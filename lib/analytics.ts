@@ -18,6 +18,27 @@ type AnalyticsProperties = {
 };
 
 const SESSION_KEY = "lunora_anonymous_session";
+const ANALYTICS_DISABLED_KEY = "polune_analytics_disabled";
+
+function analyticsDisabled() {
+  try {
+    return window.localStorage.getItem(ANALYTICS_DISABLED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function configureAnalyticsFromUrl() {
+  if (typeof window === "undefined") return;
+
+  const setting = new URLSearchParams(window.location.search).get("analytics");
+  try {
+    if (setting === "off") window.localStorage.setItem(ANALYTICS_DISABLED_KEY, "1");
+    if (setting === "on") window.localStorage.removeItem(ANALYTICS_DISABLED_KEY);
+  } catch {
+    // Analytics remains best-effort when browser storage is unavailable.
+  }
+}
 
 function anonymousSessionId() {
   try {
@@ -32,7 +53,7 @@ function anonymousSessionId() {
 }
 
 export function trackEvent(eventName: AnalyticsEventName, properties: AnalyticsProperties = {}) {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || analyticsDisabled()) return;
 
   const payload = JSON.stringify({
     sessionId: anonymousSessionId(),

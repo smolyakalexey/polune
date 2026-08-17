@@ -8,6 +8,13 @@
       "when": 1786977125610,
       "tag": "0000_furry_mandrill",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1787000400000,
+      "tag": "0001_reset_prelaunch_analytics",
+      "breakpoints": true
     }
   ]
 }

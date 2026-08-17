@@ -18,7 +18,7 @@ import type { Archetype, Rating } from "@/lib/methodology";
 import { intentCatalog } from "@/lib/intent-catalog";
 import type { CatalogIconKey, IntentDefinition } from "@/lib/intent-catalog";
 import { classifyQuerySafety, isConfidentCatalogMatch } from "@/lib/query-safety";
-import { trackEvent } from "@/lib/analytics";
+import { configureAnalyticsFromUrl, trackEvent } from "@/lib/analytics";
 import type { Icon } from "@phosphor-icons/react";
 import {
   AirplaneTilt,
@@ -572,6 +572,7 @@ export default function Home() {
       });
     };
 
+    configureAnalyticsFromUrl();
     trackEvent("page_view");
     restoreFromUrl();
     window.addEventListener("popstate", restoreFromUrl);
