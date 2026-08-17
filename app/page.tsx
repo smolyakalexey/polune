@@ -516,6 +516,7 @@ export default function Home() {
   const [feedbackAnswer, setFeedbackAnswer] = useState<"helpful" | "not_helpful" | null>(null);
   const [scoreInfoOpen, setScoreInfoOpen] = useState(false);
   const calendarStatusTimer = useRef<number | null>(null);
+  const feedbackStatusTimer = useRef<number | null>(null);
 
   const active = days.find((day) => day.id === activeId) ?? days[1];
   const bestDay = pickPreferredDay(days);
@@ -537,6 +538,7 @@ export default function Home() {
 
   useEffect(() => () => {
     if (calendarStatusTimer.current) window.clearTimeout(calendarStatusTimer.current);
+    if (feedbackStatusTimer.current) window.clearTimeout(feedbackStatusTimer.current);
   }, []);
 
   useEffect(() => {
@@ -559,6 +561,7 @@ export default function Home() {
       setScreen("result");
       setActiveId(restoredDay.id);
       setSaved(false);
+      if (feedbackStatusTimer.current) window.clearTimeout(feedbackStatusTimer.current);
       setFeedbackVisible(false);
       setFeedbackAnswer(null);
       trackEvent("result_viewed", {
@@ -592,6 +595,7 @@ export default function Home() {
     setScreen("result");
     setActiveId(nextDay.id);
     setSaved(false);
+    if (feedbackStatusTimer.current) window.clearTimeout(feedbackStatusTimer.current);
     setFeedbackVisible(false);
     setFeedbackAnswer(null);
     window.history.pushState({}, "", resultUrl(nextIntent.id, nextDay.dateIso));
@@ -609,6 +613,7 @@ export default function Home() {
     if (calendarStatusTimer.current) window.clearTimeout(calendarStatusTimer.current);
     setActiveId(day.id);
     setSaved(false);
+    if (feedbackStatusTimer.current) window.clearTimeout(feedbackStatusTimer.current);
     setFeedbackVisible(false);
     setFeedbackAnswer(null);
     window.history.pushState({}, "", resultUrl(intent.id, day.dateIso));
@@ -643,7 +648,7 @@ export default function Home() {
     link.click();
     URL.revokeObjectURL(url);
     setSaved(true);
-    setFeedbackVisible(true);
+    if (!feedbackAnswer) setFeedbackVisible(true);
     trackEvent("calendar_added", {
       intentId: intent.id,
       archetype: intent.archetype,
@@ -664,7 +669,7 @@ export default function Home() {
         await navigator.clipboard.writeText(`${text}\n${url}`);
       }
       setShared(true);
-      setFeedbackVisible(true);
+      if (!feedbackAnswer) setFeedbackVisible(true);
       trackEvent("result_shared", {
         intentId: intent.id,
         archetype: intent.archetype,
@@ -686,6 +691,8 @@ export default function Home() {
       selectedDate: active.dateIso,
       score: active.score,
     });
+    if (feedbackStatusTimer.current) window.clearTimeout(feedbackStatusTimer.current);
+    feedbackStatusTimer.current = window.setTimeout(() => setFeedbackVisible(false), 1800);
   }
 
   if (screen === "start") {
