@@ -60,8 +60,8 @@
 }
 
 * { box-sizing: border-box; }
-html { min-width: 320px; background: #f4f2f6; }
-body { margin: 0; min-width: 320px; color: var(--ink); font-family: var(--font-ui); }
+html { min-width: 320px; background: #fff; }
+body { margin: 0; min-width: 320px; min-height: 100dvh; color: var(--ink); background: #fff; font-family: var(--font-ui); }
 button, input { font: inherit; }
 button { color: inherit; }
 button:focus-visible, input:focus-visible, a:focus-visible {
@@ -71,8 +71,8 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 
 .app-shell {
   position: relative;
-  width: min(100%, 402px);
-  min-height: 100svh;
+  width: 100%;
+  min-height: 100dvh;
   margin: 0 auto;
   overflow: hidden;
   background: #fff;
@@ -110,7 +110,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .brand img { display: block; width: 85px; height: 24px; object-fit: contain; }
 
 .start-content {
-  min-height: 100svh;
+  min-height: 100dvh;
   padding: max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
@@ -174,7 +174,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 }
 
 .result-content {
-  min-height: 100svh;
+  min-height: 100dvh;
   padding: max(28px, env(safe-area-inset-top)) 8px max(28px, env(safe-area-inset-bottom));
 }
 .result-content > .brand { display: flex; width: fit-content; margin: 14px auto 0; }
@@ -388,7 +388,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   position: fixed;
   inset: 0;
   z-index: 50;
-  padding: 16px;
+  padding: max(8px, env(safe-area-inset-top)) 8px 0;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -396,10 +396,11 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   backdrop-filter: blur(12px);
 }
 .picker {
-  width: min(100%, 402px);
-  height: 80svh;
+  width: min(100%, 440px);
+  height: 90dvh;
+  max-height: calc(100dvh - max(8px, env(safe-area-inset-top)));
   padding: 18px 16px max(22px, env(safe-area-inset-bottom));
-  border-radius: 34px;
+  border-radius: 34px 34px 0 0;
   background: rgba(255,255,255,.96);
   box-shadow: 0 28px 80px rgba(58,47,120,.22);
   display: flex;
@@ -481,9 +482,12 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 }
 
 @media (min-width: 560px) {
+  html, body { background: #f4f2f6; }
   body { padding: 24px 0; }
-  .app-shell { min-height: calc(100svh - 48px); border-radius: 40px; box-shadow: 0 30px 90px rgba(58,47,120,.16); }
-  .start-content { min-height: calc(100svh - 48px); }
+  .app-shell { width: min(100%, 402px); min-height: calc(100dvh - 48px); border-radius: 40px; box-shadow: 0 30px 90px rgba(58,47,120,.16); }
+  .start-content { min-height: calc(100dvh - 48px); }
+  .picker-backdrop { padding: 16px; }
+  .picker { width: min(100%, 402px); border-radius: 34px; }
 }
 
 @media (hover: hover) and (pointer: fine) {
