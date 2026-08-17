@@ -2,7 +2,7 @@ export type Archetype = "growth" | "connection" | "planning" | "care" | "release
 
 export type Rating = "low" | "excellent" | "neutral" | "good" | "caution";
 
-export const METHOD_VERSION = "0.3";
+export const METHOD_VERSION = "0.4";
 
 export const archetypeTargets: Record<Archetype, number> = {
   growth: 90,
@@ -19,19 +19,19 @@ export function angularDistance(angle: number, target: number) {
 export function calculatePhaseScore(angle: number, archetype: Archetype) {
   const distance = angularDistance(angle, archetypeTargets[archetype]);
   const phaseMatch = (1 + Math.cos(distance * Math.PI / 180)) / 2;
-  return Math.round(100 * phaseMatch ** 4);
+  return Math.floor(100 * phaseMatch);
 }
 
 export function ratingForScore(score: number): Rating {
-  if (score >= 80) return "good";
-  if (score >= 60) return "caution";
-  if (score >= 40) return "neutral";
+  if (score >= 92) return "good";
+  if (score >= 70) return "caution";
+  if (score >= 30) return "neutral";
   return "low";
 }
 
 export function pickPreferredDay<T extends { score: number; dateIso: string }>(days: T[]) {
   if (days.length === 0) throw new Error("Для выбора дня нужен непустой список");
   const maximum = Math.max(...days.map((day) => day.score));
-  const nearMaximum = days.filter((day) => day.score >= maximum - 5);
-  return [...nearMaximum].sort((left, right) => left.dateIso.localeCompare(right.dateIso))[0];
+  const maximumDays = days.filter((day) => day.score === maximum);
+  return [...maximumDays].sort((left, right) => left.dateIso.localeCompare(right.dateIso))[0];
 }

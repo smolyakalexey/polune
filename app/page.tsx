@@ -422,7 +422,7 @@ function ScoreInfoSheet({ day, onClose }: { day: Day; onClose: () => void }) {
           </div>
         </div>
         <p className="score-footnote">фазовый угол дня — {Math.round(day.moonPhaseAngle)}°, символическая точка дела — {day.targetPhaseAngle}°, расстояние — {Math.round(day.phaseDistance)}°</p>
-        <p className="score-footnote">день недели и близость даты не добавляют баллы, ближайшая дата получает приоритет только среди почти равных результатов</p>
+        <p className="score-footnote">день недели и близость даты не добавляют баллы, ближайшая дата получает приоритет только при равном результате</p>
       </section>
     </div>
   );
