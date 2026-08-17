@@ -15,6 +15,13 @@
       "when": 1787000400000,
       "tag": "0001_reset_prelaunch_analytics",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1787002200000,
+      "tag": "0002_remove_release_check_events",
+      "breakpoints": true
     }
   ]
 }
