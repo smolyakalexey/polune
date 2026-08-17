@@ -362,7 +362,6 @@ function IntentPicker({
             placeholder="найдите дело в каталоге"
             maxLength={48}
             aria-label="поиск дела"
-            autoFocus
           />
           {query && (
             <button type="button" className="picker-search-clear" onClick={() => setQuery("")} aria-label="очистить поиск">
