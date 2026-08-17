@@ -51,6 +51,8 @@ import {
   ShoppingBag,
   Sparkle,
   TrendUp,
+  ThumbsDown,
+  ThumbsUp,
   UsersThree,
   Warning,
   Wrench,
@@ -510,6 +512,8 @@ export default function Home() {
   const [activeId, setActiveId] = useState(initialBestId);
   const [saved, setSaved] = useState(false);
   const [shared, setShared] = useState(false);
+  const [feedbackVisible, setFeedbackVisible] = useState(false);
+  const [feedbackAnswer, setFeedbackAnswer] = useState<"helpful" | "not_helpful" | null>(null);
   const [scoreInfoOpen, setScoreInfoOpen] = useState(false);
   const calendarStatusTimer = useRef<number | null>(null);
 
@@ -555,6 +559,8 @@ export default function Home() {
       setScreen("result");
       setActiveId(restoredDay.id);
       setSaved(false);
+      setFeedbackVisible(false);
+      setFeedbackAnswer(null);
       trackEvent("result_viewed", {
         intentId: restoredIntent.id,
         archetype: restoredIntent.archetype,
@@ -586,6 +592,8 @@ export default function Home() {
     setScreen("result");
     setActiveId(nextDay.id);
     setSaved(false);
+    setFeedbackVisible(false);
+    setFeedbackAnswer(null);
     window.history.pushState({}, "", resultUrl(nextIntent.id, nextDay.dateIso));
     trackEvent("intent_selected", { intentId: nextIntent.id, archetype: nextIntent.archetype });
     trackEvent("result_viewed", {
@@ -601,6 +609,8 @@ export default function Home() {
     if (calendarStatusTimer.current) window.clearTimeout(calendarStatusTimer.current);
     setActiveId(day.id);
     setSaved(false);
+    setFeedbackVisible(false);
+    setFeedbackAnswer(null);
     window.history.pushState({}, "", resultUrl(intent.id, day.dateIso));
     trackEvent("day_selected", {
       intentId: intent.id,
@@ -633,6 +643,7 @@ export default function Home() {
     link.click();
     URL.revokeObjectURL(url);
     setSaved(true);
+    setFeedbackVisible(true);
     trackEvent("calendar_added", {
       intentId: intent.id,
       archetype: intent.archetype,
@@ -653,6 +664,7 @@ export default function Home() {
         await navigator.clipboard.writeText(`${text}\n${url}`);
       }
       setShared(true);
+      setFeedbackVisible(true);
       trackEvent("result_shared", {
         intentId: intent.id,
         archetype: intent.archetype,
@@ -663,6 +675,17 @@ export default function Home() {
     } catch {
       // Отмена системного share не является ошибкой для пользователя.
     }
+  }
+
+  function submitFeedback(answer: "helpful" | "not_helpful") {
+    if (feedbackAnswer) return;
+    setFeedbackAnswer(answer);
+    trackEvent(answer === "helpful" ? "feedback_helpful" : "feedback_not_helpful", {
+      intentId: intent.id,
+      archetype: intent.archetype,
+      selectedDate: active.dateIso,
+      score: active.score,
+    });
   }
 
   if (screen === "start") {
@@ -728,6 +751,26 @@ export default function Home() {
             </button>
           </div>
         </article>
+
+        {feedbackVisible && (
+          <section className="result-feedback" aria-live="polite" aria-label="Обратная связь о рекомендации">
+            {feedbackAnswer ? (
+              <p className="feedback-thanks">спасибо, это поможет улучшить рекомендации</p>
+            ) : (
+              <>
+                <p>рекомендация была полезна?</p>
+                <div>
+                  <button type="button" onClick={() => submitFeedback("helpful")}>
+                    <ThumbsUp weight="regular" aria-hidden="true" />да
+                  </button>
+                  <button type="button" onClick={() => submitFeedback("not_helpful")}>
+                    <ThumbsDown weight="regular" aria-hidden="true" />не очень
+                  </button>
+                </div>
+              </>
+            )}
+          </section>
+        )}
 
         <section className="alternative-days" key={`alternatives-${active.id}`} aria-label="Быстрый выбор подходящего дня">
           {alternatives.map((day, index) => (

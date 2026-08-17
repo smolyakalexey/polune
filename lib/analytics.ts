@@ -6,7 +6,9 @@ export type AnalyticsEventName =
   | "result_viewed"
   | "day_selected"
   | "calendar_added"
-  | "result_shared";
+  | "result_shared"
+  | "feedback_helpful"
+  | "feedback_not_helpful";
 
 type AnalyticsProperties = {
   intentId?: string;

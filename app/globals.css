@@ -328,6 +328,39 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .share-button { display: grid; place-items: center; background: #f6f6fa; box-shadow: inset 0 0 12px rgba(255,255,255,.3); color: var(--ink); }
 .share-button img { width: 32px; height: 32px; filter: grayscale(1) brightness(0); }
 
+.result-feedback {
+  min-height: 70px;
+  margin-top: 4px;
+  padding: 12px 14px 12px 20px;
+  border-radius: 32px;
+  background: #fff;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.result-feedback > p { margin: 0; font-size: 15px; line-height: 20px; }
+.result-feedback > div { display: flex; align-items: center; gap: 4px; }
+.result-feedback button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: #f4f2f8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.result-feedback button:hover { background: #eceaf1; }
+.result-feedback button:active { transform: scale(.98); }
+.result-feedback button svg { width: 18px; height: 18px; }
+.result-feedback .feedback-thanks { width: 100%; color: var(--muted); text-align: center; }
+
 .alternative-days { margin-top: 4px; display: grid; gap: 4px; }
 .alternative-days > button {
   width: 100%;

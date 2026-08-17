@@ -10,6 +10,8 @@ const eventNames = new Set([
   "day_selected",
   "calendar_added",
   "result_shared",
+  "feedback_helpful",
+  "feedback_not_helpful",
 ]);
 const intentIds = new Set(intentCatalog.map((intent) => intent.id));
 const archetypes = new Set(["growth", "connection", "planning", "care", "release"]);
