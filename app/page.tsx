@@ -4,6 +4,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import Link from "next/link";
 import Fuse from "fuse.js";
 import { EclipticGeoMoon, MoonPhase } from "astronomy-engine";
 import {
@@ -264,6 +265,15 @@ function Brand() {
     <a className="brand" href="#top" aria-label="Polune — на главную">
       <img src="/figma/polune-mark.svg" alt="" />
     </a>
+  );
+}
+
+function LegalLinks() {
+  return (
+    <nav className="legal-links" aria-label="Информация о сервисе">
+      <Link href="/methodology">методика</Link>
+      <Link href="/privacy">конфиденциальность</Link>
+    </nav>
   );
 }
 
@@ -729,6 +739,7 @@ export default function Home() {
           <h1>узнать благоприятный<br />день, чтобы</h1>
           <IntentLine intent={previewIntents[previewIndex]} animated={!pickerOpen} onClick={() => setPickerOpen(true)} />
           <p className="intent-hint">нажмите, чтобы открыть каталог</p>
+          <LegalLinks />
         </div>
         {pickerOpen && <IntentPicker current={intent} showSelection={hasChosenIntent} onClose={() => setPickerOpen(false)} onSelect={chooseIntent} />}
       </main>
@@ -832,6 +843,7 @@ export default function Home() {
             <li><span>03</span>не советуем откладывать медицинские, финансовые и другие важные решения</li>
           </ol>
         </section>
+        <LegalLinks />
       </div>
 
       {pickerOpen && <IntentPicker current={intent} showSelection={hasChosenIntent} onClose={() => setPickerOpen(false)} onSelect={chooseIntent} />}
