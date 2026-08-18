@@ -17,6 +17,7 @@ export function InfoLayout({ eyebrow, title, children }: { eyebrow: string; titl
         {children}
       </article>
       <footer className="info-footer">
+        <Link href="/feedback">обратная связь</Link>
         <Link href="/methodology">методика</Link>
         <Link href="/privacy">конфиденциальность</Link>
       </footer>

@@ -8,7 +8,9 @@ export type AnalyticsEventName =
   | "calendar_added"
   | "result_shared"
   | "feedback_helpful"
-  | "feedback_not_helpful";
+  | "feedback_not_helpful"
+  | "feedback_form_opened"
+  | "feedback_form_submitted";
 
 type AnalyticsProperties = {
   intentId?: string;
@@ -40,7 +42,7 @@ export function configureAnalyticsFromUrl() {
   }
 }
 
-function anonymousSessionId() {
+export function getAnonymousSessionId() {
   try {
     const existing = window.localStorage.getItem(SESSION_KEY);
     if (existing) return existing;
@@ -56,7 +58,7 @@ export function trackEvent(eventName: AnalyticsEventName, properties: AnalyticsP
   if (typeof window === "undefined" || analyticsDisabled()) return;
 
   const payload = JSON.stringify({
-    sessionId: anonymousSessionId(),
+    sessionId: getAnonymousSessionId(),
     eventName,
     methodVersion: METHOD_VERSION,
     ...properties,

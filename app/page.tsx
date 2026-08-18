@@ -268,9 +268,10 @@ function Brand() {
   );
 }
 
-function LegalLinks() {
+function LegalLinks({ feedbackHref = "/feedback" }: { feedbackHref?: string }) {
   return (
     <nav className="legal-links" aria-label="Информация о сервисе">
+      <Link href={feedbackHref}>обратная связь</Link>
       <Link href="/methodology">методика</Link>
       <Link href="/privacy">конфиденциальность</Link>
     </nav>
@@ -843,7 +844,7 @@ export default function Home() {
             <li><span>03</span>не советуем откладывать медицинские, финансовые и другие важные решения</li>
           </ol>
         </section>
-        <LegalLinks />
+        <LegalLinks feedbackHref={`/feedback?intent=${intent.id}&date=${active.dateIso}&score=${active.score}`} />
       </div>
 
       {pickerOpen && <IntentPicker current={intent} showSelection={hasChosenIntent} onClose={() => setPickerOpen(false)} onSelect={chooseIntent} />}
