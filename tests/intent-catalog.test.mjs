@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { catalogSearchPhraseCount, intentCatalog } from "../lib/intent-catalog.ts";
+import { intentZodiacProfiles } from "../lib/intent-profiles.ts";
 
 const normalize = (value) => value.trim().toLowerCase().replaceAll("ё", "е");
 
@@ -29,6 +30,14 @@ test("every intent has enough formulations and a supported archetype", () => {
   for (const intent of intentCatalog) {
     assert.ok(intent.keywords.length >= 8, `${intent.id} has too few search formulations`);
     assert.ok(archetypes.has(intent.archetype), `${intent.id} has an unsupported archetype`);
+  }
+});
+
+test("every intent has exactly one supported zodiac profile", () => {
+  const profiles = new Set(["beauty", "body", "learning", "career", "social", "relationship", "home", "clearing", "travel", "creativity"]);
+  assert.deepEqual(new Set(Object.keys(intentZodiacProfiles)), new Set(intentCatalog.map((intent) => intent.id)));
+  for (const intent of intentCatalog) {
+    assert.ok(profiles.has(intentZodiacProfiles[intent.id]), `${intent.id} has an unsupported zodiac profile`);
   }
 });
 

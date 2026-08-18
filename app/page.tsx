@@ -5,18 +5,23 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import Fuse from "fuse.js";
-import { MoonPhase } from "astronomy-engine";
+import { EclipticGeoMoon, MoonPhase } from "astronomy-engine";
 import {
   angularDistance,
   archetypeTargets,
-  calculatePhaseScore,
+  calculateMethodScore,
   METHOD_VERSION,
+  PHASE_WEIGHT,
   pickPreferredDay,
   ratingForScore,
+  ZODIAC_WEIGHT,
+  zodiacSignIndex,
+  zodiacSignNames,
 } from "@/lib/methodology";
-import type { Archetype, Rating } from "@/lib/methodology";
+import type { Rating, ZodiacProfile } from "@/lib/methodology";
 import { intentCatalog } from "@/lib/intent-catalog";
 import type { CatalogIconKey, IntentDefinition } from "@/lib/intent-catalog";
+import { intentZodiacProfiles } from "@/lib/intent-profiles";
 import { classifyQuerySafety, isConfidentCatalogMatch } from "@/lib/query-safety";
 import { configureAnalyticsFromUrl, trackEvent } from "@/lib/analytics";
 import type { Icon } from "@phosphor-icons/react";
@@ -60,7 +65,7 @@ import {
   XCircle,
 } from "@phosphor-icons/react";
 
-type Intent = Omit<IntentDefinition, "icon"> & { Icon: Icon };
+type Intent = Omit<IntentDefinition, "icon"> & { Icon: Icon; zodiacProfile: ZodiacProfile };
 
 type Day = {
   id: string;
@@ -70,11 +75,15 @@ type Day = {
   longDate: string;
   monthLabel: string;
   score: number;
+  phaseScore: number;
+  zodiacScore: number;
   rating: Rating;
   moonPhaseAngle: number;
   moonPhaseLabel: string;
   targetPhaseAngle: number;
   phaseDistance: number;
+  lunarLongitude: number;
+  zodiacSignName: string;
 };
 
 const catalogIcons: Record<CatalogIconKey, Icon> = {
@@ -110,6 +119,7 @@ const catalogIcons: Record<CatalogIconKey, Icon> = {
 const intents: Intent[] = intentCatalog.map(({ icon, ...intent }) => ({
   ...intent,
   Icon: catalogIcons[icon],
+  zodiacProfile: intentZodiacProfiles[intent.id],
 }));
 
 function resultUrl(intentId: string, dateIso: string) {
@@ -133,7 +143,7 @@ function currentMoscowDate() {
   return new Date(Date.UTC(value("year"), value("month") - 1, value("day"), 12));
 }
 
-function buildCurrentWeek(archetype: Archetype): Day[] {
+function buildCurrentWeek(intent: Pick<Intent, "archetype" | "zodiacProfile">): Day[] {
   const anchor = currentMoscowDate();
   const calculatedDays = Array.from({ length: 14 }, (_, index) => {
     const date = new Date(anchor);
@@ -145,7 +155,13 @@ function buildCurrentWeek(archetype: Archetype): Day[] {
       .formatToParts(date)
       .find((part) => part.type === "month")?.value ?? "";
     const moonPhaseAngle = MoonPhase(date);
-    const score = calculatePhaseScore(moonPhaseAngle, archetype);
+    const lunarLongitude = EclipticGeoMoon(date).lon;
+    const { score, phaseScore, zodiacScore } = calculateMethodScore(
+      moonPhaseAngle,
+      lunarLongitude,
+      intent.archetype,
+      intent.zodiacProfile,
+    );
     const moonPhaseLabel = moonPhaseAngle < 15 || moonPhaseAngle >= 345
       ? "новолуние"
       : moonPhaseAngle < 165
@@ -161,11 +177,15 @@ function buildCurrentWeek(archetype: Archetype): Day[] {
       longDate: `${day} ${monthLabel}, ${weekday}`,
       monthLabel: `${monthLabel}, ${weekday}`,
       score,
+      phaseScore,
+      zodiacScore,
       rating: ratingForScore(score),
       moonPhaseAngle,
       moonPhaseLabel,
-      targetPhaseAngle: archetypeTargets[archetype],
-      phaseDistance: angularDistance(moonPhaseAngle, archetypeTargets[archetype]),
+      targetPhaseAngle: archetypeTargets[intent.archetype],
+      phaseDistance: angularDistance(moonPhaseAngle, archetypeTargets[intent.archetype]),
+      lunarLongitude,
+      zodiacSignName: zodiacSignNames[zodiacSignIndex(lunarLongitude)],
     };
   });
   const preferredId = pickPreferredDay(calculatedDays).id;
@@ -188,7 +208,7 @@ const previewIntents: Intent[] = [
   intents.find((intent) => intent.id === "conversation")!,
   intents.find((intent) => intent.id === "trip")!,
   intents.find((intent) => intent.id === "skincare")!,
-  { id: "catalog-preview", label: "найти дело в каталоге", group: "каталог", Icon: MagnifyingGlass, archetype: "planning" },
+  { id: "catalog-preview", label: "найти дело в каталоге", group: "каталог", Icon: MagnifyingGlass, archetype: "planning", zodiacProfile: "learning" },
 ];
 
 const ratingLabels: Record<Rating, string> = {
@@ -208,11 +228,11 @@ const statusIcons: Record<Rating, string> = {
 };
 
 const ratingInsights: Record<Rating, { Icon: Icon; title: string; text: string }> = {
-  excellent: { Icon: Sparkle, title: "фаза близка к целевой точке", text: "угловое расстояние до символической цели минимально" },
-  good: { Icon: SealCheck, title: "хорошее совпадение фазы", text: "дата находится рядом с символической целью" },
-  neutral: { Icon: MinusCircle, title: "нейтральное совпадение фазы", text: "дата находится между подходящей и противоположной фазой" },
-  caution: { Icon: Warning, title: "умеренное совпадение фазы", text: "фаза подходит частично, но есть более точные даты" },
-  low: { Icon: XCircle, title: "слабое совпадение фазы", text: "дата далека от символической цели" },
+  excellent: { Icon: Sparkle, title: "лучшее сочетание факторов", text: "фаза и положение луны дают максимальный индекс в ближайшие 14 дней" },
+  good: { Icon: SealCheck, title: "хорошее сочетание факторов", text: "фаза и положение луны поддерживают выбранное дело" },
+  neutral: { Icon: MinusCircle, title: "нейтральное сочетание факторов", text: "часть символических критериев совпадает, а часть остаётся нейтральной" },
+  caution: { Icon: Warning, title: "умеренное сочетание факторов", text: "совпадение заметное, но рядом есть более точные даты" },
+  low: { Icon: XCircle, title: "слабое сочетание факторов", text: "большая часть символических критериев сейчас не совпадает" },
 };
 
 function buildReasons(intent: Intent, day: Day) {
@@ -226,8 +246,8 @@ function buildReasons(intent: Intent, day: Day) {
     },
     {
       Icon: ratingInsight.Icon,
-      title: ratingInsight.title,
-      text: `${ratingInsight.text} для дела «${intent.label}»`,
+      title: `луна в ${day.zodiacSignName.toLowerCase()}`,
+      text: `${ratingInsight.text} для профиля дела «${intent.label}», фактор положения — ${day.zodiacScore} из 100`,
     },
     {
       Icon: isWeekend ? FlowerLotus : CalendarCheck,
@@ -417,11 +437,16 @@ function ScoreInfoSheet({ day, onClose }: { day: Day; onClose: () => void }) {
         <p className="score-explainer">это индекс совпадения по нашей методике, а не вероятность события и не обещание результата</p>
         <div className="score-factors">
           <div className="score-factor">
-            <div><span>совпадение с фазой для выбранного дела</span><strong>{day.score} / 100</strong></div>
-            <span className="score-track"><span style={{ width: `${day.score}%` }} /></span>
+            <div><span>фаза луны · {Math.round(PHASE_WEIGHT * 100)}%</span><strong>{day.phaseScore} / 100</strong></div>
+            <span className="score-track"><span style={{ width: `${day.phaseScore}%` }} /></span>
+          </div>
+          <div className="score-factor">
+            <div><span>луна в {day.zodiacSignName.toLowerCase()} · {Math.round(ZODIAC_WEIGHT * 100)}%</span><strong>{day.zodiacScore} / 100</strong></div>
+            <span className="score-track"><span style={{ width: `${day.zodiacScore}%` }} /></span>
           </div>
         </div>
         <p className="score-footnote">фазовый угол дня — {Math.round(day.moonPhaseAngle)}°, символическая точка дела — {day.targetPhaseAngle}°, расстояние — {Math.round(day.phaseDistance)}°</p>
+        <p className="score-footnote">эклиптическая долгота луны — {Math.round(day.lunarLongitude)}°, знак — {day.zodiacSignName}</p>
         <p className="score-footnote">день недели и близость даты не добавляют баллы, ближайшая дата получает приоритет только при равном результате</p>
       </section>
     </div>
@@ -506,7 +531,7 @@ export default function Home() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [intent, setIntent] = useState(intents[0]);
   const [previewIndex, setPreviewIndex] = useState(0);
-  const days = useMemo(() => buildCurrentWeek(intent.archetype), [intent.archetype]);
+  const days = useMemo(() => buildCurrentWeek(intent), [intent]);
   const initialBestId = pickPreferredDay(days).id;
   const [hasChosenIntent, setHasChosenIntent] = useState(false);
   const [activeId, setActiveId] = useState(initialBestId);
@@ -553,7 +578,7 @@ export default function Home() {
         return;
       }
 
-      const restoredDays = buildCurrentWeek(restoredIntent.archetype);
+      const restoredDays = buildCurrentWeek(restoredIntent);
       const requestedDate = params.get("date");
       const restoredDay = restoredDays.find((day) => day.dateIso === requestedDate) ?? pickPreferredDay(restoredDays);
       setIntent(restoredIntent);
@@ -588,7 +613,7 @@ export default function Home() {
   }, [pickerOpen, screen]);
 
   function chooseIntent(nextIntent: Intent) {
-    const nextDays = buildCurrentWeek(nextIntent.archetype);
+    const nextDays = buildCurrentWeek(nextIntent);
     const nextDay = pickPreferredDay(nextDays);
     setIntent(nextIntent);
     setHasChosenIntent(true);
