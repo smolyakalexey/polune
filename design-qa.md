@@ -1,49 +1,75 @@
-# Design QA — result screen, 15 August 2026
+# Design QA — Polune reveal lab
 
-## Evidence
+## Artifacts
 
-- Source visual truth: Figma file `bavdEOveHYl4LAaoVuhBV1`, result frames in section `305:7869`, exact logo node `305:7843`, plus browser annotations 1–2 from 15 August 2026.
-- Implementation: `http://127.0.0.1:5174/`.
-- Browser-rendered screenshot: `qa/implementation-2026-08-15.png`.
-- Viewport and screenshot: 884 × 863 CSS px, 884 × 863 image px, device density 1×.
-- State: result screen, intent `постричься`, selected date 28 August after checking both short and long card content.
-- Focused comparison: logo transparency and card action/bottom boundary. A separate full-screen reference crop was unnecessary because the annotations target these two regions precisely.
+- Source visual truth: `/Users/alexey/.codex/generated_images/019ffac9-27b3-7cf2-a8b2-9f83957f5093/exec-74fb3b39-d3e1-4f45-b534-7fd45ce4391d.png`
+- Implementation screenshot: `/private/tmp/polune-reveal-implementation-final.png`
+- Side-by-side comparison: `/private/tmp/polune-reveal-comparison-final.png`
+- Source pixels: `1536 × 1024`; compared right result frame crop: `448 × 950`
+- Implementation pixels: `390 × 844`
+- CSS viewport: `390 × 844`, device scale factor `1`
+- Normalization: the source result crop was resized with `contain` to `390 × 844`; the implementation was captured directly at `390 × 844`
+- State: dark theme, reveal completed, explanation collapsed
 
-## Full-view comparison
+## Full-view comparison evidence
 
-The existing composition, type scale, week strip, card hierarchy, background and controls are preserved. The two requested changes do not introduce layout drift: the card grows with its copy and the transparent mark keeps the same 34 × 34 CSS slot and Figma alignment.
+The selected direction and the implementation share the same dominant composition: centered Polune brand, translucent shell halves around a dark rounded result card, expressive serif date, compact verdict and advice, method link, and a high-contrast action below. The implementation keeps the card and all controls as live HTML rather than baking them into the shell artwork.
 
-## Focused comparison
+Intentional prototype differences:
 
-- Logo: the first Figma PNG export contained a white matte. The replacement is rendered from the exact Figma SVG source at 3×, stored as RGBA, and shows no square background or transparency halo in the browser capture.
-- Card: `.featured-card` no longer has a fixed minimum height. Browser geometry reports exactly 8 px from the bottom of the primary button to the card boundary for a 469 px card and for a 489 px card with longer text.
+- replay and theme controls are visible because this is an isolated motion laboratory;
+- the production-oriented share action is retained beside the primary button;
+- the implementation uses the current Polune typography and interaction focus treatment rather than reproducing generated-image artifacts literally.
+
+## Focused-region comparison evidence
+
+The result region was reviewed at full mobile resolution. Date hierarchy, card width, card radius, shell clearance, method-link spacing, and bottom action height are readable at `390 × 844`. The generated shell asset remains sharp and transparent on both themes. The card expands when `как посчитали` is opened without requiring a new graphic export.
 
 ## Required fidelity surfaces
 
-- Fonts and typography: unchanged from the approved screen; Onest sizing, weight and wrapping remain stable.
-- Spacing and layout rhythm: passed; the action row retains its proportions and the lower inset is exactly 8 px for variable-height cards.
-- Colors and visual tokens: unchanged; logo pixels are black on a transparent canvas rather than a white matte.
-- Image quality and asset fidelity: passed; exact Figma logo vector source is rasterized at 3× and used as a transparent Retina PNG.
-- Copy and content: score explanation now matches methodology v0.2 and no longer describes three fictitious weighted components.
+- **Fonts and typography:** Onest is used for interface text; Cormorant Garamond is used only for the large date. Hierarchy and line wrapping match the selected direction. The generated mock used a slightly lighter display rendering, retained as a possible P3 refinement.
+- **Spacing and layout rhythm:** result card, shell, method link, and action follow the source's vertical order. The source has no laboratory controls; their addition is intentional and isolated to `/reveal-lab`.
+- **Colors and visual tokens:** near-black background, milky card/action, pale lavender shell and semantic text contrast match the selected direction. Light and dark modes use the same component structure.
+- **Image quality and asset fidelity:** closed and opened shell states are real raster assets at `1254 × 1254` with alpha, not CSS drawings. UI text is not part of either asset.
+- **Copy and content:** exact intended result copy is present: `24 августа, пн`, `день для мягкого обновления`, `освежите форму, не меняя себя целиком`, `как посчитали`, `добавить событие`.
 
-## Interaction checks
+## Interaction verification
 
-- Opened the intent picker and selected `постричься`.
-- Switched from the preferred day to a longer neutral-day card.
-- Opened the score explanation sheet and verified the phase angle, target angle, distance and score text.
-- Checked browser console: no errors.
+- reveal starts only from `узнать день`;
+- replay returns to the initial state;
+- light/dark theme toggle works;
+- `как посчитали` expands and collapses real interface content;
+- `добавить событие` shows the temporary success state `добавлено`;
+- share control has an accessible name;
+- clean browser tab reported no console warnings or errors.
 
 ## Comparison history
 
-- P1 fixed: visible white square behind the logo. Re-exported from the exact transparent Figma SVG source at 3×; post-fix browser evidence shows transparent edges.
-- P2 fixed: fixed card height left excess space below the actions. Removed the minimum height; post-fix measurements are 8 px for cards of two different heights.
+### Iteration 1
+
+- [P2] The initial result card was too wide and included the method link inside the card.
+- [P2] The first opened-shell asset was too round and hid behind the card.
+- Fixes: narrowed the result card, moved `как посчитали` below it, moved the action upward, generated a new slender pair of shell halves, and adjusted the open-state scale and vertical position.
+- Post-fix evidence: `/private/tmp/polune-reveal-comparison-final.png`.
 
 ## Findings
 
-No actionable P0, P1 or P2 findings remain in the requested scope.
+No actionable P0, P1, or P2 differences remain for the isolated reveal prototype.
 
 ## Follow-up polish
 
-- P3: revisit the working product name after the next feature pass; the current mark remains useful as a temporary visual placeholder.
+- [P3] Tune the shell refraction and opening distance after observing the animation on a physical iPhone.
+- [P3] Consider a slightly lighter optical weight for the large date.
+- [P3] Decide whether laboratory controls remain visible when the concept is integrated into the real result flow.
+
+## Implementation checklist
+
+- [x] separate raster shell from editable HTML interface
+- [x] responsive mobile layout at `390 × 844`
+- [x] light and dark themes
+- [x] reduced-motion fallback in CSS
+- [x] functional reveal, reset, explanation and success states
+- [x] lint and production build
+- [x] browser-rendered visual comparison
 
 final result: passed
