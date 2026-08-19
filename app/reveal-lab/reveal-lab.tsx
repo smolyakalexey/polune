@@ -11,7 +11,6 @@ type Phase =
   | "vanish"
   | "split"
   | "expand"
-  | "settle"
   | "result";
 
 const timeline: ReadonlyArray<readonly [number, Phase]> = [
@@ -20,8 +19,7 @@ const timeline: ReadonlyArray<readonly [number, Phase]> = [
   [1170, "vanish"],
   [1430, "split"],
   [1590, "expand"],
-  [2170, "settle"],
-  [2700, "result"],
+  [2590, "result"],
 ];
 
 const phaseLabels: Record<Phase, string> = {
@@ -30,8 +28,7 @@ const phaseLabels: Record<Phase, string> = {
   shake: "немного трясётся",
   vanish: "исчезает первая картинка",
   split: "появляется вторая группа картинок",
-  expand: "разъединяются и увеличиваются",
-  settle: "встают на места",
+  expand: "разъединяются, увеличиваются и встают на места",
   result: "готово",
 };
 

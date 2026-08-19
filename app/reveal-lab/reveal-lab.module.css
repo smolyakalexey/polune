@@ -76,8 +76,8 @@
   transition-duration: 260ms;
 }
 
-.screen:is([data-phase="split"], [data-phase="expand"], [data-phase="settle"], [data-phase="result"]) .glow,
-.screen:is([data-phase="split"], [data-phase="expand"], [data-phase="settle"], [data-phase="result"]) .closedShell {
+.screen:is([data-phase="split"], [data-phase="expand"], [data-phase="result"]) .glow,
+.screen:is([data-phase="split"], [data-phase="expand"], [data-phase="result"]) .closedShell {
   top: 56.04cqh;
   opacity: 0;
   transform: translate(-50%, -50%) scale(.07);
@@ -132,37 +132,22 @@
   top: -100%;
 }
 
-.screen:is([data-phase="split"], [data-phase="expand"], [data-phase="settle"], [data-phase="result"]) .shellHalf {
+.screen:is([data-phase="split"], [data-phase="expand"], [data-phase="result"]) .shellHalf {
   opacity: 1;
 }
 
 .screen[data-phase="expand"] .shellHalf {
-  top: 51.43cqh;
-  transform: translate(-50%, -50%) rotate(-90deg) scale(1.157);
-  transition-duration: 580ms;
-  transition-timing-function: cubic-bezier(.16, .82, .2, 1);
+  transition-duration: 1000ms;
+  transition-timing-function: cubic-bezier(.16, .76, .18, 1);
 }
 
-.screen[data-phase="expand"] .topHalf {
-  left: -9.33cqw;
-}
-
-.screen[data-phase="expand"] .bottomHalf {
-  left: 109.98cqw;
-}
-
-.screen:is([data-phase="settle"], [data-phase="result"]) .shellHalf {
-  transition-duration: 530ms;
-  transition-timing-function: cubic-bezier(.2, .72, .2, 1);
-}
-
-.screen:is([data-phase="settle"], [data-phase="result"]) .topHalf {
+.screen:is([data-phase="expand"], [data-phase="result"]) .topHalf {
   left: 1.31cqw;
   top: 90.74cqh;
   transform: translate(-50%, -50%) rotate(-125.11deg) scale(1);
 }
 
-.screen:is([data-phase="settle"], [data-phase="result"]) .bottomHalf {
+.screen:is([data-phase="expand"], [data-phase="result"]) .bottomHalf {
   left: 95.58cqw;
   top: 8.25cqh;
   transform: translate(-50%, -50%) rotate(-120deg) scale(1);
