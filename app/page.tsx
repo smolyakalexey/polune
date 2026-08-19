@@ -622,9 +622,9 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const themeColor = startTheme === "dark" ? "#020002" : "#ffffff";
+    const themeColor = screen === "start" && startTheme === "dark" ? "#020002" : "#ffffff";
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", themeColor);
-  }, [startTheme]);
+  }, [screen, startTheme]);
 
   useEffect(() => {
     const restoreFromUrl = () => {
