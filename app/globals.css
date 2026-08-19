@@ -90,14 +90,11 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   pointer-events: none;
 }
 
-.start-screen::before {
-  inset: -185px auto auto -299px;
-  width: 876px;
-  height: 1510px;
-  background-image: url("/figma/aurora-start.svg");
-  background-size: 876px 1510px;
-  background-position: 0 0;
+.start-screen {
+  color: #fff;
+  background: #020002;
 }
+.start-screen::before { display: none; }
 .result-screen::before { background-image: url("/figma/aurora-result.svg"); }
 
 .brand {
@@ -110,13 +107,52 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .brand img { display: block; width: 85px; height: 24px; object-fit: contain; }
 
 .start-content {
+  position: relative;
+  z-index: 2;
   min-height: 100dvh;
-  padding: max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+  padding: 0 16px max(24px, env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   align-items: center;
 }
-.start-content .brand { margin-top: 14px; }
+.start-header {
+  position: absolute;
+  top: max(18px, env(safe-area-inset-top));
+  right: 16px;
+  left: 16px;
+  min-height: 40px;
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+}
+.start-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-self: center;
+  gap: 3px;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 24px;
+  text-decoration: none;
+}
+.start-logo img { width: 24px; height: 24px; display: block; }
+.start-header-action {
+  width: 40px;
+  height: 40px;
+  padding: 8px;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, .04);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, .28);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.start-header-action:last-child { justify-self: end; }
+.start-header-action:disabled { opacity: 1; }
+.start-header-action img { width: 24px; height: 24px; display: block; }
 .start-content h1,
 .result-hero h1 {
   margin: 24px 0 0;
@@ -126,7 +162,10 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   letter-spacing: -.204px;
   text-align: center;
 }
-.start-content h1 { margin-top: clamp(164px, 24svh, 210px); }
+.start-content h1 {
+  margin-top: clamp(218px, 30.3svh, 265px);
+  color: #fff;
+}
 
 .intent-line {
   width: 100%;
@@ -140,10 +179,12 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   cursor: pointer;
 }
 .intent-copy { width: 100%; display: grid; justify-items: center; }
-.start-screen .intent-line { min-height: 76px; overflow: hidden; perspective: 500px; }
+.start-screen .intent-line { min-height: 44px; overflow: hidden; perspective: 500px; }
 .intent-line.is-ticker .intent-copy { animation: intent-ticker 2.6s cubic-bezier(.22,.72,.2,1) both; }
 .intent-first-line { display: inline-flex; align-items: flex-start; justify-content: center; gap: 3px; }
 .intent-first-line > svg { width: 25px; height: 25px; margin-top: 6px; flex: 0 0 auto; color: var(--brand-mid); }
+.intent-leading-image { width: 28px; height: 23px; margin: 7px 0 0; flex: 0 0 auto; }
+.intent-caret { width: 16px; height: 16px; margin: 11px 0 0 8px; flex: 0 0 auto; }
 .intent-text-line {
   max-width: 320px;
   background: linear-gradient(180deg, var(--brand-start), var(--brand-mid) 54%, var(--brand-end));
@@ -165,7 +206,27 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   letter-spacing: .1px;
   text-align: center;
 }
+.start-screen .intent-hint { color: rgba(255, 255, 255, .32); }
 .start-content > .legal-links { margin-top: auto; }
+
+.start-decoration {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.start-glow,
+.start-shell {
+  position: absolute;
+  left: 50%;
+  top: 113.11%;
+  max-width: none;
+  height: auto;
+  transform: translate(-50%, -50%);
+}
+.start-glow { width: 240.06%; opacity: .92; }
+.start-shell { width: 200.23%; }
 
 .legal-links {
   padding: 20px 0 max(4px, env(safe-area-inset-bottom));

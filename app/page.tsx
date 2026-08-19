@@ -268,6 +268,23 @@ function Brand() {
   );
 }
 
+function StartHeader() {
+  return (
+    <header className="start-header">
+      <button className="start-header-action" type="button" aria-label="светлая тема — скоро" disabled>
+        <img src="/figma/start-sun.svg" alt="" />
+      </button>
+      <a className="start-logo" href="#top" aria-label="polune — на главную">
+        <img src="/figma/start-logo.svg" alt="" />
+        <span>polune</span>
+      </a>
+      <button className="start-header-action" type="button" aria-label="личный профиль — скоро" disabled>
+        <img src="/figma/start-user.svg" alt="" />
+      </button>
+    </header>
+  );
+}
+
 function LegalLinks({ feedbackHref = "/feedback" }: { feedbackHref?: string }) {
   return (
     <nav className="legal-links" aria-label="Информация о сервисе">
@@ -296,7 +313,17 @@ function splitIntentLabel(label: string) {
   return [words.slice(0, splitAt).join(" "), words.slice(splitAt).join(" ")];
 }
 
-function IntentLine({ intent, onClick, animated = false }: { intent: Intent; onClick: () => void; animated?: boolean }) {
+function IntentLine({
+  intent,
+  onClick,
+  animated = false,
+  showCaret = false,
+}: {
+  intent: Intent;
+  onClick: () => void;
+  animated?: boolean;
+  showCaret?: boolean;
+}) {
   const IntentIcon = intent.Icon;
   const [firstLine, secondLine] = splitIntentLabel(intent.label);
   return (
@@ -309,8 +336,11 @@ function IntentLine({ intent, onClick, animated = false }: { intent: Intent; onC
     >
       <span className="intent-copy" key={animated ? intent.id : undefined}>
         <span className="intent-first-line">
-          <IntentIcon weight="bold" aria-hidden="true" />
+          {showCaret && intent.id === "haircut"
+            ? <img className="intent-leading-image" src="/figma/intent-scissors.svg" alt="" />
+            : <IntentIcon weight="bold" aria-hidden="true" />}
           <span className="intent-text-line">{firstLine}</span>
+          {showCaret && <img className="intent-caret" src="/figma/start-caret.svg" alt="" />}
         </span>
         {secondLine && <span className="intent-text-line intent-second-line">{secondLine}</span>}
       </span>
@@ -736,11 +766,19 @@ export default function Home() {
     return (
       <main className="app-shell start-screen" id="top">
         <div className="start-content">
-          <Brand />
+          <StartHeader />
           <h1>узнать благоприятный<br />день, чтобы</h1>
-          <IntentLine intent={previewIntents[previewIndex]} animated={!pickerOpen} onClick={() => setPickerOpen(true)} />
-          <p className="intent-hint">нажмите, чтобы открыть каталог</p>
-          <LegalLinks />
+          <IntentLine
+            intent={previewIntents[previewIndex]}
+            animated={!pickerOpen}
+            showCaret
+            onClick={() => setPickerOpen(true)}
+          />
+          <p className="intent-hint">нажмите, чтобы выбрать событие</p>
+        </div>
+        <div className="start-decoration" aria-hidden="true">
+          <img className="start-glow" src="/reveal/figma-glow.svg" alt="" />
+          <img className="start-shell" src="/reveal/figma-shell-closed.png" alt="" />
         </div>
         {pickerOpen && <IntentPicker current={intent} showSelection={hasChosenIntent} onClose={() => setPickerOpen(false)} onSelect={chooseIntent} />}
       </main>
