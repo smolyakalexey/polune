@@ -1,0 +1,152 @@
+.transition {
+  position: absolute;
+  inset: 0;
+  z-index: 80;
+  container-type: size;
+  overflow: hidden;
+  background: #020002;
+}
+
+.closedObject,
+.openObject {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.closedObject { z-index: 2; }
+.openObject { z-index: 3; }
+
+.glow,
+.closedShell {
+  position: absolute;
+  left: 50%;
+  max-width: none;
+  height: auto;
+  will-change: transform, top, opacity;
+}
+
+.glow {
+  top: -70%;
+  width: 240.06%;
+  opacity: 0;
+  transform: translateX(-50%) rotate(60deg);
+  transition:
+    top 520ms cubic-bezier(.18, .76, .2, 1),
+    transform 520ms cubic-bezier(.18, .76, .2, 1),
+    opacity 360ms ease;
+}
+
+.closedShell {
+  top: -43.86%;
+  width: 151.27%;
+  opacity: 0;
+  transform: translateX(-50%);
+  transition:
+    top 520ms cubic-bezier(.18, .76, .2, 1),
+    transform 520ms cubic-bezier(.18, .76, .2, 1),
+    opacity 300ms ease;
+}
+
+.transition:is([data-phase="arrive"], [data-phase="shake"]) .glow {
+  top: 52%;
+  opacity: .94;
+  transform: translate(-50%, -50%) rotate(0) scale(.64);
+}
+
+.transition:is([data-phase="arrive"], [data-phase="shake"]) .closedShell {
+  top: 52%;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(.78);
+}
+
+.transition[data-phase="shake"] .closedShell {
+  animation: reveal-shake 240ms linear both;
+}
+
+.transition:is([data-phase="morph"], [data-phase="expand"], [data-phase="result"]) .closedShell {
+  top: 52%;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(.08);
+  transition-duration: 260ms;
+}
+
+.transition[data-phase="morph"] .glow {
+  top: 50%;
+  opacity: 1;
+  transform: translate(-50%, -50%) rotate(0) scale(.72);
+  transition-duration: 420ms;
+}
+
+.transition:is([data-phase="expand"], [data-phase="result"]) .glow {
+  top: 50%;
+  opacity: .62;
+  transform: translate(-50%, -50%) rotate(0) scale(.92);
+  transition-duration: 1040ms;
+}
+
+.shellHalf {
+  position: absolute;
+  width: 158.46%;
+  aspect-ratio: 2 / 1;
+  overflow: hidden;
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(-90deg) scale(.335);
+  transform-origin: 50% 50%;
+  transition:
+    left 180ms cubic-bezier(.2, .8, .2, 1),
+    top 180ms cubic-bezier(.2, .8, .2, 1),
+    transform 180ms cubic-bezier(.2, .8, .2, 1),
+    opacity 280ms ease;
+  will-change: transform, left, top, opacity;
+}
+
+.shellHalf img {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 200%;
+  max-width: none;
+  object-fit: fill;
+}
+
+.topHalf { left: 43.78%; top: 51.47%; }
+.topHalf img { top: 0; }
+.bottomHalf { left: 56.22%; top: 51.51%; }
+.bottomHalf img { top: -100%; }
+
+.transition:is([data-phase="morph"], [data-phase="expand"], [data-phase="result"]) .shellHalf { opacity: 1; }
+.transition[data-phase="expand"] .shellHalf { transition-timing-function: cubic-bezier(.16, .72, .18, 1); }
+.transition[data-phase="expand"] .topHalf { transition-duration: 960ms; }
+.transition[data-phase="expand"] .bottomHalf { transition-duration: 1080ms; }
+
+.transition:is([data-phase="expand"], [data-phase="result"]) .topHalf {
+  left: 1.31%;
+  top: 90.74%;
+  transform: translate(-50%, -50%) rotate(-125.11deg) scale(1);
+}
+
+.transition:is([data-phase="expand"], [data-phase="result"]) .bottomHalf {
+  left: 95.58%;
+  top: 8.25%;
+  transform: translate(-50%, -50%) rotate(-120deg) scale(1);
+}
+
+.transition[data-phase="result"] :is(.glow, .closedShell, .shellHalf) { will-change: auto; }
+
+@keyframes reveal-shake {
+  0%, 100% { transform: translate(-50%, -50%) translate(0, 0) rotate(0) scale(.78); }
+  20% { transform: translate(-50%, -50%) translate(-3px, 1px) rotate(-.7deg) scale(.78); }
+  42% { transform: translate(-50%, -50%) translate(3px, -1px) rotate(.8deg) scale(.78); }
+  64% { transform: translate(-50%, -50%) translate(-2px, -1px) rotate(-.45deg) scale(.78); }
+  82% { transform: translate(-50%, -50%) translate(2px, 1px) rotate(.35deg) scale(.78); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glow,
+  .closedShell,
+  .shellHalf {
+    animation: none !important;
+    transition-duration: .01ms !important;
+  }
+}

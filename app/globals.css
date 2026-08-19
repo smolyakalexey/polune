@@ -150,7 +150,8 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(255, 255, 255, .06);
+  background: rgba(2, 0, 2, .3);
   box-shadow: 0 8px 32px rgba(0, 0, 0, .28);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -159,7 +160,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .start-header-action:disabled { opacity: 1; }
 .start-header-action img { width: 24px; height: 24px; display: block; }
 .start-header-action svg { width: 24px; height: 24px; }
-.theme-light .start-header-action { background: rgba(2, 0, 2, .04); }
+.theme-light .start-header-action { border-color: rgba(2, 0, 2, .06); background: rgba(2, 0, 2, .07); }
 .theme-light .start-logo img,
 .theme-light .start-header-action img { filter: invert(1); }
 .start-content h1,
@@ -172,13 +173,18 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   text-align: center;
 }
 .start-content h1 {
-  position: absolute;
-  top: 38.67%;
-  left: 50%;
-  width: calc(100% - 40px);
+  width: 100%;
   margin: 0;
   color: currentColor;
-  transform: translateX(-50%);
+}
+.start-prompt {
+  position: absolute;
+  top: 38.67%;
+  right: 16px;
+  left: 16px;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
 }
 
 .intent-line {
@@ -194,20 +200,19 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 }
 .intent-copy { width: 100%; display: grid; justify-items: center; }
 .start-screen .intent-line {
-  position: absolute;
-  top: 51.72%;
-  left: 16px;
-  width: calc(100% - 32px);
+  position: static;
+  width: 100%;
   min-height: 44px;
   margin: 0;
   overflow: hidden;
   perspective: 500px;
 }
 .intent-line.is-ticker .intent-copy { animation: intent-ticker 2.6s cubic-bezier(.22,.72,.2,1) both; }
-.intent-first-line { display: inline-flex; align-items: flex-start; justify-content: center; gap: 3px; }
+.intent-first-line,
+.intent-second-row { position: relative; display: inline-flex; align-items: flex-start; justify-content: center; gap: 3px; }
 .intent-first-line > svg { width: 25px; height: 25px; margin-top: 6px; flex: 0 0 auto; color: var(--brand-mid); }
 .intent-leading-image { width: 28px; height: 23px; margin: 7px 0 0; flex: 0 0 auto; }
-.intent-caret { width: 16px; height: 16px; margin: 11px 0 0 8px; flex: 0 0 auto; }
+.intent-caret { position: absolute; top: 11px; left: calc(100% + 8px); width: 16px; height: 16px; }
 .intent-text-line {
   max-width: 320px;
   background: linear-gradient(180deg, var(--brand-start), var(--brand-mid) 54%, var(--brand-end));

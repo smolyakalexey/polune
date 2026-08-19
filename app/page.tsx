@@ -25,6 +25,7 @@ import type { CatalogIconKey, IntentDefinition } from "@/lib/intent-catalog";
 import { intentZodiacProfiles } from "@/lib/intent-profiles";
 import { classifyQuerySafety, isConfidentCatalogMatch } from "@/lib/query-safety";
 import { configureAnalyticsFromUrl, trackEvent } from "@/lib/analytics";
+import RevealTransition from "./reveal-transition";
 import type { Icon } from "@phosphor-icons/react";
 import {
   AirplaneTilt,
@@ -353,9 +354,14 @@ function IntentLine({
             ? <img className="intent-leading-image" src="/figma/intent-scissors.svg" alt="" />
             : <IntentIcon weight="bold" aria-hidden="true" />}
           <span className="intent-text-line">{firstLine}</span>
-          {showCaret && <img className="intent-caret" src="/figma/start-caret.svg" alt="" />}
+          {showCaret && !secondLine && <img className="intent-caret" src="/figma/start-caret.svg" alt="" />}
         </span>
-        {secondLine && <span className="intent-text-line intent-second-line">{secondLine}</span>}
+        {secondLine && (
+          <span className="intent-second-row">
+            <span className="intent-text-line intent-second-line">{secondLine}</span>
+            {showCaret && <img className="intent-caret" src="/figma/start-caret.svg" alt="" />}
+          </span>
+        )}
       </span>
     </button>
   );
@@ -583,6 +589,7 @@ function WeekStrip({ days, activeId, onSelect }: { days: Day[]; activeId: string
 export default function Home() {
   const [screen, setScreen] = useState<"start" | "result">("start");
   const [startTheme, setStartTheme] = useState<"dark" | "light">("dark");
+  const [pendingReveal, setPendingReveal] = useState<{ intent: Intent; day: Day } | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [intent, setIntent] = useState(intents[0]);
   const [previewIndex, setPreviewIndex] = useState(0);
@@ -665,12 +672,12 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (screen !== "start" || pickerOpen || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (screen !== "start" || pickerOpen || pendingReveal || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const ticker = window.setInterval(() => {
       setPreviewIndex((index) => (index + 1) % previewIntents.length);
     }, 2600);
     return () => window.clearInterval(ticker);
-  }, [pickerOpen, screen]);
+  }, [pendingReveal, pickerOpen, screen]);
 
   function chooseIntent(nextIntent: Intent) {
     const nextDays = buildCurrentWeek(nextIntent);
@@ -678,14 +685,21 @@ export default function Home() {
     setIntent(nextIntent);
     setHasChosenIntent(true);
     setPickerOpen(false);
-    setScreen("result");
     setActiveId(nextDay.id);
     setSaved(false);
     if (feedbackStatusTimer.current) window.clearTimeout(feedbackStatusTimer.current);
     setFeedbackVisible(false);
     setFeedbackAnswer(null);
-    window.history.pushState({}, "", resultUrl(nextIntent.id, nextDay.dateIso));
+    setPendingReveal({ intent: nextIntent, day: nextDay });
     trackEvent("intent_selected", { intentId: nextIntent.id, archetype: nextIntent.archetype });
+  }
+
+  function finishReveal() {
+    if (!pendingReveal) return;
+    const { intent: nextIntent, day: nextDay } = pendingReveal;
+    setScreen("result");
+    setPendingReveal(null);
+    window.history.pushState({}, "", resultUrl(nextIntent.id, nextDay.dateIso));
     trackEvent("result_viewed", {
       intentId: nextIntent.id,
       archetype: nextIntent.archetype,
@@ -794,13 +808,15 @@ export default function Home() {
         <div className="start-content">
           <StartControls theme={startTheme} onToggleTheme={toggleStartTheme} />
           <StartLogo />
-          <h1>узнать благоприятный<br />день, чтобы</h1>
-          <IntentLine
-            intent={previewIntents[previewIndex]}
-            animated={!pickerOpen}
-            showCaret
-            onClick={() => setPickerOpen(true)}
-          />
+          <div className="start-prompt">
+            <h1>узнать благоприятный<br />день, чтобы</h1>
+            <IntentLine
+              intent={previewIntents[previewIndex]}
+              animated={!pickerOpen}
+              showCaret
+              onClick={() => setPickerOpen(true)}
+            />
+          </div>
           <button className="start-primary" type="button" onClick={() => setPickerOpen(true)}>
             выбрать дело
           </button>
@@ -809,6 +825,7 @@ export default function Home() {
           <img className="start-glow" src="/reveal/figma-glow.svg" alt="" />
           <img className="start-shell" src="/reveal/figma-shell-closed.png" alt="" />
         </div>
+        {pendingReveal && <RevealTransition onComplete={finishReveal} />}
         {pickerOpen && <IntentPicker current={intent} showSelection={hasChosenIntent} onClose={() => setPickerOpen(false)} onSelect={chooseIntent} />}
       </main>
     );
@@ -915,6 +932,7 @@ export default function Home() {
       </div>
 
       {pickerOpen && <IntentPicker current={intent} showSelection={hasChosenIntent} onClose={() => setPickerOpen(false)} onSelect={chooseIntent} />}
+      {pendingReveal && <RevealTransition onComplete={finishReveal} />}
       {scoreInfoOpen && <ScoreInfoSheet day={active} onClose={() => setScoreInfoOpen(false)} />}
     </main>
   );
