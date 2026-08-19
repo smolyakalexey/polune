@@ -629,6 +629,15 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    const savedTheme = window.localStorage.getItem("polune-theme");
+    const preferredTheme = savedTheme === "dark" || savedTheme === "light"
+      ? savedTheme
+      : window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    const frameId = window.requestAnimationFrame(() => setStartTheme(preferredTheme));
+    return () => window.cancelAnimationFrame(frameId);
+  }, []);
+
+  useEffect(() => {
     const themeColor = screen === "start" && startTheme === "dark" ? "#020002" : "#ffffff";
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", themeColor);
   }, [screen, startTheme]);
@@ -711,6 +720,7 @@ export default function Home() {
   function toggleStartTheme() {
     setStartTheme((currentTheme) => {
       const nextTheme = currentTheme === "dark" ? "light" : "dark";
+      window.localStorage.setItem("polune-theme", nextTheme);
       return nextTheme;
     });
   }
@@ -825,7 +835,7 @@ export default function Home() {
           <img className="start-glow" src="/reveal/figma-glow.svg" alt="" />
           <img className="start-shell" src="/reveal/figma-shell-closed.png" alt="" />
         </div>
-        {pendingReveal && <RevealTransition onComplete={finishReveal} />}
+        {pendingReveal && <RevealTransition theme={startTheme} onComplete={finishReveal} />}
         {pickerOpen && <IntentPicker current={intent} showSelection={hasChosenIntent} onClose={() => setPickerOpen(false)} onSelect={chooseIntent} />}
       </main>
     );
@@ -932,7 +942,7 @@ export default function Home() {
       </div>
 
       {pickerOpen && <IntentPicker current={intent} showSelection={hasChosenIntent} onClose={() => setPickerOpen(false)} onSelect={chooseIntent} />}
-      {pendingReveal && <RevealTransition onComplete={finishReveal} />}
+      {pendingReveal && <RevealTransition theme={startTheme} onComplete={finishReveal} />}
       {scoreInfoOpen && <ScoreInfoSheet day={active} onClose={() => setScoreInfoOpen(false)} />}
     </main>
   );

@@ -1,10 +1,23 @@
 .transition {
-  position: absolute;
-  inset: 0;
+  --reveal-background: #020002;
+  --reveal-glow-arrived: .94;
+  --reveal-glow-expanded: .62;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 50%;
   z-index: 80;
+  width: min(100%, 402px);
+  transform: translateX(-50%);
   container-type: size;
   overflow: hidden;
-  background: #020002;
+  background: var(--reveal-background);
+}
+
+.transition[data-theme="light"] {
+  --reveal-background: #fff;
+  --reveal-glow-arrived: .5;
+  --reveal-glow-expanded: .32;
 }
 
 .closedObject,
@@ -50,7 +63,7 @@
 
 .transition:is([data-phase="arrive"], [data-phase="shake"]) .glow {
   top: 52%;
-  opacity: .94;
+  opacity: var(--reveal-glow-arrived);
   transform: translate(-50%, -50%) rotate(0) scale(.64);
 }
 
@@ -80,7 +93,7 @@
 
 .transition:is([data-phase="expand"], [data-phase="result"]) .glow {
   top: 50%;
-  opacity: .62;
+  opacity: var(--reveal-glow-expanded);
   transform: translate(-50%, -50%) rotate(0) scale(.92);
   transition-duration: 1040ms;
 }
@@ -148,5 +161,13 @@
   .shellHalf {
     animation: none !important;
     transition-duration: .01ms !important;
+  }
+}
+
+@media (min-width: 560px) {
+  .transition {
+    top: 24px;
+    bottom: 24px;
+    border-radius: 40px;
   }
 }

@@ -15,7 +15,7 @@ const timeline: ReadonlyArray<readonly [number, RevealPhase]> = [
   [1900, "result"],
 ];
 
-export default function RevealTransition({ onComplete }: { onComplete: () => void }) {
+export default function RevealTransition({ theme, onComplete }: { theme: "dark" | "light"; onComplete: () => void }) {
   const [phase, setPhase] = useState<RevealPhase>("start");
   const completeRef = useRef(onComplete);
 
@@ -41,7 +41,7 @@ export default function RevealTransition({ onComplete }: { onComplete: () => voi
   }, []);
 
   return (
-    <div className={styles.transition} data-phase={phase} role="status" aria-label="подбираем благоприятный день">
+    <div className={styles.transition} data-phase={phase} data-theme={theme} role="status" aria-label="подбираем благоприятный день">
       <div className={styles.closedObject} aria-hidden="true">
         <img className={styles.glow} src="/reveal/figma-glow.svg" alt="" />
         <img className={styles.closedShell} src="/reveal/figma-shell-closed.png" alt="" />
