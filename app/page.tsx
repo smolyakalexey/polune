@@ -700,6 +700,7 @@ export default function Home() {
     setFeedbackVisible(false);
     setFeedbackAnswer(null);
     setPendingReveal({ intent: nextIntent, day: nextDay });
+    setScreen("result");
     trackEvent("intent_selected", { intentId: nextIntent.id, archetype: nextIntent.archetype });
   }
 
@@ -835,7 +836,15 @@ export default function Home() {
           <img className="start-glow" src="/reveal/figma-glow.svg" alt="" />
           <img className="start-shell" src="/reveal/figma-shell-closed.png" alt="" />
         </div>
-        {pendingReveal && <RevealTransition theme={startTheme} onComplete={finishReveal} />}
+        {pendingReveal && (
+          <RevealTransition
+            theme={startTheme}
+            intentLabel={pendingReveal.intent.label}
+            selectedDay={pendingReveal.day}
+            candidates={days}
+            onComplete={finishReveal}
+          />
+        )}
         {pickerOpen && <IntentPicker current={intent} showSelection={hasChosenIntent} onClose={() => setPickerOpen(false)} onSelect={chooseIntent} />}
       </main>
     );
@@ -942,7 +951,15 @@ export default function Home() {
       </div>
 
       {pickerOpen && <IntentPicker current={intent} showSelection={hasChosenIntent} onClose={() => setPickerOpen(false)} onSelect={chooseIntent} />}
-      {pendingReveal && <RevealTransition theme={startTheme} onComplete={finishReveal} />}
+      {pendingReveal && (
+        <RevealTransition
+          theme={startTheme}
+          intentLabel={pendingReveal.intent.label}
+          selectedDay={pendingReveal.day}
+          candidates={days}
+          onComplete={finishReveal}
+        />
+      )}
       {scoreInfoOpen && <ScoreInfoSheet day={active} onClose={() => setScoreInfoOpen(false)} />}
     </main>
   );
