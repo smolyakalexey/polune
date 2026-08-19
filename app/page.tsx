@@ -45,7 +45,6 @@ import {
   Info,
   MagicWand,
   MagnifyingGlass,
-  MinusCircle,
   Moon,
   MoonStars,
   MusicNotes,
@@ -55,17 +54,15 @@ import {
   PersonSimpleRun,
   Plant,
   Scissors,
-  SealCheck,
   ShoppingBag,
   Sparkle,
   TrendUp,
   ThumbsDown,
   ThumbsUp,
+  UserCircle,
   UsersThree,
-  Warning,
   Wrench,
   X,
-  XCircle,
 } from "@phosphor-icons/react";
 
 type Intent = Omit<IntentDefinition, "icon"> & { Icon: Icon; zodiacProfile: ZodiacProfile };
@@ -88,6 +85,19 @@ type Day = {
   lunarLongitude: number;
   zodiacSignName: string;
 };
+
+type PersonalizationData = {
+  zodiac: string;
+  birthDate: string;
+  birthTime: string;
+  birthPlace: string;
+  timeUnknown: boolean;
+};
+
+const zodiacSigns = [
+  "овен", "телец", "близнецы", "рак", "лев", "дева",
+  "весы", "скорпион", "стрелец", "козерог", "водолей", "рыбы",
+];
 
 const catalogIcons: Record<CatalogIconKey, Icon> = {
   airplane: AirplaneTilt,
@@ -230,36 +240,46 @@ const statusIcons: Record<Rating, string> = {
   caution: "/figma/status-caution.svg",
 };
 
-const ratingInsights: Record<Rating, { Icon: Icon; title: string; text: string }> = {
-  excellent: { Icon: Sparkle, title: "лучшее сочетание факторов", text: "фаза и положение луны дают максимальный индекс в ближайшие 14 дней" },
-  good: { Icon: SealCheck, title: "хорошее сочетание факторов", text: "фаза и положение луны поддерживают выбранное дело" },
-  neutral: { Icon: MinusCircle, title: "нейтральное сочетание факторов", text: "часть символических критериев совпадает, а часть остаётся нейтральной" },
-  caution: { Icon: Warning, title: "умеренное сочетание факторов", text: "совпадение заметное, но рядом есть более точные даты" },
-  low: { Icon: XCircle, title: "слабое сочетание факторов", text: "большая часть символических критериев сейчас не совпадает" },
+const intentResultCopy: Partial<Record<string, { verdict: string; advice: string }>> = {
+  haircut: {
+    verdict: "день для мягкого обновления",
+    advice: "Освежите форму и детали, не меняя образ целиком.",
+  },
+  skincare: {
+    verdict: "день для бережного ухода",
+    advice: "Выберите знакомую процедуру и оставьте коже время на восстановление.",
+  },
+  cleaning: {
+    verdict: "легче освободить пространство",
+    advice: "Начните с одной заметной зоны — ритм дня поможет не бросить на середине.",
+  },
+  conversation: {
+    verdict: "слова прозвучат спокойнее",
+    advice: "Начните с главного и оставьте собеседнику место для ответа.",
+  },
+  trip: {
+    verdict: "подходящий ритм для дороги",
+    advice: "Заложите запас времени и заранее закройте бытовые мелочи.",
+  },
+  habit: {
+    verdict: "хорошая точка для старта",
+    advice: "Сделайте первый шаг настолько маленьким, чтобы повторить его завтра.",
+  },
 };
 
-function buildReasons(intent: Intent, day: Day) {
-  const ratingInsight = ratingInsights[day.rating];
-  const isWeekend = day.weekday === "сб" || day.weekday === "вс";
-  return [
-    {
-      Icon: MoonStars,
-      title: day.moonPhaseLabel,
-      text: `фазовый угол луны — ${Math.round(day.moonPhaseAngle)}°`,
-    },
-    {
-      Icon: ratingInsight.Icon,
-      title: `луна в ${day.zodiacSignName.toLowerCase()}`,
-      text: `${ratingInsight.text} для профиля дела «${intent.label}», фактор положения — ${day.zodiacScore} из 100`,
-    },
-    {
-      Icon: isWeekend ? FlowerLotus : CalendarCheck,
-      title: isWeekend ? "свободный ритм дня" : "ритм буднего дня",
-      text: isWeekend
-        ? "проще оставить время без спешки и лишних переключений"
-        : "лучше заранее выделить время и не ставить дело между встречами",
-    },
-  ];
+function buildResultCopy(intent: Intent, day: Day) {
+  const specific = intentResultCopy[intent.id];
+  if (specific) return specific;
+  if (day.rating === "low" || day.rating === "caution") {
+    return {
+      verdict: "день просит меньше спешки",
+      advice: "Если дата уже выбрана, оставьте больше времени и не перегружайте план.",
+    };
+  }
+  return {
+    verdict: "ритм дня поддерживает ваше дело",
+    advice: "Выберите один ясный шаг и заранее освободите для него время.",
+  };
 }
 
 function Brand() {
@@ -513,6 +533,100 @@ function ScoreInfoSheet({ day, onClose }: { day: Day; onClose: () => void }) {
   );
 }
 
+function PersonalizationSheet({
+  current,
+  onClose,
+  onComplete,
+}: {
+  current: PersonalizationData | null;
+  onClose: () => void;
+  onComplete: (data: PersonalizationData) => void;
+}) {
+  const [step, setStep] = useState<"zodiac" | "birth">("zodiac");
+  const [zodiac, setZodiac] = useState(current?.zodiac ?? "");
+  const [birthDate, setBirthDate] = useState(current?.birthDate ?? "");
+  const [birthTime, setBirthTime] = useState(current?.birthTime ?? "");
+  const [birthPlace, setBirthPlace] = useState(current?.birthPlace ?? "");
+  const [timeUnknown, setTimeUnknown] = useState(current?.timeUnknown ?? true);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  function finish() {
+    if (!zodiac) return;
+    onComplete({ zodiac, birthDate, birthTime: timeUnknown ? "" : birthTime, birthPlace, timeUnknown });
+  }
+
+  return (
+    <div className="profile-sheet-backdrop" role="presentation" onMouseDown={(event) => {
+      if (event.target === event.currentTarget) onClose();
+    }}>
+      <section className="profile-sheet" role="dialog" aria-modal="true" aria-labelledby="profile-sheet-title">
+        <header>
+          <div>
+            <p>{step === "zodiac" ? "шаг 1 из 2" : "необязательный шаг"}</p>
+            <h2 id="profile-sheet-title">{step === "zodiac" ? "кто вы по знаку" : "данные рождения"}</h2>
+          </div>
+          <button type="button" className="round-button" onClick={onClose} aria-label="Закрыть персонализацию">
+            <X weight="regular" />
+          </button>
+        </header>
+
+        {step === "zodiac" ? (
+          <>
+            <p className="profile-sheet-lead">Этого достаточно для быстрого персонального уточнения. Регистрация пока не нужна.</p>
+            <div className="zodiac-grid" role="radiogroup" aria-label="Знак зодиака">
+              {zodiacSigns.map((sign) => (
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={zodiac === sign}
+                  className={zodiac === sign ? "selected" : ""}
+                  key={sign}
+                  onClick={() => setZodiac(sign)}
+                >
+                  {sign}
+                </button>
+              ))}
+            </div>
+            <button type="button" className="profile-primary" disabled={!zodiac} onClick={finish}>уточнить результат</button>
+            <button type="button" className="profile-secondary" onClick={() => setStep("birth")}>указать дату рождения</button>
+          </>
+        ) : (
+          <>
+            <p className="profile-sheet-lead">Эти данные сохранятся только после входа. Пока они используются как черновик на этом экране.</p>
+            <label className="profile-field">
+              <span>дата рождения</span>
+              <input type="date" value={birthDate} onChange={(event) => setBirthDate(event.target.value)} />
+            </label>
+            <label className="profile-check">
+              <input type="checkbox" checked={timeUnknown} onChange={(event) => setTimeUnknown(event.target.checked)} />
+              <span>не знаю точное время рождения</span>
+            </label>
+            {!timeUnknown && (
+              <label className="profile-field">
+                <span>время рождения</span>
+                <input type="time" value={birthTime} onChange={(event) => setBirthTime(event.target.value)} />
+              </label>
+            )}
+            <label className="profile-field">
+              <span>место рождения <small>необязательно</small></span>
+              <input value={birthPlace} onChange={(event) => setBirthPlace(event.target.value.slice(0, 80))} placeholder="город" maxLength={80} />
+            </label>
+            <button type="button" className="profile-primary" disabled={!zodiac} onClick={finish}>применить данные</button>
+            <button type="button" className="profile-secondary" onClick={() => setStep("zodiac")}>назад к выбору знака</button>
+          </>
+        )}
+      </section>
+    </div>
+  );
+}
+
 function WeekStrip({ days, activeId, onSelect }: { days: Day[]; activeId: string; onSelect: (day: Day) => void }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [fadeEdges, setFadeEdges] = useState({ left: false, right: true });
@@ -602,6 +716,8 @@ export default function Home() {
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [feedbackAnswer, setFeedbackAnswer] = useState<"helpful" | "not_helpful" | null>(null);
   const [scoreInfoOpen, setScoreInfoOpen] = useState(false);
+  const [personalizationOpen, setPersonalizationOpen] = useState(false);
+  const [personalization, setPersonalization] = useState<PersonalizationData | null>(null);
   const calendarStatusTimer = useRef<number | null>(null);
   const feedbackStatusTimer = useRef<number | null>(null);
 
@@ -621,7 +737,7 @@ export default function Home() {
     },
     [active.id, active.rating, bestDay, days],
   );
-  const reasons = buildReasons(intent, active);
+  const resultCopy = buildResultCopy(intent, active);
 
   useEffect(() => () => {
     if (calendarStatusTimer.current) window.clearTimeout(calendarStatusTimer.current);
@@ -851,29 +967,40 @@ export default function Home() {
   }
 
   return (
-    <main className="app-shell result-screen" id="top">
+    <main className={`app-shell result-screen theme-${startTheme}`} id="top">
       <div className="result-content">
-        <Brand />
+        <header className="result-topbar">
+          <button
+            className="result-icon-button"
+            type="button"
+            onClick={toggleStartTheme}
+            aria-label={startTheme === "dark" ? "включить светлую тему" : "включить тёмную тему"}
+          >
+            {startTheme === "dark" ? <img src="/figma/start-sun.svg" alt="" /> : <Moon weight="regular" aria-hidden="true" />}
+          </button>
+          <Brand />
+          <Link className="result-icon-button" href="/profile" aria-label="Открыть профиль">
+            <UserCircle weight="regular" aria-hidden="true" />
+          </Link>
+        </header>
 
         <header className="result-hero">
           <h1>благоприятный<br />день, чтобы</h1>
           <IntentLine intent={intent} onClick={() => setPickerOpen(true)} />
+          <p className="calculation-mode">
+            {personalization ? `черновик профиля · ${personalization.zodiac}` : "общий расчёт · без персональных данных"}
+          </p>
         </header>
 
         <WeekStrip days={days} activeId={active.id} onSelect={chooseDay} />
 
         <article className="featured-card" key={active.id} aria-live="polite">
-          <div className={`score-label status-${active.rating}`}>
-            <img src={statusIcons[active.rating]} alt="" />
-            <span>{active.score}% · {ratingLabels[active.rating]}</span>
-            <button
-              type="button"
-              className="score-info-button"
-              onClick={() => setScoreInfoOpen(true)}
-              aria-label={`Как рассчитали ${active.score} из 100`}
-            >
-              <Info size={16} weight="regular" />
-            </button>
+          <div className="featured-meta">
+            <span className="period-badge"><Sparkle weight="fill" aria-hidden="true" />лучший среди ближайших</span>
+            <span className={`score-label status-${active.rating}`}>
+              <img src={statusIcons[active.rating]} alt="" />
+              {active.score}% совпадение
+            </span>
           </div>
 
           <div className="featured-date">
@@ -881,24 +1008,54 @@ export default function Home() {
             <span>{active.monthLabel}</span>
           </div>
 
-          <div className="reason-list">
-            {reasons.map((reason) => (
-              <div className="reason" key={reason.title}>
-                <div className="reason-title"><reason.Icon weight="regular" aria-hidden="true" /><h2>{reason.title}</h2></div>
-                <p>{reason.text}</p>
-              </div>
-            ))}
+          <div className="result-message">
+            <h2>{resultCopy.verdict}</h2>
+            <p>{resultCopy.advice}</p>
+          </div>
+
+          <button type="button" className="how-calculated" onClick={() => setScoreInfoOpen(true)}>
+            как посчитали
+            <Info size={18} weight="regular" aria-hidden="true" />
+          </button>
+
+          <div className="calculation-note">
+            <span>Что сейчас учитываем</span>
+            <strong>дело + дата</strong>
           </div>
 
           <div className="featured-actions">
             <button type="button" className={`calendar-button ${saved ? "saved" : ""}`} onClick={addToCalendar} disabled={saved} aria-live="polite">
-              {saved ? "добавлено в календарь" : "добавить в календарь"}
+              {saved ? "файл события готов" : "добавить событие"}
             </button>
             <button type="button" className="share-button" onClick={shareResult} aria-label="Поделиться результатом">
               {shared ? <Check size={28} weight="bold" /> : <img src="/figma/share.svg" alt="" />}
             </button>
           </div>
         </article>
+
+        <section className={`personalization-card ${personalization ? "is-complete" : ""}`}>
+          <div className="personalization-icon" aria-hidden="true"><UserCircle weight="regular" /></div>
+          <div>
+            <p>{personalization ? "данные для профиля готовы" : "сделать рекомендацию личнее"}</p>
+            <h2>{personalization ? "Вы выбрали свой знак" : "Посмотрите, изменится ли результат для вас"}</h2>
+            <span>
+              {personalization
+                ? `Знак «${personalization.zodiac}» пока не меняет оценку: персональную методику подключим отдельно и покажем, что именно повлияло на результат.`
+                : "Сейчас учитываем только дело и дату. Для первого шага достаточно выбрать знак."}
+            </span>
+          </div>
+          <button type="button" className="personalization-action" onClick={() => setPersonalizationOpen(true)}>
+            {personalization ? "изменить данные" : "уточнить для себя"}
+          </button>
+          {personalization && (
+            <Link
+              className="save-profile-link"
+              href={`/profile?zodiac=${encodeURIComponent(personalization.zodiac)}&birth_date=${encodeURIComponent(personalization.birthDate)}&birth_time=${encodeURIComponent(personalization.birthTime)}&birth_place=${encodeURIComponent(personalization.birthPlace)}&time_unknown=${personalization.timeUnknown ? "1" : "0"}`}
+            >
+              сохранить профиль через ChatGPT
+            </Link>
+          )}
+        </section>
 
         {feedbackVisible && (
           <section className="result-feedback" aria-live="polite" aria-label="Обратная связь о рекомендации">
@@ -961,6 +1118,17 @@ export default function Home() {
         />
       )}
       {scoreInfoOpen && <ScoreInfoSheet day={active} onClose={() => setScoreInfoOpen(false)} />}
+      {personalizationOpen && (
+        <PersonalizationSheet
+          current={personalization}
+          onClose={() => setPersonalizationOpen(false)}
+          onComplete={(data) => {
+            setPersonalization(data);
+            setPersonalizationOpen(false);
+            trackEvent("personalization_completed", { intentId: intent.id, selectedDate: active.dateIso });
+          }}
+        />
+      )}
     </main>
   );
 }

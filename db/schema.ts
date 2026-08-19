@@ -33,3 +33,15 @@ export const feedbackResponses = sqliteTable("feedback_responses", {
   index("idx_feedback_responses_created_at").on(table.createdAt),
   index("idx_feedback_responses_intent_created_at").on(table.intentId, table.createdAt),
 ]);
+
+export const personalizationProfiles = sqliteTable("personalization_profiles", {
+  userId: text("user_id").primaryKey(),
+  email: text("email").notNull(),
+  zodiac: text("zodiac").notNull(),
+  birthDate: text("birth_date"),
+  birthTime: text("birth_time"),
+  birthPlace: text("birth_place"),
+  timeUnknown: integer("time_unknown", { mode: "boolean" }).notNull().default(true),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
