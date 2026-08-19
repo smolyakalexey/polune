@@ -45,6 +45,7 @@ import {
   MagicWand,
   MagnifyingGlass,
   MinusCircle,
+  Moon,
   MoonStars,
   MusicNotes,
   PaintBrush,
@@ -268,16 +269,28 @@ function Brand() {
   );
 }
 
-function StartHeader() {
+function StartLogo() {
   return (
-    <header className="start-header">
-      <button className="start-header-action" type="button" aria-label="светлая тема — скоро" disabled>
-        <img src="/figma/start-sun.svg" alt="" />
+    <a className="start-logo" href="#top" aria-label="polune — на главную">
+      <img src="/figma/start-logo.svg" alt="" />
+      <span>polune</span>
+    </a>
+  );
+}
+
+function StartControls({ theme, onToggleTheme }: { theme: "dark" | "light"; onToggleTheme: () => void }) {
+  return (
+    <header className="start-controls">
+      <button
+        className="start-header-action"
+        type="button"
+        onClick={onToggleTheme}
+        aria-label={theme === "dark" ? "включить светлую тему" : "включить тёмную тему"}
+      >
+        {theme === "dark"
+          ? <img src="/figma/start-sun.svg" alt="" />
+          : <Moon weight="regular" aria-hidden="true" />}
       </button>
-      <a className="start-logo" href="#top" aria-label="polune — на главную">
-        <img src="/figma/start-logo.svg" alt="" />
-        <span>polune</span>
-      </a>
       <button className="start-header-action" type="button" aria-label="личный профиль — скоро" disabled>
         <img src="/figma/start-user.svg" alt="" />
       </button>
@@ -569,6 +582,7 @@ function WeekStrip({ days, activeId, onSelect }: { days: Day[]; activeId: string
 
 export default function Home() {
   const [screen, setScreen] = useState<"start" | "result">("start");
+  const [startTheme, setStartTheme] = useState<"dark" | "light">("dark");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [intent, setIntent] = useState(intents[0]);
   const [previewIndex, setPreviewIndex] = useState(0);
@@ -606,6 +620,11 @@ export default function Home() {
     if (calendarStatusTimer.current) window.clearTimeout(calendarStatusTimer.current);
     if (feedbackStatusTimer.current) window.clearTimeout(feedbackStatusTimer.current);
   }, []);
+
+  useEffect(() => {
+    const themeColor = startTheme === "dark" ? "#020002" : "#ffffff";
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", themeColor);
+  }, [startTheme]);
 
   useEffect(() => {
     const restoreFromUrl = () => {
@@ -672,6 +691,13 @@ export default function Home() {
       archetype: nextIntent.archetype,
       selectedDate: nextDay.dateIso,
       score: nextDay.score,
+    });
+  }
+
+  function toggleStartTheme() {
+    setStartTheme((currentTheme) => {
+      const nextTheme = currentTheme === "dark" ? "light" : "dark";
+      return nextTheme;
     });
   }
 
@@ -764,9 +790,10 @@ export default function Home() {
 
   if (screen === "start") {
     return (
-      <main className="app-shell start-screen" id="top">
+      <main className={`app-shell start-screen theme-${startTheme}`} id="top">
         <div className="start-content">
-          <StartHeader />
+          <StartControls theme={startTheme} onToggleTheme={toggleStartTheme} />
+          <StartLogo />
           <h1>узнать благоприятный<br />день, чтобы</h1>
           <IntentLine
             intent={previewIntents[previewIndex]}
@@ -774,7 +801,9 @@ export default function Home() {
             showCaret
             onClick={() => setPickerOpen(true)}
           />
-          <p className="intent-hint">нажмите, чтобы выбрать событие</p>
+          <button className="start-primary" type="button" onClick={() => setPickerOpen(true)}>
+            выбрать дело
+          </button>
         </div>
         <div className="start-decoration" aria-hidden="true">
           <img className="start-glow" src="/reveal/figma-glow.svg" alt="" />
