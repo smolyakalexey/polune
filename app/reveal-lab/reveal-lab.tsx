@@ -8,26 +8,23 @@ type Phase =
   | "start"
   | "arrive"
   | "shake"
-  | "vanish"
-  | "split"
+  | "morph"
   | "expand"
   | "result";
 
 const timeline: ReadonlyArray<readonly [number, Phase]> = [
-  [240, "arrive"],
-  [820, "shake"],
-  [1170, "vanish"],
-  [1430, "split"],
-  [1590, "expand"],
-  [2590, "result"],
+  [120, "arrive"],
+  [580, "shake"],
+  [820, "morph"],
+  [960, "expand"],
+  [2040, "result"],
 ];
 
 const phaseLabels: Record<Phase, string> = {
   start: "старт",
   arrive: "выезжает",
   shake: "немного трясётся",
-  vanish: "исчезает первая картинка",
-  split: "появляется вторая группа картинок",
+  morph: "оболочка сменяется половинами",
   expand: "разъединяются, увеличиваются и встают на места",
   result: "готово",
 };
@@ -56,7 +53,7 @@ export default function RevealLab() {
   }, [clearTimeline]);
 
   useEffect(() => {
-    const autoplayId = window.setTimeout(play, 260);
+    const autoplayId = window.setTimeout(play, 160);
     return () => {
       window.clearTimeout(autoplayId);
       clearTimeline();

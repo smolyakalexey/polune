@@ -45,18 +45,18 @@
   height: auto;
   opacity: .92;
   transition:
-    top 580ms cubic-bezier(.2, .78, .2, 1),
-    transform 580ms cubic-bezier(.2, .78, .2, 1),
-    opacity 180ms ease;
+    top 460ms cubic-bezier(.2, .78, .2, 1),
+    transform 460ms cubic-bezier(.2, .78, .2, 1),
+    opacity 460ms ease;
 }
 
 .closedShell {
   width: 200.23cqw;
   height: auto;
   transition:
-    top 580ms cubic-bezier(.2, .78, .2, 1),
-    transform 580ms cubic-bezier(.2, .78, .2, 1),
-    opacity 180ms ease;
+    top 460ms cubic-bezier(.2, .78, .2, 1),
+    transform 460ms cubic-bezier(.2, .78, .2, 1),
+    opacity 260ms ease;
 }
 
 .screen:is([data-phase="arrive"], [data-phase="shake"]) .glow,
@@ -66,22 +66,29 @@
 }
 
 .screen[data-phase="shake"] .closedShell {
-  animation: shell-shake 350ms linear both;
+  animation: shell-shake 240ms linear both;
 }
 
-.screen[data-phase="vanish"] .glow,
-.screen[data-phase="vanish"] .closedShell {
-  top: 56.04cqh;
-  transform: translate(-50%, -50%) scale(.0983);
-  transition-duration: 260ms;
-}
-
-.screen:is([data-phase="split"], [data-phase="expand"], [data-phase="result"]) .glow,
-.screen:is([data-phase="split"], [data-phase="expand"], [data-phase="result"]) .closedShell {
+.screen:is([data-phase="morph"], [data-phase="expand"], [data-phase="result"]) .closedShell {
   top: 56.04cqh;
   opacity: 0;
   transform: translate(-50%, -50%) scale(.07);
-  transition-duration: 150ms;
+  transition-duration: 260ms;
+}
+
+.screen[data-phase="morph"] .glow {
+  top: 52cqh;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(.64);
+  transition-duration: 420ms;
+}
+
+.screen:is([data-phase="expand"], [data-phase="result"]) .glow {
+  top: 50cqh;
+  opacity: .62;
+  transform: translate(-50%, -50%) scale(.9);
+  transition-duration: 1080ms;
+  transition-timing-function: cubic-bezier(.18, .72, .2, 1);
 }
 
 .openObject {
@@ -100,7 +107,7 @@
     left 160ms cubic-bezier(.2, .8, .2, 1),
     top 160ms cubic-bezier(.2, .8, .2, 1),
     transform 160ms cubic-bezier(.2, .8, .2, 1),
-    opacity 120ms ease;
+    opacity 300ms cubic-bezier(.2, .7, .2, 1);
   will-change: transform, left, top, opacity;
 }
 
@@ -132,13 +139,20 @@
   top: -100%;
 }
 
-.screen:is([data-phase="split"], [data-phase="expand"], [data-phase="result"]) .shellHalf {
+.screen:is([data-phase="morph"], [data-phase="expand"], [data-phase="result"]) .shellHalf {
   opacity: 1;
 }
 
 .screen[data-phase="expand"] .shellHalf {
-  transition-duration: 1000ms;
-  transition-timing-function: cubic-bezier(.16, .76, .18, 1);
+  transition-timing-function: cubic-bezier(.16, .72, .18, 1);
+}
+
+.screen[data-phase="expand"] .topHalf {
+  transition-duration: 960ms;
+}
+
+.screen[data-phase="expand"] .bottomHalf {
+  transition-duration: 1080ms;
 }
 
 .screen:is([data-phase="expand"], [data-phase="result"]) .topHalf {
@@ -151,6 +165,12 @@
   left: 95.58cqw;
   top: 8.25cqh;
   transform: translate(-50%, -50%) rotate(-120deg) scale(1);
+}
+
+.screen[data-phase="result"] .glow,
+.screen[data-phase="result"] .closedShell,
+.screen[data-phase="result"] .shellHalf {
+  will-change: auto;
 }
 
 .controls {
