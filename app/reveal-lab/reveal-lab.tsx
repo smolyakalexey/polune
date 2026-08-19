@@ -1,196 +1,115 @@
 "use client";
 
-import {
-  ArrowCounterClockwise,
-  Check,
-  Info,
-  Moon,
-  ShareNetwork,
-  Sun,
-} from "@phosphor-icons/react";
-import "@fontsource/cormorant-garamond/400.css";
-import { useEffect, useRef, useState } from "react";
+import { ArrowCounterClockwise, Play } from "@phosphor-icons/react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./reveal-lab.module.css";
 
-type Phase = "ready" | "tension" | "opening" | "result";
-type Theme = "light" | "dark";
+type Phase =
+  | "start"
+  | "arrive"
+  | "shake"
+  | "vanish"
+  | "split"
+  | "expand"
+  | "settle"
+  | "result";
 
-const timers = [320, 1040] as const;
+const timeline: ReadonlyArray<readonly [number, Phase]> = [
+  [240, "arrive"],
+  [820, "shake"],
+  [1170, "vanish"],
+  [1430, "split"],
+  [1590, "expand"],
+  [2170, "settle"],
+  [2700, "result"],
+];
+
+const phaseLabels: Record<Phase, string> = {
+  start: "старт",
+  arrive: "выезжает",
+  shake: "немного трясётся",
+  vanish: "исчезает первая картинка",
+  split: "появляется вторая группа картинок",
+  expand: "разъединяются и увеличиваются",
+  settle: "встают на места",
+  result: "готово",
+};
 
 export default function RevealLab() {
-  const [phase, setPhase] = useState<Phase>("ready");
-  const [theme, setTheme] = useState<Theme>("light");
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [phase, setPhase] = useState<Phase>("start");
   const timeoutIds = useRef<number[]>([]);
 
-  useEffect(
-    () => () => timeoutIds.current.forEach((timeoutId) => window.clearTimeout(timeoutId)),
-    [],
-  );
-
-  const clearTimers = () => {
+  const clearTimeline = useCallback(() => {
     timeoutIds.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
     timeoutIds.current = [];
-  };
+  }, []);
 
-  const runReveal = () => {
-    if (phase !== "ready") return;
+  const play = useCallback(() => {
+    clearTimeline();
+    setPhase("start");
 
-    clearTimers();
-    setDetailsOpen(false);
-    setSaved(false);
-    setPhase("tension");
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      timeoutIds.current = [window.setTimeout(() => setPhase("result"), 220)];
+      return;
+    }
 
-    timeoutIds.current = [
-      window.setTimeout(() => setPhase("opening"), timers[0]),
-      window.setTimeout(() => setPhase("result"), timers[1]),
-    ];
-  };
+    timeoutIds.current = timeline.map(([delay, nextPhase]) =>
+      window.setTimeout(() => setPhase(nextPhase), delay),
+    );
+  }, [clearTimeline]);
 
-  const reset = () => {
-    clearTimers();
-    setPhase("ready");
-    setDetailsOpen(false);
-    setSaved(false);
-  };
+  useEffect(() => {
+    const autoplayId = window.setTimeout(play, 260);
+    return () => {
+      window.clearTimeout(autoplayId);
+      clearTimeline();
+    };
+  }, [clearTimeline, play]);
 
-  const toggleTheme = () => {
-    setTheme((currentTheme) => (currentTheme === "light" ? "dark" : "light"));
-  };
-
-  const save = () => {
-    setSaved(true);
-    timeoutIds.current.push(window.setTimeout(() => setSaved(false), 1800));
-  };
-
-  const showResult = phase === "opening" || phase === "result";
-  const isRunning = phase === "tension" || phase === "opening";
+  const isRunning = phase !== "start" && phase !== "result";
 
   return (
-    <main
-      className={styles.stage}
-      data-phase={phase}
-      data-theme={theme}
-      aria-busy={isRunning}
-    >
-      <div className={styles.screen}>
-        <header className={styles.header}>
-          <button
-            className={styles.iconButton}
-            type="button"
-            onClick={reset}
-            aria-label="повторить анимацию"
-            disabled={phase === "ready"}
-          >
-            <ArrowCounterClockwise aria-hidden="true" weight="bold" />
-          </button>
-
+    <main className={styles.stage}>
+      <section
+        className={styles.screen}
+        data-phase={phase}
+        aria-label="прототип анимации появления результата"
+        aria-busy={isRunning}
+      >
+        <div className={styles.closedObject} aria-hidden="true">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            className={styles.logo}
-            src="/figma/polune-mark.svg"
-            alt="polune"
-          />
-
-          <button
-            className={styles.iconButton}
-            type="button"
-            onClick={toggleTheme}
-            aria-label={theme === "light" ? "включить тёмную тему" : "включить светлую тему"}
-          >
-            {theme === "light" ? (
-              <Moon aria-hidden="true" weight="fill" />
-            ) : (
-              <Sun aria-hidden="true" weight="fill" />
-            )}
-          </button>
-        </header>
-
-        <section className={styles.query} aria-hidden={showResult}>
-          <h1>благоприятный<br />день, чтобы</h1>
-          <p>постричься</p>
-        </section>
-
-        <div className={styles.objectStage} aria-hidden="true">
+          <img className={styles.glow} src="/reveal/figma-glow.svg" alt="" />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             className={styles.closedShell}
-            src="/reveal/shell-closed.webp"
-            alt=""
-          />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            className={styles.openShell}
-            src="/reveal/shell-open.webp"
+            src="/reveal/figma-shell-closed.png"
             alt=""
           />
         </div>
 
-        {isRunning && (
-          <p className={styles.progress} role="status">
-            смотрим ритм дня
-          </p>
-        )}
+        <div className={styles.openObject} aria-hidden="true">
+          <div className={`${styles.shellHalf} ${styles.topHalf}`}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/reveal/figma-shell-open.png" alt="" />
+          </div>
+          <div className={`${styles.shellHalf} ${styles.bottomHalf}`}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/reveal/figma-shell-open.png" alt="" />
+          </div>
+        </div>
 
-        <section className={styles.result} aria-hidden={!showResult}>
-          <article className={styles.resultCard}>
-            <p className={styles.date}>
-              <span>24</span>
-              августа, пн
-            </p>
-
-            <div className={styles.rule} />
-
-            <h1>день для мягкого обновления</h1>
-            <p className={styles.advice}>
-              освежите форму, не меняя себя целиком
-            </p>
-          </article>
-
-          <button
-            className={styles.methodButton}
-            type="button"
-            onClick={() => setDetailsOpen((isOpen) => !isOpen)}
-            aria-expanded={detailsOpen}
-          >
-            как посчитали
-            <Info aria-hidden="true" weight="regular" />
+        <div className={styles.controls}>
+          <span aria-live="polite">{phaseLabels[phase]}</span>
+          <button type="button" onClick={play} disabled={isRunning}>
+            {phase === "start" ? (
+              <Play aria-hidden="true" weight="fill" />
+            ) : (
+              <ArrowCounterClockwise aria-hidden="true" weight="bold" />
+            )}
+            {phase === "start" ? "воспроизвести" : "повторить"}
           </button>
-
-          {detailsOpen && (
-            <div className={styles.details}>
-              растущая луна поддерживает обновление формы
-              <br />
-              день подходит для спокойных изменений без резких решений
-            </div>
-          )}
-        </section>
-
-        <div className={styles.actions} data-visible={phase === "ready" || phase === "result"}>
-          {phase === "ready" ? (
-            <button className={styles.primaryButton} type="button" onClick={runReveal}>
-              узнать день
-            </button>
-          ) : (
-            <>
-              <button className={styles.primaryButton} type="button" onClick={save}>
-                {saved ? (
-                  <>
-                    <Check aria-hidden="true" weight="bold" />
-                    добавлено
-                  </>
-                ) : (
-                  "добавить событие"
-                )}
-              </button>
-              <button className={styles.shareButton} type="button" aria-label="поделиться">
-                <ShareNetwork aria-hidden="true" weight="bold" />
-              </button>
-            </>
-          )}
         </div>
-      </div>
+      </section>
     </main>
   );
 }
