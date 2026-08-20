@@ -302,7 +302,7 @@ function StartControls() {
 
 function splitIntentLabel(label: string) {
   const words = label.trim().split(/\s+/);
-  if (label.length <= 18 || words.length < 2) return [label];
+  if (label.length <= 15 || words.length < 2) return [label];
 
   let splitAt = 1;
   let smallestDifference = Number.POSITIVE_INFINITY;
@@ -497,7 +497,7 @@ function ScoreInfoSheet({ day, onClose }: { day: Day; onClose: () => void }) {
           </div>
         </div>
         <p className="score-footnote">фазовый угол дня — {Math.round(day.moonPhaseAngle)}°, символическая точка дела — {day.targetPhaseAngle}°, расстояние — {Math.round(day.phaseDistance)}°</p>
-        <p className="score-footnote">эклиптическая долгота луны — {Math.round(day.lunarLongitude)}°, знак — {day.zodiacSignName}</p>
+        <p className="score-footnote">эклиптическая долгота луны — {Math.round(day.lunarLongitude)}°, знак — {day.zodiacSignName.toLowerCase()}</p>
         <p className="score-footnote">день недели и близость даты не добавляют баллы, ближайшая дата получает приоритет только при равном результате</p>
       </section>
     </div>
@@ -651,7 +651,7 @@ function MoonPhaseIllustration({ angle, label }: { angle: number; label: string 
   const normalized = ((angle % 360) + 360) % 360;
   const waxing = normalized <= 180;
   const illumination = (1 - Math.cos((normalized * Math.PI) / 180)) / 2;
-  const shadowShift = (waxing ? -1 : 1) * illumination * 110;
+  const shadowShift = (waxing ? -1 : 1) * illumination * 112;
   return (
     <div
       className={`phase-moon ${waxing ? "is-waxing" : "is-waning"}`}
@@ -659,7 +659,7 @@ function MoonPhaseIllustration({ angle, label }: { angle: number; label: string 
       aria-label={`${label}, освещено ${Math.round(illumination * 100)}%`}
       style={{ "--moon-shadow-shift": `${shadowShift}%` } as CSSProperties}
     >
-      <span className="phase-moon-surface" />
+      <img className="phase-moon-surface" src="/figma/moon-base.png" alt="" />
       <span className="phase-moon-shadow" />
     </div>
   );
@@ -1035,8 +1035,12 @@ export default function Home() {
             <MoonPhaseIllustration angle={active.moonPhaseAngle} label={active.moonPhaseLabel} />
             {personalizationBubbleVisible && (
               <button type="button" className="personalization-bubble" onClick={() => setPersonalizationOpen(true)}>
-                <img src="/figma/personalization-calendar.png" alt="" />
-                {personalization ? `для вас · ${personalization.zodiac}` : "персонализировать под вас"}
+                <span className="personalization-dot personalization-dot-one" aria-hidden="true" />
+                <span className="personalization-dot personalization-dot-two" aria-hidden="true" />
+                <span className="personalization-bubble-body">
+                  <img src="/figma/personalization-calendar.png" alt="" />
+                  <span>{personalization ? `для вас · ${personalization.zodiac}` : "персонализировать под вас"}</span>
+                </span>
               </button>
             )}
           </div>
@@ -1047,9 +1051,9 @@ export default function Home() {
 
           <div className="result-guidance">
             <p>
-              <strong>{active.rating === "excellent" ? "лучший " : ""}{resultCopy.verdict}.</strong>{" "}
-              <ArrowCircleUpLeft className="result-guidance-icon" weight="regular" aria-hidden="true" />{" "}
-              <span>{resultCopy.advice}</span>
+              <strong>{active.rating === "excellent" ? "лучший " : ""}{resultCopy.verdict}.</strong>
+              <ArrowCircleUpLeft className="result-guidance-icon" weight="regular" aria-hidden="true" />
+              <span>{resultCopy.advice.charAt(0).toLowerCase() + resultCopy.advice.slice(1)}</span>
             </p>
           </div>
 
