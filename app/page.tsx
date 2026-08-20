@@ -839,6 +839,11 @@ export default function Home() {
   const resultCopy = buildResultCopy(intent, active);
   const resultHeading = buildResultHeading(resultCopy.verdict, active.rating === "excellent");
   const resultAdvice = `${resultCopy.advice.charAt(0).toLowerCase()}${resultCopy.advice.slice(1)}`.replace(/[.!?]+$/, "");
+  const pendingResultCopy = pendingReveal ? buildResultCopy(pendingReveal.intent, pendingReveal.day) : null;
+  const pendingResultHeading = pendingResultCopy ? buildResultHeading(pendingResultCopy.verdict, true) : "";
+  const pendingResultAdvice = pendingResultCopy
+    ? `${pendingResultCopy.advice.charAt(0).toLowerCase()}${pendingResultCopy.advice.slice(1)}`.replace(/[.!?]+$/, "")
+    : "";
 
   useEffect(() => {
     if (screen !== "result" || pendingReveal) return;
@@ -1047,7 +1052,8 @@ export default function Home() {
             theme={startTheme}
             intentLabel={pendingReveal.intent.label}
             selectedDay={pendingReveal.day}
-            candidates={days}
+            resultHeading={pendingResultHeading}
+            resultAdvice={pendingResultAdvice}
             onComplete={finishReveal}
           />
         )}
@@ -1155,7 +1161,8 @@ export default function Home() {
           theme={startTheme}
           intentLabel={pendingReveal.intent.label}
           selectedDay={pendingReveal.day}
-          candidates={days}
+          resultHeading={pendingResultHeading}
+          resultAdvice={pendingResultAdvice}
           onComplete={finishReveal}
         />
       )}

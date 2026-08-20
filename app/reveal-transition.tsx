@@ -1,12 +1,10 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element -- local brand and status assets */
-
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import styles from "./reveal-transition.module.css";
 
-type RevealPhase = "enter" | "scan" | "lock" | "reveal" | "leave";
+type RevealPhase = "enter" | "ignite" | "count" | "wave" | "lock" | "lift" | "reveal" | "leave";
 
 type RevealDay = {
   id: string;
@@ -16,33 +14,92 @@ type RevealDay = {
   score: number;
 };
 
+type TransitionStar = {
+  id: number;
+  left: number;
+  top: number;
+  size: number;
+  opacity: number;
+  birthDelay: number;
+  waveDelay: number;
+  base: boolean;
+};
+
 const timeline: ReadonlyArray<readonly [number, RevealPhase]> = [
-  [40, "enter"],
-  [280, "scan"],
-  [1420, "lock"],
-  [1780, "reveal"],
-  [2460, "leave"],
+  [60, "ignite"],
+  [360, "count"],
+  [1700, "wave"],
+  [2850, "lock"],
+  [3300, "lift"],
+  [3900, "reveal"],
+  [4950, "leave"],
 ];
+
+function createTransitionStars(count: number): TransitionStar[] {
+  let seed = 0x734a91;
+  const random = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+
+  return Array.from({ length: count }, (_, id) => {
+    const left = random() * 100;
+    const top = random() * 100;
+    const energy = random();
+    return {
+      id,
+      left,
+      top,
+      size: energy > .975 ? 3.4 : energy > .86 ? 2 : energy > .52 ? 1.2 : .72,
+      opacity: .28 + energy * .7,
+      birthDelay: random() * 1.25,
+      waveDelay: Math.max(0, (100 - top) / 100 * 1.05 + random() * .08),
+      base: id < 38,
+    };
+  });
+}
+
+const transitionStars = createTransitionStars(420);
+
+const StarCloud = memo(function StarCloud() {
+  return (
+    <div className={styles.stars} aria-hidden="true">
+      {transitionStars.map((star) => (
+        <i
+          className={`${styles.star} ${star.base ? styles.baseStar : ""}`}
+          key={star.id}
+          style={{
+            "--star-left": `${star.left}%`,
+            "--star-top": `${star.top}%`,
+            "--star-size": `${star.size}px`,
+            "--star-opacity": star.opacity,
+            "--birth-delay": `${star.birthDelay}s`,
+            "--wave-delay": `${star.waveDelay}s`,
+          } as CSSProperties}
+        />
+      ))}
+    </div>
+  );
+});
 
 export default function RevealTransition({
   theme,
   intentLabel,
   selectedDay,
-  candidates,
+  resultHeading,
+  resultAdvice,
   onComplete,
 }: {
   theme: "dark" | "light";
   intentLabel: string;
   selectedDay: RevealDay;
-  candidates: RevealDay[];
+  resultHeading: string;
+  resultAdvice: string;
   onComplete: () => void;
 }) {
   const [phase, setPhase] = useState<RevealPhase>("enter");
+  const [counterValue, setCounterValue] = useState("47281");
   const completeRef = useRef(onComplete);
-  const searchDays = useMemo(
-    () => [...candidates.filter((day) => day.id !== selectedDay.id).slice(0, 4), selectedDay],
-    [candidates, selectedDay],
-  );
 
   useEffect(() => {
     completeRef.current = onComplete;
@@ -53,7 +110,7 @@ export default function RevealTransition({
     document.body.style.overflow = "hidden";
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      const reducedMotionId = window.setTimeout(() => completeRef.current(), 220);
+      const reducedMotionId = window.setTimeout(() => completeRef.current(), 260);
       return () => {
         document.body.style.overflow = previousOverflow;
         window.clearTimeout(reducedMotionId);
@@ -63,7 +120,7 @@ export default function RevealTransition({
     const phaseIds = timeline.map(([delay, nextPhase]) =>
       window.setTimeout(() => setPhase(nextPhase), delay),
     );
-    const completeId = window.setTimeout(() => completeRef.current(), 2660);
+    const completeId = window.setTimeout(() => completeRef.current(), 5300);
 
     return () => {
       document.body.style.overflow = previousOverflow;
@@ -72,65 +129,55 @@ export default function RevealTransition({
     };
   }, []);
 
+  useEffect(() => {
+    if (phase !== "count" && phase !== "wave") return;
+
+    let seed = phase === "count" ? 0x91ab2f : 0x410cd7;
+    const intervalId = window.setInterval(() => {
+      seed = (seed * 1103515245 + 12345) >>> 0;
+      setCounterValue(String(10000 + (seed % 89999)));
+    }, 58);
+    return () => window.clearInterval(intervalId);
+  }, [phase]);
+
+  const month = selectedDay.monthLabel.split(",")[0];
+  const locked = phase === "lock" || phase === "lift" || phase === "reveal" || phase === "leave";
+  const displayedValue = locked ? selectedDay.day : counterValue;
+
   return (
     <div
       className={styles.transition}
       data-phase={phase}
       data-theme={theme}
       role="status"
-      aria-label={`подбираем благоприятный день, чтобы ${intentLabel}`}
+      aria-label={`определяем лучший день, чтобы ${intentLabel}`}
     >
-      <div className={styles.aurora} aria-hidden="true" />
+      <div className={styles.spaceGlow} aria-hidden="true" />
+      <StarCloud />
 
-      <header className={styles.brand} aria-hidden="true">
-        <img src="/figma/start-logo.svg" alt="" />
-        <span>polune</span>
-      </header>
-
-      <div className={styles.searchCopy}>
-        <span>подбираем день, чтобы</span>
-        <strong>{intentLabel}</strong>
+      <div className={styles.waveField} aria-hidden="true">
+        <i className={styles.waveGlow} />
+        <i className={styles.waveRing} />
+        <i className={`${styles.waveRing} ${styles.waveRingDelay}`} />
       </div>
 
-      <div className={styles.foundCopy}>
-        <span className={styles.checkmark} aria-hidden="true">✓</span>
-        <span>подходящий день найден</span>
-      </div>
-
-      <div className={styles.dateViewport} aria-hidden="true">
-        <div className={styles.focusHalo} />
-        <div className={styles.dateRail}>
-          {searchDays.map((day, index) => (
-            <div
-              className={`${styles.dateCard} ${day.id === selectedDay.id ? styles.selectedDate : ""}`}
-              key={day.id}
-              style={{ "--card-index": index } as CSSProperties}
-            >
-              <span className={styles.dateNumber}>{day.day}</span>
-              <span className={styles.dateMeta}>
-                <strong>{day.monthLabel.split(",")[0]}</strong>
-                <small>{day.weekday}</small>
-              </span>
-              <span className={styles.searchDot} />
-            </div>
-          ))}
+      <div className={styles.counterCluster} aria-hidden="true">
+        <div className={`${styles.counterValue} ${locked ? styles.lockedValue : ""}`} key={displayedValue}>
+          <strong>{displayedValue}</strong>
+          {locked && <span>{month}</span>}
         </div>
+        <p className={styles.counterCopy}>
+          <span>{locked ? "лучший день найден" : "определяем лучший день, чтобы"}</span>
+          {!locked && <strong>{intentLabel}</strong>}
+        </p>
       </div>
 
-      <div className={styles.resultPreview} aria-hidden="true">
-        <div className={styles.resultScore}>
-          <img src="/figma/status-excellent.svg" alt="" />
-          <span>{selectedDay.score}% · лучший день</span>
-        </div>
-        <div className={styles.resultDate}>
-          <strong>{selectedDay.day}</strong>
-          <span>{selectedDay.monthLabel}</span>
-        </div>
-        <div className={styles.resultLine} />
-        <div className={`${styles.resultLine} ${styles.shortLine}`} />
+      <div className={styles.finalCopy} aria-hidden="true">
+        <h2>{resultHeading}</h2>
+        <p>{resultAdvice}</p>
       </div>
 
-      <div className={styles.homeIndicator} aria-hidden="true" />
+      <div className={styles.progress} aria-hidden="true"><span /></div>
     </div>
   );
 }
