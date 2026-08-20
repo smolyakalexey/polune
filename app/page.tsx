@@ -97,6 +97,8 @@ type PersonalizationData = {
   timeUnknown: boolean;
 };
 
+const PERSONALIZATION_STORAGE_KEY = "polune-personalization-v1";
+
 const zodiacSigns = [
   { name: "овен", symbol: "♈︎" },
   { name: "телец", symbol: "♉︎" },
@@ -926,9 +928,11 @@ export default function Home() {
   const [personalizationOpen, setPersonalizationOpen] = useState(false);
   const [personalization, setPersonalization] = useState<PersonalizationData | null>(null);
   const [personalizationBubblePhase, setPersonalizationBubblePhase] = useState<"hidden" | "visible" | "leaving">("hidden");
+  const [dayMotionPhase, setDayMotionPhase] = useState<"idle" | "out" | "in">("idle");
   const [calendarExpanded, setCalendarExpanded] = useState(false);
   const calendarStatusTimer = useRef<number | null>(null);
   const feedbackStatusTimer = useRef<number | null>(null);
+  const dayMotionTimer = useRef<number | null>(null);
   const personalizationBubbleHasAppeared = useRef(false);
 
   const active = days.find((day) => day.id === activeId) ?? calendarDays.find((day) => day.id === activeId) ?? days[1];
@@ -942,6 +946,7 @@ export default function Home() {
     : "";
 
   useEffect(() => {
+    if (personalization) return;
     if (screen !== "result" || pendingReveal || personalizationOpen) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       const timer = window.setTimeout(() => setPersonalizationBubblePhase("visible"), 2200);
@@ -976,11 +981,36 @@ export default function Home() {
       cancelled = true;
       timers.forEach((timer) => window.clearTimeout(timer));
     };
-  }, [active.id, pendingReveal, personalizationOpen, screen]);
+  }, [active.id, pendingReveal, personalization, personalizationOpen, screen]);
+
+  useEffect(() => {
+    let restoreTimer: number | null = null;
+    try {
+      const savedPersonalization = window.localStorage.getItem(PERSONALIZATION_STORAGE_KEY);
+      if (!savedPersonalization) return;
+      const parsed = JSON.parse(savedPersonalization) as Partial<PersonalizationData>;
+      if (typeof parsed.zodiac !== "string" || !parsed.zodiac) return;
+      restoreTimer = window.setTimeout(() => {
+        setPersonalization({
+          zodiac: parsed.zodiac!,
+          birthDate: typeof parsed.birthDate === "string" ? parsed.birthDate : "",
+          birthTime: typeof parsed.birthTime === "string" ? parsed.birthTime : "",
+          birthPlace: typeof parsed.birthPlace === "string" ? parsed.birthPlace : "",
+          timeUnknown: Boolean(parsed.timeUnknown),
+        });
+      }, 0);
+    } catch {
+      window.localStorage.removeItem(PERSONALIZATION_STORAGE_KEY);
+    }
+    return () => {
+      if (restoreTimer !== null) window.clearTimeout(restoreTimer);
+    };
+  }, []);
 
   useEffect(() => () => {
     if (calendarStatusTimer.current) window.clearTimeout(calendarStatusTimer.current);
     if (feedbackStatusTimer.current) window.clearTimeout(feedbackStatusTimer.current);
+    if (dayMotionTimer.current) window.clearTimeout(dayMotionTimer.current);
   }, []);
 
   useEffect(() => {
@@ -1006,6 +1036,7 @@ export default function Home() {
       const restoredDay = restoredCalendarDays.find((day) => day.dateIso === requestedDate) ?? pickPreferredDay(restoredDays);
       setIntent(restoredIntent);
       setPersonalizationBubblePhase("hidden");
+      setDayMotionPhase("idle");
       setHasChosenIntent(true);
       setScreen("result");
       setActiveId(restoredDay.id);
@@ -1037,8 +1068,10 @@ export default function Home() {
   }, [pendingReveal, pickerOpen, screen]);
 
   function chooseIntent(nextIntent: Intent) {
-    const nextDays = buildCurrentWeek(nextIntent, 62).slice(0, 14);
+    const nextDays = buildCurrentWeek(nextIntent);
     const nextDay = pickPreferredDay(nextDays);
+    if (dayMotionTimer.current) window.clearTimeout(dayMotionTimer.current);
+    setDayMotionPhase("idle");
     setIntent(nextIntent);
     personalizationBubbleHasAppeared.current = false;
     setPersonalizationBubblePhase("hidden");
@@ -1072,18 +1105,25 @@ export default function Home() {
     if (day.id === activeId) return;
     setPersonalizationBubblePhase("hidden");
     if (calendarStatusTimer.current) window.clearTimeout(calendarStatusTimer.current);
-    setActiveId(day.id);
-    setSaved(false);
-    if (feedbackStatusTimer.current) window.clearTimeout(feedbackStatusTimer.current);
-    setFeedbackVisible(false);
-    setFeedbackAnswer(null);
-    window.history.pushState({}, "", resultUrl(intent.id, day.dateIso));
-    trackEvent("day_selected", {
-      intentId: intent.id,
-      archetype: intent.archetype,
-      selectedDate: day.dateIso,
-      score: day.score,
-    });
+    if (dayMotionTimer.current) window.clearTimeout(dayMotionTimer.current);
+    setDayMotionPhase("out");
+    dayMotionTimer.current = window.setTimeout(() => {
+      dayMotionTimer.current = null;
+      setActiveId(day.id);
+      setSaved(false);
+      if (feedbackStatusTimer.current) window.clearTimeout(feedbackStatusTimer.current);
+      setFeedbackVisible(false);
+      setFeedbackAnswer(null);
+      window.history.pushState({}, "", resultUrl(intent.id, day.dateIso));
+      trackEvent("day_selected", {
+        intentId: intent.id,
+        archetype: intent.archetype,
+        selectedDate: day.dateIso,
+        score: day.score,
+      });
+      setDayMotionPhase("in");
+      window.requestAnimationFrame(() => window.requestAnimationFrame(() => setDayMotionPhase("idle")));
+    }, 150);
   }
 
   function addToCalendar() {
@@ -1204,6 +1244,7 @@ export default function Home() {
               setHasChosenIntent(false);
               setCalendarExpanded(false);
               setPersonalizationBubblePhase("hidden");
+              setDayMotionPhase("idle");
             }}
             aria-label="Вернуться и выбрать другое дело"
           >
@@ -1211,14 +1252,34 @@ export default function Home() {
           </button>
           <span />
           <button className="result-icon-button" type="button" onClick={shareResult} aria-label="Поделиться результатом">
-            {shared ? <Check size={22} weight="bold" /> : <img src="/figma/result-share.svg" alt="" />}
+            {shared ? <Check size={26} weight="bold" /> : <img src="/figma/result-share.svg" alt="" />}
           </button>
         </header>
 
-        <article className="result-cosmic-card" key={active.id} aria-live="polite">
+        <article className="result-cosmic-card" aria-live="polite">
           <div className="moon-stage">
             <MoonPhaseIllustration angle={active.moonPhaseAngle} label={active.moonPhaseLabel} />
-            {personalizationBubblePhase !== "hidden" && (
+          </div>
+
+          <div className={`result-changing-content is-${dayMotionPhase}`}>
+            <div className="result-date-line">
+              <strong>{active.day} {active.monthLabel.split(",")[0]}</strong>
+            </div>
+
+            <div className="result-guidance">
+              <h2>{resultHeading}</h2>
+              <p>{resultAdvice}</p>
+            </div>
+
+            <button type="button" className={`result-score-row status-${active.rating}`} onClick={() => setScoreInfoOpen(true)}>
+              <img src={statusIcons[active.rating]} alt="" />
+              <span>{active.score}% совпадение</span>
+              <Info weight="regular" aria-hidden="true" />
+            </button>
+          </div>
+
+          <div className={`result-actions ${personalization ? "is-personalized" : ""}`}>
+            {!personalization && personalizationBubblePhase !== "hidden" && (
               <button
                 type="button"
                 className={`personalization-bubble ${personalizationBubblePhase === "leaving" ? "is-leaving" : ""}`}
@@ -1231,30 +1292,26 @@ export default function Home() {
                 <span className="personalization-dot personalization-dot-two" aria-hidden="true" />
                 <span className="personalization-bubble-body">
                   <img src="/figma/personalization-calendar.png" alt="" />
-                  <span>{personalization ? `для вас · ${personalization.zodiac}` : "персонализировать под вас"}</span>
+                  <span>поможет получать более точные рекомендации</span>
                 </span>
               </button>
             )}
+            {!personalization && (
+              <button
+                type="button"
+                className="result-personalization-action"
+                onClick={() => {
+                  setPersonalizationBubblePhase("hidden");
+                  setPersonalizationOpen(true);
+                }}
+              >
+                указать свои данные о рождении
+              </button>
+            )}
+            <button type="button" className={`result-calendar-action ${saved ? "saved" : ""}`} onClick={addToCalendar} disabled={saved} aria-live="polite">
+              {saved ? "добавлено в календарь" : "добавить в календарь"}
+            </button>
           </div>
-
-          <div className="result-date-line">
-            <strong>{active.day} {active.monthLabel.split(",")[0]}</strong>
-          </div>
-
-          <div className="result-guidance">
-            <h2>{resultHeading}</h2>
-            <p>{resultAdvice}</p>
-          </div>
-
-          <button type="button" className={`result-score-row status-${active.rating}`} onClick={() => setScoreInfoOpen(true)}>
-            <img src={statusIcons[active.rating]} alt="" />
-            <span>{active.score}% совпадение</span>
-            <Info weight="regular" aria-hidden="true" />
-          </button>
-
-          <button type="button" className={`result-calendar-action ${saved ? "saved" : ""}`} onClick={addToCalendar} disabled={saved} aria-live="polite">
-            {saved ? "добавлено в календарь" : "добавить в календарь"}
-          </button>
         </article>
 
         {feedbackVisible && (
@@ -1310,6 +1367,8 @@ export default function Home() {
           onClose={() => setPersonalizationOpen(false)}
           onComplete={(data) => {
             setPersonalization(data);
+            window.localStorage.setItem(PERSONALIZATION_STORAGE_KEY, JSON.stringify(data));
+            setPersonalizationBubblePhase("hidden");
             setPersonalizationOpen(false);
             trackEvent("personalization_completed", { intentId: intent.id, selectedDate: active.dateIso });
           }}

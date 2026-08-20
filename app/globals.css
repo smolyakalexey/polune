@@ -155,7 +155,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   top: max(18px, env(safe-area-inset-top));
   right: 16px;
   left: 16px;
-  min-height: 40px;
+  min-height: 48px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -176,9 +176,9 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 }
 .start-logo img { width: 24px; height: 24px; display: block; }
 .start-header-action {
-  width: 40px;
-  height: 40px;
-  padding: 8px;
+  width: 48px;
+  height: 48px;
+  padding: 10px;
   border: 0;
   border-radius: 50%;
   display: grid;
@@ -191,8 +191,8 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 }
 .start-header-action:last-child { justify-self: end; }
 .start-header-action:disabled { opacity: 1; }
-.start-header-action img { width: 24px; height: 24px; display: block; }
-.start-header-action svg { width: 24px; height: 24px; }
+.start-header-action img { width: 28px; height: 28px; display: block; }
+.start-header-action svg { width: 28px; height: 28px; }
 .theme-light .start-header-action { border-color: rgba(2, 0, 2, .08); background: rgba(2, 0, 2, .1); }
 .theme-light .start-logo img,
 .theme-light .start-header-action img { filter: invert(1); }
@@ -361,12 +361,12 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   min-height: 100dvh;
   padding: max(18px, env(safe-area-inset-top)) 8px max(28px, env(safe-area-inset-bottom));
 }
-.result-topbar { height: 44px; padding: 0 8px; display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; }
+.result-topbar { height: 48px; padding: 0 8px; display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; }
 .result-topbar .brand { justify-self: center; }
 .result-topbar .brand img { width: 79px; }
 .result-icon-button {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   padding: 0;
   border: 1px solid var(--result-border);
   border-radius: 50%;
@@ -378,7 +378,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   text-decoration: none;
   cursor: pointer;
 }
-.result-icon-button svg, .result-icon-button img { width: 22px; height: 22px; }
+.result-icon-button svg, .result-icon-button img { width: 26px; height: 26px; }
 .result-screen.theme-dark .result-topbar .brand img,
 .result-screen.theme-dark .result-icon-button img { filter: invert(1); }
 .result-hero { margin-top: 25px; text-align: center; }
@@ -1272,14 +1272,14 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   top: 62px;
   right: auto;
   left: 50%;
-  width: 40px;
-  min-height: 40px;
+  width: 48px;
+  min-height: 48px;
   transform: translateX(-50%);
 }
 .start-screen .start-header-action {
-  width: 40px;
-  height: 40px;
-  padding: 8px;
+  width: 48px;
+  height: 48px;
+  padding: 10px;
   border: 0;
   background: #1e1e1e;
   box-shadow: 0 12px 40px rgba(58,47,120,.14);
@@ -1327,13 +1327,13 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   right: 20px;
   left: 20px;
   z-index: 5;
-  height: 40px;
+  height: 48px;
   padding: 0;
-  grid-template-columns: 40px 1fr 40px;
+  grid-template-columns: 48px 1fr 48px;
 }
 .result-icon-button {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   color: #fff;
   border-color: rgba(255,255,255,.09);
   background: rgba(18,22,23,.64);
@@ -1361,9 +1361,8 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   width: 132px;
   height: 128px;
   overflow: hidden;
-  border-radius: 50%;
-  -webkit-mask: url("/figma/moon-base.png") center / 100% 100% no-repeat;
-  mask: url("/figma/moon-base.png") center / 100% 100% no-repeat;
+  border-radius: 0;
+  clip-path: circle(41.25% at 50% 50%);
   filter: drop-shadow(0 0 18px rgba(181,194,255,.16));
   animation: moon-arrive .72s cubic-bezier(.16,1,.3,1) both;
 }
@@ -1373,7 +1372,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   inset: 0;
   width: 100%;
   height: 100%;
-  border-radius: inherit;
+  border-radius: 0;
 }
 .phase-moon-surface {
   display: block;
@@ -1384,7 +1383,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   width: 100%;
   height: 100%;
   background: #020002;
-  filter: blur(3px);
+  filter: blur(2.5px);
   box-shadow: none;
   transform: translateX(var(--moon-shadow-shift));
   transition: transform .55s cubic-bezier(.2,.8,.2,1);
@@ -1395,12 +1394,11 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 }
 .personalization-bubble {
   position: absolute;
-  top: 95px;
-  left: 140px;
-  bottom: auto;
+  right: 0;
+  bottom: calc(100% + 8px);
   z-index: 3;
-  width: 221px;
-  height: 51px;
+  width: 205px;
+  height: 59px;
   padding: 0;
   border: 0;
   display: block;
@@ -1421,15 +1419,15 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 }
 .personalization-dot-one {
   z-index: 3;
-  left: 185px;
-  top: 46px;
+  right: 30px;
+  bottom: 0;
   width: 5px;
   height: 5px;
   animation: personalization-dot-in .2s cubic-bezier(.16,1.2,.34,1) both;
 }
 .personalization-dot-two {
-  left: 187px;
-  top: 33px;
+  right: 18px;
+  bottom: 9px;
   width: 12px;
   height: 12px;
   animation: personalization-dot-in .24s .16s cubic-bezier(.16,1.2,.34,1) both;
@@ -1438,20 +1436,20 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   position: absolute;
   inset: 0 0 auto;
   z-index: 1;
-  height: 41px;
-  padding: 8px 14px 8px 12px;
-  border-radius: 999px;
+  height: 51px;
+  padding: 8px 12px 8px 8px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   background: #fff;
   box-shadow: 0 9px 24px rgba(0,0,0,.28);
   transform: scale(.04, .28);
-  transform-origin: 87.3% 100%;
+  transform-origin: 86% 100%;
   animation: personalization-body-grow .48s .32s cubic-bezier(.16,1,.3,1) both;
 }
-.personalization-bubble-body > img { width: 25px; height: 25px; object-fit: contain; flex: 0 0 auto; opacity: 0; animation: personalization-content-in .24s .62s ease-out forwards; }
-.personalization-bubble-body > span { white-space: nowrap; opacity: 0; animation: personalization-content-in .24s .62s ease-out forwards; }
+.personalization-bubble-body > img { width: 32px; height: 32px; object-fit: contain; flex: 0 0 auto; opacity: 0; animation: personalization-content-in .24s .62s ease-out forwards; }
+.personalization-bubble-body > span { width: 149px; white-space: normal; text-align: left; line-height: 16px; opacity: 0; animation: personalization-content-in .24s .62s ease-out forwards; }
 @keyframes personalization-dot-in {
   from { opacity: 0; transform: scale(0); }
   to { opacity: 1; transform: scale(1); }
@@ -1492,6 +1490,17 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 }
 .result-guidance h2 { color: #fff; font-weight: 500; }
 .result-guidance p { margin-top: 5px; color: rgba(255,255,255,.58); font-weight: 400; }
+.result-changing-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity .15s ease, transform .18s cubic-bezier(.2,.8,.2,1);
+}
+.result-changing-content.is-out { opacity: 0; transform: translateY(-6px); }
+.result-changing-content.is-in { opacity: 0; transform: translateY(8px); transition: none; }
 .result-score-row {
   min-height: 44px;
   margin-top: 24px;
@@ -1509,21 +1518,32 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 }
 .result-score-row img { width: 24px; height: 24px; }
 .result-score-row svg { width: 16px; height: 16px; color: rgba(255,255,255,.5); }
-.result-calendar-action {
+.result-actions {
   position: absolute;
   right: 20px;
-  top: 646px;
-  bottom: auto;
+  top: auto;
+  bottom: 160px;
   left: 20px;
+  display: grid;
+  gap: 4px;
+}
+.result-personalization-action,
+.result-calendar-action {
   min-height: 64px;
   border: 0;
   border-radius: 16px;
-  color: #080909;
-  background: #fff;
-  box-shadow: 0 12px 30px rgba(0,0,0,.18);
+  box-shadow: 0 12px 30px rgba(0,0,0,.18), inset 0 0 12px rgba(255,255,255,.3);
   font-size: 18px;
   font-weight: 500;
   cursor: pointer;
+}
+.result-personalization-action {
+  color: #fff;
+  background: linear-gradient(180deg, #7b68f7 0%, #6263f5 54%, #4d4be7 100%);
+}
+.result-calendar-action {
+  color: #080909;
+  background: #fff;
 }
 .result-calendar-action.saved { color: #fff; background: var(--green); }
 
@@ -1745,7 +1765,9 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .result-guidance { margin-top: 24px; }
   .result-guidance h2, .result-guidance p { font-size: 24px; line-height: 28px; }
   .result-score-row { margin-top: 14px; }
-  .result-calendar-action { top: auto; bottom: 160px; min-height: 56px; }
+  .result-actions { top: auto; bottom: 160px; }
+  .result-personalization-action,
+  .result-calendar-action { min-height: 56px; }
 }
 
 /* Real mobile browsers expose a wider, shorter visual viewport than the
@@ -1798,7 +1820,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .result-content {
     height: 100dvh;
     min-height: 0;
-    padding: 58px 18px 214px;
+    padding: 66px 18px 214px;
   }
 
   .result-topbar {
@@ -1814,11 +1836,6 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .phase-moon {
     width: 116px;
     height: 112px;
-  }
-
-  .personalization-bubble {
-    top: 82px;
-    left: calc(50% - 20px);
   }
 
   .result-date-line {
@@ -1845,11 +1862,15 @@ button:focus-visible, input:focus-visible, a:focus-visible {
     margin-top: clamp(8px, 1.6dvh, 14px);
   }
 
-  .result-calendar-action {
+  .result-actions {
     top: auto;
     right: 18px;
     bottom: 154px;
     left: 18px;
+  }
+
+  .result-personalization-action,
+  .result-calendar-action {
     min-height: 56px;
   }
 
@@ -1858,4 +1879,13 @@ button:focus-visible, input:focus-visible, a:focus-visible {
     border-right: 0;
     border-left: 0;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .result-changing-content { transition: none; }
+  .personalization-bubble,
+  .personalization-bubble-body,
+  .personalization-bubble-body > img,
+  .personalization-bubble-body > span,
+  .personalization-dot { animation-duration: .01ms !important; animation-delay: 0ms !important; }
 }
