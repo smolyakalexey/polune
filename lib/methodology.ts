@@ -6,6 +6,7 @@ export type Rating = "low" | "excellent" | "neutral" | "good" | "caution";
 export const METHOD_VERSION = "0.5";
 export const PHASE_WEIGHT = 0.55;
 export const ZODIAC_WEIGHT = 0.45;
+export const PREFERRED_SCORE_TOLERANCE = 7;
 
 export const archetypeTargets: Record<Archetype, number> = {
   growth: 90,
@@ -77,8 +78,8 @@ export function ratingForScore(score: number): Rating {
 export function pickPreferredDay<T extends { score: number; dateIso: string }>(days: T[]) {
   if (days.length === 0) throw new Error("Для выбора дня нужен непустой список");
   const maximum = Math.max(...days.map((day) => day.score));
-  const maximumDays = days.filter((day) => day.score === maximum);
-  return [...maximumDays].sort((left, right) => left.dateIso.localeCompare(right.dateIso))[0];
+  const nearMaximumDays = days.filter((day) => day.score >= maximum - PREFERRED_SCORE_TOLERANCE);
+  return [...nearMaximumDays].sort((left, right) => left.dateIso.localeCompare(right.dateIso))[0];
 }
 
 export function annotatePreferredDays<T extends { score: number; dateIso: string }>(days: T[]) {

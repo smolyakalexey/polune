@@ -1826,7 +1826,12 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .result-content {
     height: 100dvh;
     min-height: 0;
-    padding: 66px 18px 214px;
+    padding: 66px 18px 174px;
+  }
+
+  .result-cosmic-card {
+    height: 100%;
+    min-height: 0;
   }
 
   .result-topbar {
@@ -1869,10 +1874,14 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   }
 
   .result-actions {
+    position: relative;
     top: auto;
-    right: 18px;
-    bottom: 154px;
-    left: 18px;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    width: 100%;
+    margin-top: auto;
+    flex: 0 0 auto;
   }
 
   .result-personalization-action,
@@ -1909,7 +1918,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
     font-size: 17px;
   }
   .result-score-row img { width: 22px; height: 22px; }
-  .result-actions { bottom: 150px; }
+  .result-actions { bottom: auto; }
   .result-personalization-action,
   .result-calendar-action {
     min-height: 54px;
@@ -1950,7 +1959,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .result-guidance h2 { font-size: 18px; line-height: 21px; }
   .result-guidance p { font-size: 16px; line-height: 19px; }
   .result-score-row { min-height: 36px; margin-top: 2px; }
-  .result-actions { bottom: 140px; }
+  .result-actions { bottom: auto; }
   .result-personalization-action,
   .result-calendar-action { min-height: 48px; }
   .result-calendar { height: 134px; }

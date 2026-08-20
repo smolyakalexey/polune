@@ -1,52 +1,43 @@
-# Design QA — iPhone 16 Pro Max adaptation
+# Design QA — ближайший лучший день и адаптив по высоте
 
-## Artifacts and normalization
+- source visual truth: `/var/folders/94/bf2s3jnx1yxg49qk4nmh71s80000gq/T/TemporaryItems/NSIRD_screencaptureui_BpdKCd/Screenshot 2026-08-21 at 01.01.13.png`
+- implementation screenshot: `/Users/alexey/Documents/ChatGPT/благоприятные дни/blagopriyatny-den/design-audit/2026-08-21-preferred-height-clean.png`
+- combined comparison: `/Users/alexey/Documents/ChatGPT/благоприятные дни/blagopriyatny-den/design-audit/2026-08-21-height-comparison.png`
+- viewport: 419 × 847 CSS px
+- source: 838 × 1694 px at 2×, normalized to 419 × 847 px
+- implementation: 419 × 847 px at 1×
+- state: result screen, no saved personalization, two CTA, collapsed calendar, preferred date selected
 
-- Source screenshots: the four iPhone screenshots supplied on 2026-08-20.
-- Source result content crop: `/private/tmp/reference-result.png`.
-- Implementation result crop: `/private/tmp/mobile-result.png`.
-- Additional implementation captures: `/private/tmp/mobile-picker.png`, `/private/tmp/mobile-zodiac-raw.png`, `/private/tmp/mobile-birth.png`, `/private/tmp/mobile-transition.png`.
-- Comparison viewport: `440 × 828` CSS pixels, matching the usable Safari/Telegram content region in the supplied `1320 × 2868` screenshots at 3× scale.
-- States checked: start, intent picker, result with collapsed calendar, expanded calendar, zodiac step, birth-data step, reveal wave.
+## Full-view comparison
 
-## Full-view comparison evidence
+The source showed the score row partially hidden behind the personalization CTA. In the revised implementation the result content, score row, both CTA and calendar occupy separate vertical regions. At 419 × 847 the score ends at 379 px, actions occupy 561–673 px, and the calendar starts at 703 px.
 
-The supplied result screenshot and the new result capture were inspected together at the same `440 × 828` viewport. In the source, the calendar covered nearly the entire white CTA and the calendar header read as a separate grey layer. In the implementation, the CTA is fully visible directly above the calendar and the calendar uses one continuous dark-glass surface through its grabber area.
+The preferred date uses the same `status-excellent` state for both the score row and selected calendar day. Other calendar dates retain their absolute score colors.
 
-## Focused-region evidence
+## Required fidelity surfaces
 
-- **Main result:** top controls, moon, date, guidance, score, CTA and two calendar rows fit inside the visible browser viewport.
-- **Intent picker:** the sheet spans all 440 px; cards and search stay inside its padding.
-- **Zodiac sheet:** the sheet spans all 440 px and the 3-column grid remains centered without horizontal clipping.
-- **Birth fields:** date, time and city controls occupy the available sheet width; custom calendar/time icons remain inset and no native input overflows.
-- **Reveal transition:** the canvas and reel occupy the complete 440 px viewport; the radial star wave reaches both edges with no 402 px crop.
-- **Expanded calendar:** its grabber is fixed to the continuous glass surface and both month grids stay within the sheet width.
+- fonts and typography: existing Onest family and weights preserved; compact-height sizes reduce without clipping or single-word overflow;
+- spacing and layout rhythm: fixed action overlay replaced with a flex-reserved action region; no overlap remains at 419 × 847 or 419 × 680;
+- colors and tokens: preferred date consistently uses the existing purple brand token; red/yellow/gray/green thresholds remain unchanged for non-preferred dates;
+- image quality: existing moon and status assets are preserved without raster or crop changes;
+- copy and content: existing result and CTA copy are unchanged.
+
+## Focused verification
+
+- 419 × 847: score bottom 378.6 px, two-button actions top 561 px, calendar top 703 px;
+- 419 × 680: score bottom 302 px, two-button actions top 406 px, calendar top 545.9 px;
+- browser console: no warnings or errors;
+- preferred result: `result-score-row status-excellent`;
+- preferred calendar selection: `calendar-peek-day status-excellent selected`.
 
 ## Comparison history
 
-### Iteration 1
+1. P1: absolute-positioned CTA could cover the score row on a short visual viewport.
+2. Fix: mobile result card now owns the available height and actions use `margin-top: auto` in normal flex flow; stale `bottom` offsets were removed from compact breakpoints.
+3. Post-fix: both two-button mobile checks have at least 104 px between score and actions and at least 16 px between actions and calendar.
 
-- [P1] The result CTA was hidden behind the collapsed calendar on the short iOS visual viewport.
-- [P1] Date/time inputs used their intrinsic iOS width and overflowed the birth-data sheet.
-- [P2] Bottom sheets and reveal canvas were capped at 402 px on a 440 px device.
-- [P2] The calendar grabber gradient created a visibly separate top strip.
-- Fixes: anchored the CTA above the calendar, added mobile viewport-specific vertical rhythm, constrained input shells and native controls, made all mobile sheets/canvas full-width, and unified the calendar surface.
+## Findings
 
-### Iteration 2
-
-- Rechecked all affected states in the in-app browser at `440 × 828`.
-- No actionable P0, P1 or P2 layout defects remained.
-- Production compilation and TypeScript validation completed successfully.
-
-## Implementation checklist
-
-- [x] full-width mobile sheets
-- [x] safe birth-data input sizing
-- [x] CTA visible above collapsed calendar
-- [x] unified calendar glass background
-- [x] full-width reveal animation
-- [x] iOS visual-viewport vertical composition
-- [x] production build
-- [x] browser-rendered visual comparison
+No actionable P0/P1/P2 findings remain for the requested preferred-day state or height adaptation. The intentionally more compact typography on short screens is the mechanism that keeps all required controls visible.
 
 final result: passed

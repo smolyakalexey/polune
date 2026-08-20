@@ -72,13 +72,22 @@ test("method score combines phase and zodiac factors", () => {
   assert.deepEqual(mixed, { phaseScore: 100, zodiacScore: 55, score: 79 });
 });
 
-test("highest score wins before date proximity", () => {
+test("nearest day within seven points of the maximum is preferred", () => {
   const result = pickPreferredDay([
     { dateIso: "2026-08-15", score: 92 },
     { dateIso: "2026-08-16", score: 96 },
     { dateIso: "2026-08-17", score: 99 },
   ]);
-  assert.equal(result.dateIso, "2026-08-17");
+  assert.equal(result.dateIso, "2026-08-15");
+});
+
+test("a noticeably stronger later day beats a weak nearby day", () => {
+  const result = pickPreferredDay([
+    { dateIso: "2026-08-15", score: 84 },
+    { dateIso: "2026-08-16", score: 85 },
+    { dateIso: "2026-08-28", score: 94 },
+  ]);
+  assert.equal(result.dateIso, "2026-08-28");
 });
 
 test("nearest date breaks an exact score tie", () => {

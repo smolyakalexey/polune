@@ -815,12 +815,14 @@ function MoonPhaseIllustration({ angle, label }: { angle: number; label: string 
 function ResultCalendar({
   days,
   activeId,
+  preferredId,
   expanded,
   onExpandedChange,
   onSelect,
 }: {
   days: Day[];
   activeId: string;
+  preferredId: string;
   expanded: boolean;
   onExpandedChange: (expanded: boolean) => void;
   onSelect: (day: Day) => void;
@@ -863,18 +865,19 @@ function ResultCalendar({
 
       {!expanded ? (
         <div className="calendar-peek">
-          {peekDays.map((day) => (
-            <button
+          {peekDays.map((day) => {
+            const displayRating: Rating = day.id === preferredId ? "excellent" : day.rating;
+            return <button
               type="button"
               key={day.id}
-              className={`calendar-peek-day status-${day.rating} ${day.id === activeId ? "selected" : ""}`}
+              className={`calendar-peek-day status-${displayRating} ${day.id === activeId ? "selected" : ""}`}
               onClick={() => onSelect(day)}
               aria-label={`${day.longDate}: ${day.score}%`}
             >
               <span>{day.day}</span>
-              <small><img src={statusIcons[day.rating]} alt="" />{day.weekday}</small>
+              <small><img src={statusIcons[displayRating]} alt="" />{day.weekday}</small>
             </button>
-          ))}
+          })}
         </div>
       ) : (
         <div className="calendar-months">
@@ -885,20 +888,21 @@ function ResultCalendar({
                 {['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'].map((weekday) => <span key={weekday}>{weekday}</span>)}
               </div>
               <div className="calendar-month-grid">
-                {group.days.map((day, index) => (
-                  <button
+                {group.days.map((day, index) => {
+                  const displayRating: Rating = day.id === preferredId ? "excellent" : day.rating;
+                  return <button
                     type="button"
                     key={day.id}
-                    className={`status-${day.rating} ${day.id === activeId ? "selected" : ""}`}
+                    className={`status-${displayRating} ${day.id === activeId ? "selected" : ""}`}
                     onClick={() => onSelect(day)}
                     style={index === 0
                       ? { gridColumnStart: ((new Date(`${day.dateIso}T12:00:00Z`).getUTCDay() + 6) % 7) + 1 }
                       : undefined}
                   >
                     <span>{day.day}</span>
-                    <img src={statusIcons[day.rating]} alt="" />
+                    <img src={statusIcons[displayRating]} alt="" />
                   </button>
-                ))}
+                })}
               </div>
             </section>
           ))}
@@ -938,6 +942,8 @@ export default function Home() {
   const active = days.find((day) => day.id === activeId) ?? calendarDays.find((day) => day.id === activeId) ?? days[1];
   const resultCopy = buildResultCopy(intent, active);
   const isPreferredInResultWindow = days.some((day) => day.id === active.id && day.isPreferred);
+  const preferredId = pickPreferredDay(days).id;
+  const activeDisplayRating: Rating = isPreferredInResultWindow ? "excellent" : active.rating;
   const resultHeading = buildResultHeading(resultCopy.verdict, isPreferredInResultWindow);
   const resultAdvice = `${resultCopy.advice.charAt(0).toLowerCase()}${resultCopy.advice.slice(1)}`.replace(/[.!?]+$/, "");
   const pendingResultCopy = pendingReveal ? buildResultCopy(pendingReveal.intent, pendingReveal.day) : null;
@@ -1272,8 +1278,8 @@ export default function Home() {
               <p>{resultAdvice}</p>
             </div>
 
-            <button type="button" className={`result-score-row status-${active.rating}`} onClick={() => setScoreInfoOpen(true)}>
-              <img src={statusIcons[active.rating]} alt="" />
+            <button type="button" className={`result-score-row status-${activeDisplayRating}`} onClick={() => setScoreInfoOpen(true)}>
+              <img src={statusIcons[activeDisplayRating]} alt="" />
               <span>{active.score}% совпадение</span>
               <Info weight="regular" aria-hidden="true" />
             </button>
@@ -1341,6 +1347,7 @@ export default function Home() {
         <ResultCalendar
           days={calendarDays}
           activeId={active.id}
+          preferredId={preferredId}
           expanded={calendarExpanded}
           onExpandedChange={setCalendarExpanded}
           onSelect={(day) => {
