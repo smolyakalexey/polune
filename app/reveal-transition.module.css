@@ -106,7 +106,7 @@
   height: 84px;
   display: flex;
   align-items: center;
-  animation: reel-run 2.36s .26s linear infinite both;
+  animation: reel-run 2.77s .26s 1 both;
   will-change: transform;
 }
 
@@ -144,14 +144,19 @@
 }
 
 @keyframes reel-run {
-  from { transform: translateX(-46px); }
-  to { transform: translateX(-2898px); }
+  0% { transform: translateX(-46px); animation-timing-function: cubic-bezier(.48, 0, .82, .42); }
+  12% { transform: translateX(-600px); animation-timing-function: cubic-bezier(.14, .62, .24, 1); }
+  48% { transform: translateX(-4300px); animation-timing-function: linear; }
+  78% { transform: translateX(-7450px); animation-timing-function: cubic-bezier(.18, .78, .28, 1); }
+  92% { transform: translateX(-8350px); animation-timing-function: cubic-bezier(.16, .82, .28, 1); }
+  100% { transform: translateX(-8602px); }
 }
 
 @keyframes date-lock {
-  0% { opacity: .45; transform: scale(.94); filter: blur(4px); }
-  70% { opacity: 1; transform: scale(1.04); filter: blur(0); }
-  100% { opacity: 1; transform: scale(1); }
+  0% { opacity: .25; transform: translateY(12px) scale(.76); filter: blur(8px); }
+  48% { opacity: 1; transform: translateY(-4px) scale(1.07); filter: blur(0); }
+  74% { opacity: 1; transform: translateY(1px) scale(.985); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .counterCopy {
@@ -204,10 +209,26 @@
   line-height: 32px;
   letter-spacing: -.382px;
   text-wrap: balance;
+  opacity: 0;
+  transform: translateY(18px);
 }
 
 .finalCopy h2 { font-weight: 500; }
 .finalCopy p { margin-top: 5px; color: rgba(255,255,255,.58); }
+
+.transition:is([data-phase="reveal"], [data-phase="leave"]) .finalCopy h2 {
+  animation: result-copy-in .68s .04s cubic-bezier(.16, 1, .3, 1) both;
+}
+
+.transition:is([data-phase="reveal"], [data-phase="leave"]) .finalCopy p {
+  animation: result-copy-in .76s .16s cubic-bezier(.16, 1, .3, 1) both;
+}
+
+@keyframes result-copy-in {
+  0% { opacity: 0; transform: translateY(18px); filter: blur(3px); }
+  68% { opacity: 1; transform: translateY(-2px); filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0); }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .transition { transition: opacity 140ms ease; }
@@ -216,6 +237,7 @@
   .counterCopy { display: none; }
   .lockedDate strong { font-size: 68px; line-height: 64px; }
   .finalCopy { opacity: 1; transform: none; transition: none; }
+  .finalCopy h2, .finalCopy p { opacity: 1; transform: none; animation: none !important; }
 }
 
 @media (max-height: 720px) {

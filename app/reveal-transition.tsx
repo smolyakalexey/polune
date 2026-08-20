@@ -28,10 +28,10 @@ type TransitionStar = {
 const timeline: ReadonlyArray<readonly [number, RevealPhase]> = [
   [60, "ignite"],
   [260, "count"],
-  [1350, "wave"],
-  [3000, "lock"],
-  [3440, "lift"],
-  [4050, "reveal"],
+  [1450, "wave"],
+  [3030, "lock"],
+  [3470, "lift"],
+  [3980, "reveal"],
   [5180, "leave"],
 ];
 
@@ -72,7 +72,7 @@ function createTransitionStars(count: number): TransitionStar[] {
 }
 
 const transitionStars = createTransitionStars(1920);
-const reelDays = Array.from({ length: 62 }, (_, index) => index % 31 + 1);
+const reelDays = Array.from({ length: 124 }, (_, index) => index % 31 + 1);
 
 function clamp(value: number) {
   return Math.max(0, Math.min(1, value));
@@ -105,9 +105,13 @@ const StarCanvas = memo(function StarCanvas() {
     const draw = (now: number) => {
       const elapsed = now - startedAt;
       const density = clamp((elapsed - 60) / 1100);
-      const wave = clamp((elapsed - 1350) / 1650);
-      const calm = clamp((elapsed - 3000) / 1050);
-      const settle = clamp((elapsed - 4050) / 920);
+      const waveLinear = clamp((elapsed - 1450) / 1580);
+      const wave = Math.pow(waveLinear, .68);
+      const anticipationLinear = clamp((elapsed - 1120) / 330);
+      const anticipation = elapsed < 1450 ? Math.sin(anticipationLinear * Math.PI * .5) : 0;
+      const launch = Math.sin(clamp((elapsed - 1450) / 430) * Math.PI);
+      const calm = clamp((elapsed - 3030) / 950);
+      const settle = clamp((elapsed - 3980) / 980);
       context.clearRect(0, 0, width, height);
 
       for (const star of transitionStars) {
@@ -127,26 +131,34 @@ const StarCanvas = memo(function StarCanvas() {
         const distance = (ovalDistance - radialFront) / .14;
         const impulse = wave > 0 && wave < 1 ? Math.exp(-(distance * distance)) : 0;
         const crest = wave > 0 && wave < 1 ? Math.exp(-(distance * distance) * 4.4) : 0;
+        const echoFront = Math.max(0, radialFront - .42);
+        const echoDistance = (ovalDistance - echoFront) / .2;
+        const echo = wave > .08 && wave < 1 ? Math.exp(-(echoDistance * echoDistance)) * .28 : 0;
+        const sourceTension = Math.exp(-(ovalDistance * ovalDistance) * 7.5) * anticipation;
         const twinkle = .93 + Math.sin(now * .0018 + star.twinkleOffset) * .07;
         const waveScale = star.depth === 0 ? .78 : star.depth === 1 ? 1.05 : .55;
         const calmScale = star.depth === 0 ? .78 : star.depth === 1 ? .86 : .92;
         const finalScale = star.depth === 2 ? 1 + settle * .42 : 1 - settle * (star.depth === 0 ? .28 : .14);
-        const scale = (1 + density * .1 + impulse * waveScale)
+        const scale = (1 + density * .1 + impulse * waveScale + echo * .24 - sourceTension * .08)
           * (.32 + easedBirth * .68)
           * (1 - calm * (1 - calmScale))
           * finalScale;
         const settleOpacity = star.depth === 0 ? .36 : star.depth === 1 ? .52 : .62;
-        const densityBoost = impulse * (star.depth === 0 ? .16 : .09) + crest * (star.depth === 0 ? .08 : .14);
+        const densityBoost = impulse * (star.depth === 0 ? .16 : .09)
+          + crest * (star.depth === 0 ? .08 : .14)
+          + echo * .08
+          + sourceTension * .16;
         const opacity = Math.min(1, baseOpacity * easedBirth * twinkle * (1 + impulse * 1.15) + densityBoost)
           * (1 - calm * .16)
           * (1 - settle * (1 - settleOpacity));
-        const perspective = impulse * (.012 + star.depth * .01);
+        const perspective = (impulse + echo * .45) * (.012 + star.depth * .01) + launch * .004;
         const sourceX = normalizedX * width;
         const sourceY = normalizedY * height;
         const waveOriginX = width * sourceXRatio;
         const waveOriginY = height * sourceYRatio;
-        const x = waveOriginX + (sourceX - waveOriginX) * (1 + perspective);
-        const y = waveOriginY + (sourceY - waveOriginY) * (1 + perspective);
+        const tensionPull = 1 - sourceTension * .045;
+        const x = waveOriginX + (sourceX - waveOriginX) * (1 + perspective) * tensionPull;
+        const y = waveOriginY + (sourceY - waveOriginY) * (1 + perspective) * tensionPull;
         const radius = star.size * scale;
 
         const color = star.depth === 0 ? "195, 231, 238" : star.depth === 1 ? "215, 249, 252" : "188, 234, 241";
