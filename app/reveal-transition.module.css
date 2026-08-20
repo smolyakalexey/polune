@@ -32,8 +32,8 @@
 }
 
 .transition:is([data-phase="count"], [data-phase="wave"], [data-phase="lock"]) .spaceGlow {
-  opacity: .68;
-  transform: scale(1.12);
+  opacity: .82;
+  transform: scale(1.2);
 }
 
 .transition:is([data-phase="lift"], [data-phase="reveal"], [data-phase="leave"]) .spaceGlow {
@@ -41,7 +41,23 @@
   transform: scale(1.02);
 }
 
-.stars { position: absolute; inset: 0; overflow: hidden; }
+.stars {
+  position: absolute;
+  inset: -3%;
+  overflow: hidden;
+  transform: scale(.98);
+  transition: transform 1.2s cubic-bezier(.16, 1, .3, 1), filter 1.2s ease;
+}
+
+.transition:is([data-phase="count"], [data-phase="wave"], [data-phase="lock"]) .stars {
+  transform: scale(1.035);
+  filter: brightness(1.22) saturate(1.08);
+}
+
+.transition:is([data-phase="reveal"], [data-phase="leave"]) .stars {
+  transform: scale(1);
+  filter: brightness(.82);
+}
 
 .star {
   position: absolute;
@@ -52,8 +68,9 @@
   border-radius: 50%;
   opacity: 0;
   background: rgba(226, 255, 255, .92);
-  box-shadow: 0 0 5px rgba(121, 228, 255, .56);
+  box-shadow: 0 0 7px rgba(121, 228, 255, .72);
   transform: scale(.25);
+  will-change: transform, opacity, filter;
 }
 
 .baseStar {
@@ -66,101 +83,51 @@
 }
 
 .transition[data-phase="wave"] .star {
-  animation: star-wave 1.05s var(--wave-delay) ease-in-out both;
+  animation: star-ripple 1.08s var(--wave-delay) cubic-bezier(.22, .68, .2, 1) both;
 }
 
 .transition:is([data-phase="lock"], [data-phase="lift"]) .star {
   opacity: var(--star-opacity);
-  transform: scale(1);
-  filter: brightness(1.26);
+  transform: scale(1.28);
+  filter: brightness(1.48);
   transition: opacity .35s ease, filter .35s ease, transform .35s ease;
 }
 
 .transition:is([data-phase="reveal"], [data-phase="leave"]) .star {
-  opacity: calc(var(--star-opacity) * .54);
-  transform: scale(.82);
+  opacity: calc(var(--star-opacity) * .48);
+  transform: scale(.76);
   filter: brightness(.82);
   transition: opacity 1.05s ease, filter 1.05s ease, transform 1.05s ease;
 }
 
 @keyframes star-birth {
   0% { opacity: 0; transform: scale(.18); filter: brightness(.65); }
-  65% { opacity: var(--star-opacity); transform: scale(1.2); filter: brightness(1.85); }
-  100% { opacity: var(--star-opacity); transform: scale(1); filter: brightness(1); }
+  62% { opacity: 1; transform: scale(1.72); filter: brightness(2.3); }
+  100% { opacity: var(--star-opacity); transform: scale(1.2); filter: brightness(1.35); }
 }
 
-@keyframes star-wave {
-  0% { opacity: var(--star-opacity); transform: scale(1); filter: brightness(1); }
-  45% { opacity: 1; transform: scale(2.15); filter: brightness(2.2); box-shadow: 0 0 11px rgba(182, 248, 255, .9); }
-  100% { opacity: var(--star-opacity); transform: scale(1); filter: brightness(1); }
-}
-
-.waveField {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.transition[data-phase="wave"] .waveField { opacity: 1; }
-
-.waveField::before {
-  content: "";
-  position: absolute;
-  top: 66%;
-  right: -24%;
-  left: -24%;
-  height: 58px;
-  border-radius: 50%;
-  background: radial-gradient(ellipse, rgba(218, 253, 255, .34), rgba(103, 214, 235, .11) 42%, transparent 70%);
-  filter: blur(6px);
-  mix-blend-mode: screen;
-  animation: none;
-}
-
-.transition[data-phase="wave"] .waveField::before { animation: wave-band 1.42s cubic-bezier(.18, .7, .16, 1) both; }
-
-.waveGlow,
-.waveRing {
-  position: absolute;
-  top: 66%;
-  left: 50%;
-  border-radius: 50%;
-  transform: translate(-50%, -50%) scale(.15);
-}
-
-.waveGlow {
-  width: 120px;
-  height: 54px;
-  background: radial-gradient(ellipse, rgba(201, 250, 255, .34), transparent 68%);
-  filter: blur(8px);
-  animation: none;
-}
-
-.waveRing {
-  width: 118px;
-  height: 42px;
-  border: 1px solid rgba(221, 253, 255, .42);
-  box-shadow: 0 0 18px rgba(121, 226, 255, .28), inset 0 0 13px rgba(121, 226, 255, .14);
-  animation: none;
-}
-
-.transition[data-phase="wave"] .waveGlow { animation: wave-rise 1.45s cubic-bezier(.18, .7, .16, 1) both; }
-.transition[data-phase="wave"] .waveRing { animation: wave-rise 1.35s cubic-bezier(.18, .7, .16, 1) both; }
-.transition[data-phase="wave"] .waveRingDelay { animation-delay: .16s; opacity: .22; }
-
-@keyframes wave-rise {
-  0% { opacity: 0; transform: translate(-50%, -50%) scale(.14, .1); }
-  12% { opacity: 1; }
-  75% { opacity: .7; }
-  100% { opacity: 0; transform: translate(-50%, -540px) scale(4.8, 3.2); }
-}
-
-@keyframes wave-band {
-  0% { opacity: 0; transform: translateY(0) scaleX(.18); }
-  14% { opacity: .95; }
-  72% { opacity: .72; }
-  100% { opacity: 0; transform: translateY(-570px) scaleX(1.12); }
+@keyframes star-ripple {
+  0% {
+    opacity: var(--star-opacity);
+    transform: translate(0, 0) scale(1.2);
+    filter: brightness(1.35);
+  }
+  34% {
+    opacity: 1;
+    transform: translate(var(--wave-x), var(--wave-y)) scale(2.9, 1.45);
+    filter: brightness(2.65);
+    box-shadow: 0 0 15px rgba(182, 248, 255, .98);
+  }
+  62% {
+    opacity: .9;
+    transform: translate(0, 7px) scale(1.7, 2.25);
+    filter: brightness(1.85);
+  }
+  100% {
+    opacity: var(--star-opacity);
+    transform: translate(0, 0) scale(1.28);
+    filter: brightness(1.48);
+  }
 }
 
 .counterCluster {
@@ -191,27 +158,67 @@
   transform: translateY(0);
 }
 
-.counterValue {
+.reelViewport {
+  width: min(100vw, 402px);
+  min-height: 84px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
+}
+
+.dayReel {
+  width: 100%;
+  min-height: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  animation: reel-step 76ms linear both;
+}
+
+.dayReel span {
+  width: 20%;
+  color: rgba(255,255,255,.24);
+  font-size: 46px;
+  font-weight: 400;
+  line-height: 72px;
+  letter-spacing: -2px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  filter: blur(1.6px);
+  transform: scale(.76);
+}
+
+.dayReel .activeReelDay {
+  color: #fff;
+  font-size: 78px;
+  line-height: 84px;
+  letter-spacing: -3px;
+  filter: blur(0);
+  transform: scale(1);
+  text-shadow: 0 0 28px rgba(183, 242, 255, .2);
+}
+
+.lockedDate {
   min-height: 84px;
   display: flex;
   align-items: baseline;
   justify-content: center;
   gap: 12px;
-  animation: counter-tick 58ms ease-out both;
+  animation: date-lock .48s cubic-bezier(.16, 1, .3, 1) both;
   transition: gap .86s cubic-bezier(.16, 1, .3, 1);
 }
 
-.counterValue strong {
-  font-size: 82px;
+.lockedDate strong {
+  font-size: 78px;
   font-weight: 400;
   line-height: 84px;
   letter-spacing: -3px;
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 0 24px rgba(183, 242, 255, .12);
+  text-shadow: 0 0 28px rgba(183, 242, 255, .2);
   transition: font-size .86s cubic-bezier(.16, 1, .3, 1), line-height .86s cubic-bezier(.16, 1, .3, 1);
 }
 
-.counterValue span {
+.lockedDate span {
   font-size: 56px;
   font-weight: 400;
   line-height: 64px;
@@ -219,21 +226,19 @@
   transition: font-size .86s cubic-bezier(.16, 1, .3, 1), line-height .86s cubic-bezier(.16, 1, .3, 1);
 }
 
-.transition:is([data-phase="lift"], [data-phase="reveal"], [data-phase="leave"]) .counterValue { gap: 10px; }
-.transition:is([data-phase="lift"], [data-phase="reveal"], [data-phase="leave"]) .counterValue strong,
-.transition:is([data-phase="lift"], [data-phase="reveal"], [data-phase="leave"]) .counterValue span {
+.transition:is([data-phase="lift"], [data-phase="reveal"], [data-phase="leave"]) .lockedDate { gap: 10px; }
+.transition:is([data-phase="lift"], [data-phase="reveal"], [data-phase="leave"]) .lockedDate strong,
+.transition:is([data-phase="lift"], [data-phase="reveal"], [data-phase="leave"]) .lockedDate span {
   font-size: 68px;
   line-height: 64px;
 }
 
-.lockedValue { animation: counter-lock .48s cubic-bezier(.16, 1, .3, 1) both; }
-
-@keyframes counter-tick {
-  from { opacity: .42; transform: translateY(9px); filter: blur(3px); }
-  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+@keyframes reel-step {
+  from { opacity: .48; transform: translateX(-19px); filter: blur(2px); }
+  to { opacity: 1; transform: translateX(0); filter: blur(0); }
 }
 
-@keyframes counter-lock {
+@keyframes date-lock {
   0% { opacity: .45; transform: scale(.94); filter: blur(4px); }
   70% { opacity: 1; transform: scale(1.04); filter: blur(0); }
   100% { opacity: 1; transform: scale(1); }
@@ -287,46 +292,25 @@
 .finalCopy h2 { font-weight: 500; }
 .finalCopy p { margin-top: 5px; color: rgba(255,255,255,.58); }
 
-.progress {
-  position: absolute;
-  right: 24px;
-  bottom: max(22px, env(safe-area-inset-bottom));
-  left: 24px;
-  height: 2px;
-  overflow: hidden;
-  border-radius: 99px;
-  background: rgba(255,255,255,.08);
-  opacity: 0;
-  transition: opacity .3s ease;
-}
-
-.transition:is([data-phase="count"], [data-phase="wave"], [data-phase="lock"]) .progress { opacity: 1; }
-.progress span { height: 100%; display: block; background: rgba(191,246,255,.72); transform-origin: left; animation: progress-run 3s .36s linear both; }
-@keyframes progress-run { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-
 @media (prefers-reduced-motion: reduce) {
   .transition { transition: opacity 140ms ease; }
-  .star, .spaceGlow, .waveField, .progress { display: none; }
+  .star, .spaceGlow { display: none; }
   .counterCluster { top: 26.4%; opacity: 1; transform: none; transition: none; }
   .counterCopy { display: none; }
-  .counterValue strong { font-size: 68px; line-height: 64px; }
-  .counterValue span { font-size: 56px; line-height: 64px; }
+  .lockedDate strong, .lockedDate span { font-size: 68px; line-height: 64px; }
   .finalCopy { opacity: 1; transform: none; transition: none; }
 }
 
 @media (max-height: 720px) {
   .transition:is([data-phase="lift"], [data-phase="reveal"], [data-phase="leave"]) .counterCluster { top: 25%; }
-  .counterValue strong { font-size: 68px; line-height: 68px; }
-  .counterValue span { font-size: 50px; line-height: 58px; }
+  .lockedDate strong { font-size: 68px; line-height: 68px; }
+  .lockedDate span { font-size: 50px; line-height: 58px; }
   .finalCopy { top: 38%; }
   .finalCopy h2, .finalCopy p { font-size: 24px; line-height: 28px; }
 }
 
 @media (min-width: 560px) {
   .transition {
-    top: 24px;
-    bottom: 24px;
-    border-radius: 40px;
     box-shadow: 0 30px 90px rgba(25, 18, 58, .24);
   }
 }

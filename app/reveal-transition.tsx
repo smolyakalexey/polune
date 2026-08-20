@@ -22,17 +22,19 @@ type TransitionStar = {
   opacity: number;
   birthDelay: number;
   waveDelay: number;
+  waveX: number;
+  waveY: number;
   base: boolean;
 };
 
 const timeline: ReadonlyArray<readonly [number, RevealPhase]> = [
   [60, "ignite"],
-  [360, "count"],
-  [1700, "wave"],
-  [2850, "lock"],
-  [3300, "lift"],
-  [3900, "reveal"],
-  [4950, "leave"],
+  [260, "count"],
+  [1350, "wave"],
+  [3000, "lock"],
+  [3440, "lift"],
+  [4050, "reveal"],
+  [5180, "leave"],
 ];
 
 function createTransitionStars(count: number): TransitionStar[] {
@@ -50,16 +52,18 @@ function createTransitionStars(count: number): TransitionStar[] {
       id,
       left,
       top,
-      size: energy > .975 ? 3.4 : energy > .86 ? 2 : energy > .52 ? 1.2 : .72,
-      opacity: .28 + energy * .7,
-      birthDelay: random() * 1.25,
-      waveDelay: Math.max(0, (100 - top) / 100 * 1.05 + random() * .08),
-      base: id < 38,
+      size: energy > .985 ? 4.8 : energy > .92 ? 3 : energy > .62 ? 1.65 : .9,
+      opacity: .36 + energy * .64,
+      birthDelay: random() * 1.35,
+      waveDelay: Math.max(0, (100 - top) / 100 * .72 + random() * .055),
+      waveX: Math.sin(left / 100 * Math.PI * 5) * (14 + random() * 24),
+      waveY: -(10 + random() * 19),
+      base: id < 52,
     };
   });
 }
 
-const transitionStars = createTransitionStars(420);
+const transitionStars = createTransitionStars(760);
 
 const StarCloud = memo(function StarCloud() {
   return (
@@ -75,6 +79,8 @@ const StarCloud = memo(function StarCloud() {
             "--star-opacity": star.opacity,
             "--birth-delay": `${star.birthDelay}s`,
             "--wave-delay": `${star.waveDelay}s`,
+            "--wave-x": `${star.waveX}px`,
+            "--wave-y": `${star.waveY}px`,
           } as CSSProperties}
         />
       ))}
@@ -98,7 +104,7 @@ export default function RevealTransition({
   onComplete: () => void;
 }) {
   const [phase, setPhase] = useState<RevealPhase>("enter");
-  const [counterValue, setCounterValue] = useState("47281");
+  const [reelDay, setReelDay] = useState(1);
   const completeRef = useRef(onComplete);
 
   useEffect(() => {
@@ -120,7 +126,7 @@ export default function RevealTransition({
     const phaseIds = timeline.map(([delay, nextPhase]) =>
       window.setTimeout(() => setPhase(nextPhase), delay),
     );
-    const completeId = window.setTimeout(() => completeRef.current(), 5300);
+    const completeId = window.setTimeout(() => completeRef.current(), 5520);
 
     return () => {
       document.body.style.overflow = previousOverflow;
@@ -132,17 +138,15 @@ export default function RevealTransition({
   useEffect(() => {
     if (phase !== "count" && phase !== "wave") return;
 
-    let seed = phase === "count" ? 0x91ab2f : 0x410cd7;
     const intervalId = window.setInterval(() => {
-      seed = (seed * 1103515245 + 12345) >>> 0;
-      setCounterValue(String(10000 + (seed % 89999)));
-    }, 58);
+      setReelDay((day) => day === 31 ? 1 : day + 1);
+    }, 76);
     return () => window.clearInterval(intervalId);
   }, [phase]);
 
   const month = selectedDay.monthLabel.split(",")[0];
   const locked = phase === "lock" || phase === "lift" || phase === "reveal" || phase === "leave";
-  const displayedValue = locked ? selectedDay.day : counterValue;
+  const reelDays = [-2, -1, 0, 1, 2].map((offset) => ((reelDay + offset + 30) % 31) + 1);
 
   return (
     <div
@@ -155,16 +159,20 @@ export default function RevealTransition({
       <div className={styles.spaceGlow} aria-hidden="true" />
       <StarCloud />
 
-      <div className={styles.waveField} aria-hidden="true">
-        <i className={styles.waveGlow} />
-        <i className={styles.waveRing} />
-        <i className={`${styles.waveRing} ${styles.waveRingDelay}`} />
-      </div>
-
       <div className={styles.counterCluster} aria-hidden="true">
-        <div className={`${styles.counterValue} ${locked ? styles.lockedValue : ""}`} key={displayedValue}>
-          <strong>{displayedValue}</strong>
-          {locked && <span>{month}</span>}
+        <div className={styles.reelViewport}>
+          {locked ? (
+            <div className={styles.lockedDate}>
+              <strong>{selectedDay.day}</strong>
+              <span>{month}</span>
+            </div>
+          ) : (
+            <div className={styles.dayReel} key={reelDay}>
+              {reelDays.map((day, index) => (
+                <span className={index === 2 ? styles.activeReelDay : ""} key={`${day}-${index}`}>{day}</span>
+              ))}
+            </div>
+          )}
         </div>
         <p className={styles.counterCopy}>
           <span>{locked ? "лучший день найден" : "определяем лучший день, чтобы"}</span>
@@ -176,8 +184,6 @@ export default function RevealTransition({
         <h2>{resultHeading}</h2>
         <p>{resultAdvice}</p>
       </div>
-
-      <div className={styles.progress} aria-hidden="true"><span /></div>
     </div>
   );
 }

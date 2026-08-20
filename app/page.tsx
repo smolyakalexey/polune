@@ -1144,16 +1144,18 @@ export default function Home() {
 
       </div>
 
-      <ResultCalendar
-        days={calendarDays}
-        activeId={active.id}
-        expanded={calendarExpanded}
-        onExpandedChange={setCalendarExpanded}
-        onSelect={(day) => {
-          chooseDay(day);
-          if (calendarExpanded) setCalendarExpanded(false);
-        }}
-      />
+      {!pendingReveal && (
+        <ResultCalendar
+          days={calendarDays}
+          activeId={active.id}
+          expanded={calendarExpanded}
+          onExpandedChange={setCalendarExpanded}
+          onSelect={(day) => {
+            chooseDay(day);
+            if (calendarExpanded) setCalendarExpanded(false);
+          }}
+        />
+      )}
 
       {pickerOpen && <IntentPicker current={intent} showSelection={hasChosenIntent} onClose={() => setPickerOpen(false)} onSelect={chooseIntent} />}
       {pendingReveal && (
