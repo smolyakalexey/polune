@@ -1,7 +1,6 @@
 "use client";
 
 import { memo, useEffect, useRef, useState } from "react";
-import type { CSSProperties } from "react";
 import styles from "./reveal-transition.module.css";
 
 type RevealPhase = "enter" | "ignite" | "count" | "wave" | "lock" | "lift" | "reveal" | "leave";
@@ -21,9 +20,9 @@ type TransitionStar = {
   size: number;
   opacity: number;
   birthDelay: number;
-  waveDelay: number;
   waveX: number;
   waveY: number;
+  glow: boolean;
   base: boolean;
 };
 
@@ -55,37 +54,101 @@ function createTransitionStars(count: number): TransitionStar[] {
       size: energy > .985 ? 4.8 : energy > .92 ? 3 : energy > .62 ? 1.65 : .9,
       opacity: .36 + energy * .64,
       birthDelay: random() * 1.35,
-      waveDelay: Math.max(0, (100 - top) / 100 * .72 + random() * .055),
       waveX: Math.sin(left / 100 * Math.PI * 5) * (14 + random() * 24),
       waveY: -(10 + random() * 19),
+      glow: energy > .965,
       base: id < 52,
     };
   });
 }
 
-const transitionStars = createTransitionStars(760);
+const transitionStars = createTransitionStars(680);
+const reelDays = Array.from({ length: 62 }, (_, index) => index % 31 + 1);
 
-const StarCloud = memo(function StarCloud() {
-  return (
-    <div className={styles.stars} aria-hidden="true">
-      {transitionStars.map((star) => (
-        <i
-          className={`${styles.star} ${star.base ? styles.baseStar : ""}`}
-          key={star.id}
-          style={{
-            "--star-left": `${star.left}%`,
-            "--star-top": `${star.top}%`,
-            "--star-size": `${star.size}px`,
-            "--star-opacity": star.opacity,
-            "--birth-delay": `${star.birthDelay}s`,
-            "--wave-delay": `${star.waveDelay}s`,
-            "--wave-x": `${star.waveX}px`,
-            "--wave-y": `${star.waveY}px`,
-          } as CSSProperties}
-        />
-      ))}
-    </div>
-  );
+function clamp(value: number) {
+  return Math.max(0, Math.min(1, value));
+}
+
+const StarCanvas = memo(function StarCanvas() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const context = canvas.getContext("2d", { alpha: true });
+    if (!context) return;
+
+    let width = 0;
+    let height = 0;
+    let frameId = 0;
+    const startedAt = performance.now();
+
+    const resize = () => {
+      const bounds = canvas.getBoundingClientRect();
+      const ratio = Math.min(window.devicePixelRatio || 1, 1.5);
+      width = bounds.width;
+      height = bounds.height;
+      canvas.width = Math.round(width * ratio);
+      canvas.height = Math.round(height * ratio);
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    };
+
+    const draw = (now: number) => {
+      const elapsed = now - startedAt;
+      const density = clamp((elapsed - 60) / 1380);
+      const wave = clamp((elapsed - 1350) / 1650);
+      const waveFront = 1.1 - wave * 1.22;
+      const settle = clamp((elapsed - 4050) / 920);
+      context.clearRect(0, 0, width, height);
+
+      for (const star of transitionStars) {
+        const birth = clamp((elapsed - 60 - star.birthDelay * 1000) / 420);
+        const baseOpacity = star.base ? star.opacity * .34 : star.opacity * density;
+        if (birth <= 0 || baseOpacity <= .01) continue;
+
+        const easedBirth = 1 - Math.pow(1 - birth, 3);
+        const normalizedY = star.top / 100;
+        const distance = (normalizedY - waveFront) / .082;
+        const impulse = wave > 0 && wave < 1 ? Math.exp(-(distance * distance)) : 0;
+        const twinkle = .9 + Math.sin(now * .0022 + star.id * 1.73) * .1;
+        const calmScale = 1.18 + density * .28;
+        const scale = (calmScale + impulse * 1.9) * (.3 + easedBirth * .7) * (1 - settle * .38);
+        const opacity = Math.min(1, baseOpacity * easedBirth * twinkle * (1 + impulse * 1.35)) * (1 - settle * .5);
+        const x = star.left / 100 * width + star.waveX * impulse;
+        const y = star.top / 100 * height + star.waveY * impulse;
+        const radius = star.size * scale;
+
+        context.fillStyle = `rgba(224, 251, 255, ${opacity})`;
+        if (star.glow) {
+          context.shadowColor = `rgba(145, 235, 255, ${Math.min(.9, opacity)})`;
+          context.shadowBlur = 5 + impulse * 7;
+        }
+
+        if (radius < 1.25) {
+          context.fillRect(x, y, Math.max(.75, radius), Math.max(.75, radius));
+        } else {
+          context.beginPath();
+          context.ellipse(x, y, radius * (1 + impulse * .65), radius * (1 - impulse * .3), 0, 0, Math.PI * 2);
+          context.fill();
+        }
+
+        if (star.glow) context.shadowBlur = 0;
+      }
+
+      if (elapsed < 5600) frameId = window.requestAnimationFrame(draw);
+    };
+
+    resize();
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(canvas);
+    frameId = window.requestAnimationFrame(draw);
+    return () => {
+      resizeObserver.disconnect();
+      window.cancelAnimationFrame(frameId);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className={styles.starCanvas} aria-hidden="true" />;
 });
 
 export default function RevealTransition({
@@ -104,7 +167,6 @@ export default function RevealTransition({
   onComplete: () => void;
 }) {
   const [phase, setPhase] = useState<RevealPhase>("enter");
-  const [reelDay, setReelDay] = useState(1);
   const completeRef = useRef(onComplete);
 
   useEffect(() => {
@@ -135,18 +197,8 @@ export default function RevealTransition({
     };
   }, []);
 
-  useEffect(() => {
-    if (phase !== "count" && phase !== "wave") return;
-
-    const intervalId = window.setInterval(() => {
-      setReelDay((day) => day === 31 ? 1 : day + 1);
-    }, 76);
-    return () => window.clearInterval(intervalId);
-  }, [phase]);
-
   const month = selectedDay.monthLabel.split(",")[0];
   const locked = phase === "lock" || phase === "lift" || phase === "reveal" || phase === "leave";
-  const reelDays = [-2, -1, 0, 1, 2].map((offset) => ((reelDay + offset + 30) % 31) + 1);
 
   return (
     <div
@@ -157,7 +209,7 @@ export default function RevealTransition({
       aria-label={`определяем лучший день, чтобы ${intentLabel}`}
     >
       <div className={styles.spaceGlow} aria-hidden="true" />
-      <StarCloud />
+      <StarCanvas />
 
       <div className={styles.counterCluster} aria-hidden="true">
         <div className={styles.reelViewport}>
@@ -167,10 +219,10 @@ export default function RevealTransition({
               <span>{month}</span>
             </div>
           ) : (
-            <div className={styles.dayReel} key={reelDay}>
-              {reelDays.map((day, index) => (
-                <span className={index === 2 ? styles.activeReelDay : ""} key={`${day}-${index}`}>{day}</span>
-              ))}
+            <div className={styles.dayReel}>
+              <div className={styles.dayReelTrack}>
+                {reelDays.map((day, index) => <span key={`rail-${index}`}>{day}</span>)}
+              </div>
             </div>
           )}
         </div>
