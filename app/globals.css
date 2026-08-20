@@ -1052,11 +1052,14 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .profile-secondary { margin-top: 6px; color: var(--ink); background: transparent; }
 .profile-inline-error { margin: 12px 4px -8px; color: #ff8175; font-size: 13px; line-height: 18px; text-align: center; }
 .profile-back-link { width: 100%; min-height: 44px; margin-top: 2px; border: 0; color: #fff; background: transparent; font-size: 16px; font-weight: 500; cursor: pointer; }
-.profile-field { display: grid; gap: 7px; margin-top: 14px; }
+.profile-field { min-width: 0; display: grid; gap: 7px; margin-top: 14px; }
 .profile-field > span { color: var(--result-secondary); font-size: 13px; font-weight: 500; line-height: 18px; }
 .profile-field small { color: var(--muted); font-size: 12px; font-weight: 400; }
 .profile-field input {
+  display: block;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 54px;
   padding: 0 15px;
   border: 1px solid var(--result-border);
@@ -1064,11 +1067,14 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   outline: 0;
   color: var(--ink);
   background: var(--result-soft);
+  -webkit-appearance: none;
+  appearance: none;
+  font-family: inherit;
   font-size: 16px;
 }
 .profile-field input:focus { border-color: var(--brand-mid); box-shadow: 0 0 0 3px rgba(98, 99, 245, .12); }
-.profile-input-shell { position: relative; display: block; }
-.profile-input-shell input { padding-right: 48px; }
+.profile-input-shell { position: relative; display: block; width: 100%; min-width: 0; max-width: 100%; }
+.profile-input-shell input { width: 100%; min-width: 0; max-width: 100%; padding-right: 48px; }
 .profile-input-shell > svg {
   position: absolute;
   top: 50%;
@@ -1532,7 +1538,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   overflow: hidden;
   border-radius: 32px 32px 0 0;
   color: #fff;
-  background: linear-gradient(180deg, rgba(31,31,32,.42), rgba(18,18,19,.3));
+  background: linear-gradient(180deg, rgba(31,32,33,.78), rgba(11,13,14,.9));
   border: 1px solid rgba(255,255,255,.08);
   border-bottom: 0;
   box-shadow: 0 -18px 46px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.035);
@@ -1568,7 +1574,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   display: grid;
   place-items: start center;
   border-radius: 31px 31px 0 0;
-  background: linear-gradient(180deg, rgba(40,40,42,.58), rgba(28,28,30,.18));
+  background: transparent;
   cursor: ns-resize;
   touch-action: none;
 }
@@ -1740,4 +1746,116 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .result-guidance h2, .result-guidance p { font-size: 24px; line-height: 28px; }
   .result-score-row { margin-top: 14px; }
   .result-calendar-action { top: auto; bottom: 160px; min-height: 56px; }
+}
+
+/* Real mobile browsers expose a wider, shorter visual viewport than the
+   desktop device shell. Keep every interactive layer inside that viewport. */
+@media (max-width: 559px) {
+  .app-shell,
+  .start-screen,
+  .result-screen {
+    width: 100%;
+    max-width: none;
+  }
+
+  .start-content {
+    min-height: 100dvh;
+  }
+
+  .start-screen .start-controls {
+    top: max(18px, env(safe-area-inset-top));
+  }
+
+  .start-screen .start-logo {
+    top: clamp(220px, 33dvh, 280px);
+  }
+
+  .start-screen .start-prompt {
+    top: clamp(268px, 39dvh, 328px);
+  }
+
+  .start-screen .start-primary {
+    bottom: max(18px, calc(env(safe-area-inset-bottom) + 8px));
+  }
+
+  .start-screen.theme-dark .picker,
+  .profile-sheet,
+  .score-sheet,
+  .result-screen .score-sheet {
+    width: 100%;
+    max-width: none;
+  }
+
+  .profile-sheet {
+    max-height: calc(100dvh - max(8px, env(safe-area-inset-top)));
+  }
+
+  .result-screen {
+    height: 100dvh;
+    min-height: 0;
+  }
+
+  .result-content {
+    height: 100dvh;
+    min-height: 0;
+    padding: 58px 18px 214px;
+  }
+
+  .result-topbar {
+    top: max(18px, env(safe-area-inset-top));
+    right: 18px;
+    left: 18px;
+  }
+
+  .moon-stage {
+    height: 112px;
+  }
+
+  .phase-moon {
+    width: 116px;
+    height: 112px;
+  }
+
+  .personalization-bubble {
+    top: 82px;
+    left: calc(50% - 20px);
+  }
+
+  .result-date-line {
+    margin-top: 8px;
+  }
+
+  .result-date-line strong {
+    font-size: clamp(52px, 14vw, 62px);
+    line-height: .96;
+  }
+
+  .result-guidance {
+    width: min(310px, calc(100vw - 52px));
+    margin-top: clamp(16px, 2.4dvh, 22px);
+  }
+
+  .result-guidance h2,
+  .result-guidance p {
+    font-size: clamp(22px, 6.2vw, 26px);
+    line-height: 1.13;
+  }
+
+  .result-score-row {
+    margin-top: clamp(8px, 1.6dvh, 14px);
+  }
+
+  .result-calendar-action {
+    top: auto;
+    right: 18px;
+    bottom: 154px;
+    left: 18px;
+    min-height: 56px;
+  }
+
+  .result-calendar {
+    width: 100%;
+    border-right: 0;
+    border-left: 0;
+  }
 }

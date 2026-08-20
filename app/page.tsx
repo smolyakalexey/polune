@@ -235,7 +235,7 @@ const previewIntents: Intent[] = [
   intents.find((intent) => intent.id === "conversation")!,
   intents.find((intent) => intent.id === "trip")!,
   intents.find((intent) => intent.id === "skincare")!,
-  { id: "catalog-preview", label: "найти дело в каталоге", group: "каталог", Icon: MagnifyingGlass, archetype: "planning", zodiacProfile: "learning" },
+  { id: "catalog-preview", label: "найти дело в каталоге", group: "каталог", keywords: [], Icon: MagnifyingGlass, archetype: "planning", zodiacProfile: "learning" },
 ];
 
 const ratingLabels: Record<Rating, string> = {

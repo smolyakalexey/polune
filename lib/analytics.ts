@@ -9,6 +9,7 @@ export type AnalyticsEventName =
   | "result_shared"
   | "feedback_helpful"
   | "feedback_not_helpful"
+  | "personalization_completed"
   | "feedback_form_opened"
   | "feedback_form_submitted";
 
