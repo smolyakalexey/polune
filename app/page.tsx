@@ -8,6 +8,7 @@ import Fuse from "fuse.js";
 import { EclipticGeoMoon, MoonPhase } from "astronomy-engine";
 import {
   angularDistance,
+  annotatePreferredDays,
   archetypeTargets,
   calculateMethodScore,
   METHOD_VERSION,
@@ -81,6 +82,7 @@ type Day = {
   phaseScore: number;
   zodiacScore: number;
   rating: Rating;
+  isPreferred: boolean;
   moonPhaseAngle: number;
   moonPhaseLabel: string;
   targetPhaseAngle: number;
@@ -217,11 +219,7 @@ function buildCurrentWeek(intent: Pick<Intent, "archetype" | "zodiacProfile">, c
       zodiacSignName: zodiacSignNames[zodiacSignIndex(lunarLongitude)],
     };
   });
-  const preferredId = pickPreferredDay(calculatedDays).id;
-  return calculatedDays.map((day) => ({
-    ...day,
-    rating: day.id === preferredId ? "excellent" : ratingForScore(day.score),
-  }));
+  return annotatePreferredDays(calculatedDays);
 }
 
 const intentSearch = new Fuse(intents, {
@@ -939,10 +937,11 @@ export default function Home() {
 
   const active = days.find((day) => day.id === activeId) ?? calendarDays.find((day) => day.id === activeId) ?? days[1];
   const resultCopy = buildResultCopy(intent, active);
-  const resultHeading = buildResultHeading(resultCopy.verdict, active.rating === "excellent");
+  const isPreferredInResultWindow = days.some((day) => day.id === active.id && day.isPreferred);
+  const resultHeading = buildResultHeading(resultCopy.verdict, isPreferredInResultWindow);
   const resultAdvice = `${resultCopy.advice.charAt(0).toLowerCase()}${resultCopy.advice.slice(1)}`.replace(/[.!?]+$/, "");
   const pendingResultCopy = pendingReveal ? buildResultCopy(pendingReveal.intent, pendingReveal.day) : null;
-  const pendingResultHeading = pendingResultCopy ? buildResultHeading(pendingResultCopy.verdict, true) : "";
+  const pendingResultHeading = pendingResultCopy ? buildResultHeading(pendingResultCopy.verdict, pendingReveal?.day.isPreferred ?? false) : "";
   const pendingResultAdvice = pendingResultCopy
     ? `${pendingResultCopy.advice.charAt(0).toLowerCase()}${pendingResultCopy.advice.slice(1)}`.replace(/[.!?]+$/, "")
     : "";

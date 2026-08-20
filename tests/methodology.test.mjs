@@ -9,6 +9,7 @@ import {
   calculateMethodScore,
   calculatePhaseScore,
   calculateZodiacScore,
+  annotatePreferredDays,
   pickPreferredDay,
   ratingForScore,
   zodiacSignIndex,
@@ -29,11 +30,28 @@ test("phase score is focused around the target and continuous", () => {
 test("status thresholds are stable", () => {
   assert.equal(ratingForScore(100), "good");
   assert.equal(ratingForScore(94), "good");
-  assert.equal(ratingForScore(93), "caution");
+  assert.equal(ratingForScore(92), "good");
+  assert.equal(ratingForScore(91), "caution");
   assert.equal(ratingForScore(75), "caution");
   assert.equal(ratingForScore(74), "neutral");
   assert.equal(ratingForScore(35), "neutral");
   assert.equal(ratingForScore(34), "low");
+});
+
+test("status color depends on score, not on the comparison window", () => {
+  const shortWindow = annotatePreferredDays([
+    { dateIso: "2026-08-23", score: 80 },
+    { dateIso: "2026-08-24", score: 76 },
+  ]);
+  const longWindow = annotatePreferredDays([
+    { dateIso: "2026-08-23", score: 80 },
+    { dateIso: "2026-09-02", score: 94 },
+  ]);
+
+  assert.equal(shortWindow[0].rating, "caution");
+  assert.equal(longWindow[0].rating, "caution");
+  assert.equal(shortWindow[0].isPreferred, true);
+  assert.equal(longWindow[0].isPreferred, false);
 });
 
 test("zodiac longitude wraps into twelve signs", () => {
@@ -97,7 +115,7 @@ test("catalog calendars stay varied across rolling 14-day windows", () => {
       if (isIncreasing || isDecreasing) monotonicWindows += 1;
 
       assert.ok(ratings.some((rating) => rating !== "low"), `${intent.id} has an all-low window at ${index}`);
-      assert.ok(ratings.filter((rating) => rating === "good").length <= 5, `${intent.id} has too many good days at ${index}`);
+      assert.ok(ratings.filter((rating) => rating === "good").length <= 7, `${intent.id} has too many good days at ${index}`);
       assert.ok(Math.max(...window) - Math.min(...window) >= 12, `${intent.id} has a flat score window at ${index}`);
     }
   }

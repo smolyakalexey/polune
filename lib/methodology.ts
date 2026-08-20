@@ -68,7 +68,7 @@ export function calculateMethodScore(
 }
 
 export function ratingForScore(score: number): Rating {
-  if (score >= 94) return "good";
+  if (score >= 92) return "good";
   if (score >= 75) return "caution";
   if (score >= 35) return "neutral";
   return "low";
@@ -79,4 +79,13 @@ export function pickPreferredDay<T extends { score: number; dateIso: string }>(d
   const maximum = Math.max(...days.map((day) => day.score));
   const maximumDays = days.filter((day) => day.score === maximum);
   return [...maximumDays].sort((left, right) => left.dateIso.localeCompare(right.dateIso))[0];
+}
+
+export function annotatePreferredDays<T extends { score: number; dateIso: string }>(days: T[]) {
+  const preferredDate = pickPreferredDay(days).dateIso;
+  return days.map((day) => ({
+    ...day,
+    rating: ratingForScore(day.score),
+    isPreferred: day.dateIso === preferredDate,
+  }));
 }
