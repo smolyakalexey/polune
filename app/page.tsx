@@ -28,7 +28,7 @@ import RevealTransition from "./reveal-transition";
 import type { Icon } from "@phosphor-icons/react";
 import {
   AirplaneTilt,
-  ArrowLeft,
+  ArrowCircleUpLeft,
   Bed,
   BookOpenText,
   Briefcase,
@@ -45,7 +45,6 @@ import {
   Info,
   MagicWand,
   MagnifyingGlass,
-  Moon,
   MoonStars,
   MusicNotes,
   PaintBrush,
@@ -59,7 +58,6 @@ import {
   TrendUp,
   ThumbsDown,
   ThumbsUp,
-  UserCircle,
   UsersThree,
   Wrench,
   X,
@@ -292,19 +290,9 @@ function StartLogo() {
   );
 }
 
-function StartControls({ theme, onToggleTheme }: { theme: "dark" | "light"; onToggleTheme: () => void }) {
+function StartControls() {
   return (
     <header className="start-controls">
-      <button
-        className="start-header-action"
-        type="button"
-        onClick={onToggleTheme}
-        aria-label={theme === "dark" ? "включить светлую тему" : "включить тёмную тему"}
-      >
-        {theme === "dark"
-          ? <img src="/figma/start-sun.svg" alt="" />
-          : <Moon weight="regular" aria-hidden="true" />}
-      </button>
       <button className="start-header-action" type="button" aria-label="личный профиль — скоро" disabled>
         <img src="/figma/start-user.svg" alt="" />
       </button>
@@ -610,27 +598,44 @@ function PersonalizationSheet({
   );
 }
 
-const starSeeds = Array.from({ length: 74 }, (_, index) => ({
-  left: (index * 47 + 13) % 101,
-  top: (index * 83 + 7) % 101,
-  size: index % 13 === 0 ? 2.5 : index % 5 === 0 ? 1.7 : 1,
-  delay: -((index * 0.73) % 6),
-  duration: 3.8 + (index % 7) * 0.54,
-}));
+function createStarSeeds(count: number) {
+  let seed = 0x51f15e;
+  const random = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+  return Array.from({ length: count }, (_, index) => {
+    const intensity = random();
+    return {
+      left: random() * 100,
+      top: random() * 100,
+      size: intensity > .965 ? 4.2 : intensity > .86 ? 2.5 : intensity > .58 ? 1.45 : .8,
+      opacity: .26 + intensity * .72,
+      delay: -(random() * 7),
+      duration: 3.4 + random() * 6.8,
+      bright: intensity > .92,
+      flare: intensity > .982,
+      index,
+    };
+  });
+}
+
+const starSeeds = createStarSeeds(268);
 
 function Starfield() {
   return (
     <div className="starfield" aria-hidden="true">
       <div className="star-nebula" />
-      {starSeeds.map((star, index) => (
+      {starSeeds.map((star) => (
         <i
-          className={index % 9 === 0 ? "star star-bright" : "star"}
-          key={index}
+          className={`star ${star.bright ? "star-bright" : ""} ${star.flare ? "star-flare" : ""}`}
+          key={star.index}
           style={{
             left: `${star.left}%`,
             top: `${star.top}%`,
             width: star.size,
             height: star.size,
+            opacity: star.opacity,
             animationDelay: `${star.delay}s`,
             animationDuration: `${star.duration}s`,
           }}
@@ -758,7 +763,7 @@ function ResultCalendar({
 
 export default function Home() {
   const [screen, setScreen] = useState<"start" | "result">("start");
-  const [startTheme, setStartTheme] = useState<"dark" | "light">("dark");
+  const startTheme = "dark" as const;
   const [pendingReveal, setPendingReveal] = useState<{ intent: Intent; day: Day } | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [intent, setIntent] = useState(intents[0]);
@@ -795,18 +800,9 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const savedTheme = window.localStorage.getItem("polune-theme");
-    const preferredTheme = savedTheme === "dark" || savedTheme === "light"
-      ? savedTheme
-      : window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    const frameId = window.requestAnimationFrame(() => setStartTheme(preferredTheme));
-    return () => window.cancelAnimationFrame(frameId);
-  }, []);
-
-  useEffect(() => {
-    const themeColor = screen === "start" && startTheme === "dark" ? "#020002" : "#ffffff";
+    const themeColor = "#020002";
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", themeColor);
-  }, [screen, startTheme]);
+  }, [screen]);
 
   useEffect(() => {
     const restoreFromUrl = () => {
@@ -884,14 +880,6 @@ export default function Home() {
       archetype: nextIntent.archetype,
       selectedDate: nextDay.dateIso,
       score: nextDay.score,
-    });
-  }
-
-  function toggleStartTheme() {
-    setStartTheme((currentTheme) => {
-      const nextTheme = currentTheme === "dark" ? "light" : "dark";
-      window.localStorage.setItem("polune-theme", nextTheme);
-      return nextTheme;
     });
   }
 
@@ -988,10 +976,10 @@ export default function Home() {
       <main className={`app-shell start-screen theme-${startTheme}`} id="top">
         <Starfield />
         <div className="start-content">
-          <StartControls theme={startTheme} onToggleTheme={toggleStartTheme} />
+          <StartControls />
           <StartLogo />
           <div className="start-prompt">
-            <h1>узнать благоприятный<br />день, чтобы</h1>
+            <h1>узнать<br />благоприятный<br />день, чтобы</h1>
             <IntentLine
               intent={previewIntents[previewIndex]}
               animated={!pickerOpen}
@@ -1034,11 +1022,11 @@ export default function Home() {
             }}
             aria-label="Вернуться и выбрать другое дело"
           >
-            <ArrowLeft weight="regular" aria-hidden="true" />
+            <img src="/figma/result-back.svg" alt="" />
           </button>
           <span />
           <button className="result-icon-button" type="button" onClick={shareResult} aria-label="Поделиться результатом">
-            {shared ? <Check size={22} weight="bold" /> : <img src="/figma/share.svg" alt="" />}
+            {shared ? <Check size={22} weight="bold" /> : <img src="/figma/result-share.svg" alt="" />}
           </button>
         </header>
 
@@ -1047,7 +1035,7 @@ export default function Home() {
             <MoonPhaseIllustration angle={active.moonPhaseAngle} label={active.moonPhaseLabel} />
             {personalizationBubbleVisible && (
               <button type="button" className="personalization-bubble" onClick={() => setPersonalizationOpen(true)}>
-                <UserCircle weight="fill" aria-hidden="true" />
+                <img src="/figma/personalization-calendar.png" alt="" />
                 {personalization ? `для вас · ${personalization.zodiac}` : "персонализировать под вас"}
               </button>
             )}
@@ -1058,8 +1046,11 @@ export default function Home() {
           </div>
 
           <div className="result-guidance">
-            <h1>{resultCopy.verdict}</h1>
-            <p><intent.Icon weight="regular" aria-hidden="true" />{resultCopy.advice}</p>
+            <p>
+              <strong>{active.rating === "excellent" ? "лучший " : ""}{resultCopy.verdict}.</strong>{" "}
+              <ArrowCircleUpLeft className="result-guidance-icon" weight="regular" aria-hidden="true" />{" "}
+              <span>{resultCopy.advice}</span>
+            </p>
           </div>
 
           <button type="button" className={`result-score-row status-${active.rating}`} onClick={() => setScoreInfoOpen(true)}>
