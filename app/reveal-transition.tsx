@@ -20,9 +20,8 @@ type TransitionStar = {
   size: number;
   opacity: number;
   birthDelay: number;
-  waveX: number;
-  waveY: number;
-  glow: boolean;
+  depth: 0 | 1 | 2;
+  twinkleOffset: number;
   base: boolean;
 };
 
@@ -46,23 +45,33 @@ function createTransitionStars(count: number): TransitionStar[] {
   return Array.from({ length: count }, (_, id) => {
     const left = random() * 100;
     const top = random() * 100;
-    const energy = random();
+    const depth: 0 | 1 | 2 = id < count * .75 ? 0 : id < count * .965 ? 1 : 2;
+    const sizeSeed = random();
+    const size = depth === 0
+      ? .38 + sizeSeed * .52
+      : depth === 1
+        ? .75 + sizeSeed * .78
+        : 1.5 + sizeSeed * 1.35;
+    const opacity = depth === 0
+      ? .32 + random() * .36
+      : depth === 1
+        ? .5 + random() * .4
+        : .26 + random() * .34;
     return {
       id,
       left,
       top,
-      size: energy > .985 ? 4.8 : energy > .92 ? 3 : energy > .62 ? 1.65 : .9,
-      opacity: .36 + energy * .64,
-      birthDelay: random() * 1.35,
-      waveX: Math.sin(left / 100 * Math.PI * 5) * (14 + random() * 24),
-      waveY: -(10 + random() * 19),
-      glow: energy > .965,
-      base: id < 52,
+      size,
+      opacity,
+      birthDelay: random() * .72,
+      depth,
+      twinkleOffset: random() * Math.PI * 2,
+      base: id < 58,
     };
   });
 }
 
-const transitionStars = createTransitionStars(680);
+const transitionStars = createTransitionStars(780);
 const reelDays = Array.from({ length: 62 }, (_, index) => index % 31 + 1);
 
 function clamp(value: number) {
@@ -95,44 +104,56 @@ const StarCanvas = memo(function StarCanvas() {
 
     const draw = (now: number) => {
       const elapsed = now - startedAt;
-      const density = clamp((elapsed - 60) / 1380);
+      const density = clamp((elapsed - 60) / 1100);
       const wave = clamp((elapsed - 1350) / 1650);
-      const waveFront = 1.1 - wave * 1.22;
+      const waveFront = .82 - wave * .78;
+      const calm = clamp((elapsed - 3000) / 1050);
       const settle = clamp((elapsed - 4050) / 920);
       context.clearRect(0, 0, width, height);
 
       for (const star of transitionStars) {
         const birth = clamp((elapsed - 60 - star.birthDelay * 1000) / 420);
-        const baseOpacity = star.base ? star.opacity * .34 : star.opacity * density;
+        const baseOpacity = star.base ? star.opacity * .66 : star.opacity * density;
         if (birth <= 0 || baseOpacity <= .01) continue;
 
         const easedBirth = 1 - Math.pow(1 - birth, 3);
         const normalizedY = star.top / 100;
-        const distance = (normalizedY - waveFront) / .082;
+        const edge = Math.abs(star.left / 100 - .5) * 2;
+        const curvedFront = waveFront + edge * edge * .055;
+        const distance = (normalizedY - curvedFront) / .09;
         const impulse = wave > 0 && wave < 1 ? Math.exp(-(distance * distance)) : 0;
-        const twinkle = .9 + Math.sin(now * .0022 + star.id * 1.73) * .1;
-        const calmScale = 1.18 + density * .28;
-        const scale = (calmScale + impulse * 1.9) * (.3 + easedBirth * .7) * (1 - settle * .38);
-        const opacity = Math.min(1, baseOpacity * easedBirth * twinkle * (1 + impulse * 1.35)) * (1 - settle * .5);
-        const x = star.left / 100 * width + star.waveX * impulse;
-        const y = star.top / 100 * height + star.waveY * impulse;
+        const twinkle = .93 + Math.sin(now * .0018 + star.twinkleOffset) * .07;
+        const waveScale = star.depth === 0 ? .78 : star.depth === 1 ? 1.05 : .55;
+        const calmScale = star.depth === 0 ? .78 : star.depth === 1 ? .86 : .92;
+        const finalScale = star.depth === 2 ? 1 + settle * .42 : 1 - settle * (star.depth === 0 ? .28 : .14);
+        const scale = (1 + density * .1 + impulse * waveScale)
+          * (.32 + easedBirth * .68)
+          * (1 - calm * (1 - calmScale))
+          * finalScale;
+        const settleOpacity = star.depth === 0 ? .36 : star.depth === 1 ? .52 : .62;
+        const densityBoost = impulse * (star.depth === 0 ? .16 : .09);
+        const opacity = Math.min(1, baseOpacity * easedBirth * twinkle * (1 + impulse * 1.15) + densityBoost)
+          * (1 - calm * .16)
+          * (1 - settle * (1 - settleOpacity));
+        const perspective = impulse * (.012 + star.depth * .01);
+        const sourceX = star.left / 100 * width;
+        const sourceY = star.top / 100 * height;
+        const x = width * .5 + (sourceX - width * .5) * (1 + perspective);
+        const y = height * .52 + (sourceY - height * .52) * (1 + perspective) - impulse * (3 + star.depth * 1.5);
         const radius = star.size * scale;
 
-        context.fillStyle = `rgba(224, 251, 255, ${opacity})`;
-        if (star.glow) {
-          context.shadowColor = `rgba(145, 235, 255, ${Math.min(.9, opacity)})`;
-          context.shadowBlur = 5 + impulse * 7;
+        const color = star.depth === 0 ? "195, 231, 238" : star.depth === 1 ? "215, 249, 252" : "188, 234, 241";
+        context.fillStyle = `rgba(${color}, ${opacity})`;
+        if (star.depth === 2) {
+          context.shadowColor = `rgba(135, 224, 239, ${Math.min(.5, opacity)})`;
+          context.shadowBlur = 4 + impulse * 3;
         }
 
-        if (radius < 1.25) {
-          context.fillRect(x, y, Math.max(.75, radius), Math.max(.75, radius));
-        } else {
-          context.beginPath();
-          context.ellipse(x, y, radius * (1 + impulse * .65), radius * (1 - impulse * .3), 0, 0, Math.PI * 2);
-          context.fill();
-        }
+        context.beginPath();
+        context.arc(x, y, Math.max(.42, radius), 0, Math.PI * 2);
+        context.fill();
 
-        if (star.glow) context.shadowBlur = 0;
+        if (star.depth === 2) context.shadowBlur = 0;
       }
 
       if (elapsed < 5600) frameId = window.requestAnimationFrame(draw);
@@ -212,7 +233,7 @@ export default function RevealTransition({
       <StarCanvas />
 
       <div className={styles.counterCluster} aria-hidden="true">
-        <div className={styles.reelViewport}>
+        <div className={`${styles.reelViewport} ${locked ? styles.reelViewportLocked : ""}`}>
           {locked ? (
             <div className={styles.lockedDate}>
               <strong>{selectedDay.day}</strong>
