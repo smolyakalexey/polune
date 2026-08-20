@@ -22,6 +22,9 @@ type TransitionStar = {
   birthDelay: number;
   depth: 0 | 1 | 2;
   twinkleOffset: number;
+  revealRank: number;
+  glowRank: number;
+  spark: boolean;
   base: boolean;
 };
 
@@ -66,16 +69,24 @@ function createTransitionStars(count: number): TransitionStar[] {
       birthDelay: random() * .72,
       depth,
       twinkleOffset: random() * Math.PI * 2,
-      base: id < 58,
+      revealRank: random(),
+      glowRank: random(),
+      spark: random() > .987,
+      base: id < 80,
     };
   });
 }
 
-const transitionStars = createTransitionStars(1920);
+const transitionStars = createTransitionStars(2400);
 const reelDays = Array.from({ length: 124 }, (_, index) => index % 31 + 1);
 
 function clamp(value: number) {
   return Math.max(0, Math.min(1, value));
+}
+
+function smoothstep(value: number) {
+  const t = clamp(value);
+  return t * t * (3 - 2 * t);
 }
 
 const StarCanvas = memo(function StarCanvas() {
@@ -94,7 +105,7 @@ const StarCanvas = memo(function StarCanvas() {
 
     const resize = () => {
       const bounds = canvas.getBoundingClientRect();
-      const ratio = Math.min(window.devicePixelRatio || 1, 1.5);
+      const ratio = Math.min(window.devicePixelRatio || 1, 1.35);
       width = bounds.width;
       height = bounds.height;
       canvas.width = Math.round(width * ratio);
@@ -112,11 +123,16 @@ const StarCanvas = memo(function StarCanvas() {
       const launch = Math.sin(clamp((elapsed - 1450) / 430) * Math.PI);
       const calm = clamp((elapsed - 3030) / 950);
       const settle = clamp((elapsed - 3980) / 980);
+      const buildup = smoothstep((elapsed - 180) / 950);
+      const surge = smoothstep((elapsed - 820) / 630);
+      const peakQuantity = .18 + buildup * .52 + surge * .3;
+      const quantity = peakQuantity * (1 - calm * .62);
       context.clearRect(0, 0, width, height);
 
       for (const star of transitionStars) {
         const birth = clamp((elapsed - 60 - star.birthDelay * 1000) / 420);
-        const baseOpacity = star.base ? star.opacity * .66 : star.opacity * density;
+        const quantityVisibility = star.base ? 1 : clamp((quantity - star.revealRank) / .04);
+        const baseOpacity = (star.base ? star.opacity * .66 : star.opacity * density) * quantityVisibility;
         if (birth <= 0 || baseOpacity <= .01) continue;
 
         const easedBirth = 1 - Math.pow(1 - birth, 3);
@@ -163,10 +179,11 @@ const StarCanvas = memo(function StarCanvas() {
 
         const color = star.depth === 0 ? "195, 231, 238" : star.depth === 1 ? "215, 249, 252" : "188, 234, 241";
         context.fillStyle = `rgba(${color}, ${opacity})`;
-        const crestGlow = crest > .12 && star.id % 8 === 0;
+        const localHeat = Math.max(crest, sourceTension * .72);
+        const crestGlow = localHeat > .1 && star.glowRank > .7;
         if (star.depth === 2 || crestGlow) {
-          context.shadowColor = `rgba(145, 235, 247, ${Math.min(.72, opacity + crest * .24)})`;
-          context.shadowBlur = star.depth === 2 ? 4 + impulse * 3 : 3 + crest * 8;
+          context.shadowColor = `rgba(145, 238, 250, ${Math.min(.86, opacity + localHeat * .34)})`;
+          context.shadowBlur = star.depth === 2 ? 4 + impulse * 4 : 4 + localHeat * 13;
         }
 
         context.beginPath();
@@ -174,6 +191,21 @@ const StarCanvas = memo(function StarCanvas() {
         context.fill();
 
         if (star.depth === 2 || crestGlow) context.shadowBlur = 0;
+
+        if (star.spark && crest > .24) {
+          const flare = (3.5 + crest * 6.5) * (star.depth === 0 ? .76 : 1);
+          context.save();
+          context.globalCompositeOperation = "lighter";
+          context.strokeStyle = `rgba(211, 252, 255, ${Math.min(.9, crest * opacity * 1.25)})`;
+          context.lineWidth = .7;
+          context.beginPath();
+          context.moveTo(x - flare * .48, y);
+          context.lineTo(x + flare * .48, y);
+          context.moveTo(x, y - flare);
+          context.lineTo(x, y + flare);
+          context.stroke();
+          context.restore();
+        }
       }
 
       if (elapsed < 5600) frameId = window.requestAnimationFrame(draw);

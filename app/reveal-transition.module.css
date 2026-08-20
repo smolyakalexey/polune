@@ -36,6 +36,18 @@
   transform: scale(1.2);
 }
 
+.transition[data-phase="wave"] .spaceGlow {
+  animation: cosmic-bloom 1.58s ease-in-out both;
+}
+
+@keyframes cosmic-bloom {
+  0% { opacity: .82; transform: scale(1.2); }
+  28% { opacity: .98; transform: scale(1.32); }
+  58% { opacity: .7; transform: scale(1.12); }
+  82% { opacity: .92; transform: scale(1.24); }
+  100% { opacity: .82; transform: scale(1.2); }
+}
+
 .transition:is([data-phase="lift"], [data-phase="reveal"], [data-phase="leave"]) .spaceGlow {
   opacity: .24;
   transform: scale(1.02);
