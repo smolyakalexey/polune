@@ -1435,7 +1435,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   letter-spacing: -2px;
 }
 .result-guidance {
-  width: 362px;
+  width: 332px;
   max-width: 100%;
   margin-top: 32px;
   text-align: center;
@@ -1446,6 +1446,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   font-size: 28px;
   line-height: 32px;
   letter-spacing: -.382px;
+  text-wrap: balance;
 }
 .result-guidance h2 { color: #fff; font-weight: 500; }
 .result-guidance p { margin-top: 5px; color: rgba(255,255,255,.58); font-weight: 400; }

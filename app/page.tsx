@@ -294,6 +294,14 @@ function buildResultCopy(intent: Intent, day: Day) {
   };
 }
 
+function buildResultHeading(verdict: string, isBestDay: boolean) {
+  if (!isBestDay) return verdict;
+  if (verdict.startsWith("хорошая ")) return verdict.replace(/^хорошая /, "лучшая ");
+  if (verdict.startsWith("подходящий ")) return verdict.replace(/^подходящий /, "лучший ");
+  if (verdict.startsWith("день ") || verdict.startsWith("ритм ")) return `лучший ${verdict}`;
+  return verdict;
+}
+
 function StartLogo() {
   return (
     <a className="start-logo" href="#top" aria-label="polune — на главную">
@@ -829,6 +837,7 @@ export default function Home() {
 
   const active = days.find((day) => day.id === activeId) ?? calendarDays.find((day) => day.id === activeId) ?? days[1];
   const resultCopy = buildResultCopy(intent, active);
+  const resultHeading = buildResultHeading(resultCopy.verdict, active.rating === "excellent");
   const resultAdvice = `${resultCopy.advice.charAt(0).toLowerCase()}${resultCopy.advice.slice(1)}`.replace(/[.!?]+$/, "");
 
   useEffect(() => {
@@ -1092,7 +1101,7 @@ export default function Home() {
           </div>
 
           <div className="result-guidance">
-            <h2>{active.rating === "excellent" ? "лучший " : ""}{resultCopy.verdict}</h2>
+            <h2>{resultHeading}</h2>
             <p>{resultAdvice}</p>
           </div>
 
