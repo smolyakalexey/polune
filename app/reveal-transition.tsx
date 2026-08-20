@@ -71,7 +71,7 @@ function createTransitionStars(count: number): TransitionStar[] {
   });
 }
 
-const transitionStars = createTransitionStars(960);
+const transitionStars = createTransitionStars(1920);
 const reelDays = Array.from({ length: 62 }, (_, index) => index % 31 + 1);
 
 function clamp(value: number) {
@@ -106,7 +106,6 @@ const StarCanvas = memo(function StarCanvas() {
       const elapsed = now - startedAt;
       const density = clamp((elapsed - 60) / 1100);
       const wave = clamp((elapsed - 1350) / 1650);
-      const waveFront = .82 - wave * .78;
       const calm = clamp((elapsed - 3000) / 1050);
       const settle = clamp((elapsed - 4050) / 920);
       context.clearRect(0, 0, width, height);
@@ -117,10 +116,15 @@ const StarCanvas = memo(function StarCanvas() {
         if (birth <= 0 || baseOpacity <= .01) continue;
 
         const easedBirth = 1 - Math.pow(1 - birth, 3);
+        const normalizedX = star.left / 100;
         const normalizedY = star.top / 100;
-        const edge = Math.abs(star.left / 100 - .5) * 2;
-        const curvedFront = waveFront + edge * edge * .055;
-        const distance = (normalizedY - curvedFront) / .09;
+        const sourceXRatio = .5;
+        const sourceYRatio = .645;
+        const ovalX = (normalizedX - sourceXRatio) / .64;
+        const ovalY = (normalizedY - sourceYRatio) / .22;
+        const ovalDistance = Math.sqrt(ovalX * ovalX + ovalY * ovalY);
+        const radialFront = wave * 3.05;
+        const distance = (ovalDistance - radialFront) / .14;
         const impulse = wave > 0 && wave < 1 ? Math.exp(-(distance * distance)) : 0;
         const crest = wave > 0 && wave < 1 ? Math.exp(-(distance * distance) * 4.4) : 0;
         const twinkle = .93 + Math.sin(now * .0018 + star.twinkleOffset) * .07;
@@ -137,15 +141,17 @@ const StarCanvas = memo(function StarCanvas() {
           * (1 - calm * .16)
           * (1 - settle * (1 - settleOpacity));
         const perspective = impulse * (.012 + star.depth * .01);
-        const sourceX = star.left / 100 * width;
-        const sourceY = star.top / 100 * height;
-        const x = width * .5 + (sourceX - width * .5) * (1 + perspective);
-        const y = height * .52 + (sourceY - height * .52) * (1 + perspective) - impulse * (3 + star.depth * 1.5);
+        const sourceX = normalizedX * width;
+        const sourceY = normalizedY * height;
+        const waveOriginX = width * sourceXRatio;
+        const waveOriginY = height * sourceYRatio;
+        const x = waveOriginX + (sourceX - waveOriginX) * (1 + perspective);
+        const y = waveOriginY + (sourceY - waveOriginY) * (1 + perspective);
         const radius = star.size * scale;
 
         const color = star.depth === 0 ? "195, 231, 238" : star.depth === 1 ? "215, 249, 252" : "188, 234, 241";
         context.fillStyle = `rgba(${color}, ${opacity})`;
-        const crestGlow = crest > .12 && star.id % 5 === 0;
+        const crestGlow = crest > .12 && star.id % 8 === 0;
         if (star.depth === 2 || crestGlow) {
           context.shadowColor = `rgba(145, 235, 247, ${Math.min(.72, opacity + crest * .24)})`;
           context.shadowBlur = star.depth === 2 ? 4 + impulse * 3 : 3 + crest * 8;
@@ -238,8 +244,7 @@ export default function RevealTransition({
         <div className={`${styles.reelViewport} ${locked ? styles.reelViewportLocked : ""}`}>
           {locked ? (
             <div className={styles.lockedDate}>
-              <strong>{selectedDay.day}</strong>
-              <span>{month}</span>
+              <strong>{selectedDay.day} {month}</strong>
             </div>
           ) : (
             <div className={styles.dayReel}>
