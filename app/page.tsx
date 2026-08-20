@@ -254,7 +254,9 @@ const statusIcons: Record<Rating, string> = {
   caution: "/figma/status-caution.svg",
 };
 
-const intentResultCopy: Partial<Record<string, { verdict: string; advice: string }>> = {
+type ResultCopy = { verdict: string; advice: string };
+
+const intentResultCopy: Partial<Record<string, ResultCopy>> = {
   haircut: {
     verdict: "день для мягкого обновления",
     advice: "Освежите форму и детали, не меняя образ целиком.",
@@ -281,19 +283,103 @@ const intentResultCopy: Partial<Record<string, { verdict: string; advice: string
   },
 };
 
+const archetypePositiveCopy: Record<Intent["archetype"], ResultCopy> = {
+  growth: {
+    verdict: "ритм дня поддерживает новое начало",
+    advice: "Сделайте первый понятный шаг и оставьте немного пространства для продолжения.",
+  },
+  connection: {
+    verdict: "легче найти общий ритм",
+    advice: "Начните с главного и дайте разговору развиваться без лишнего давления.",
+  },
+  planning: {
+    verdict: "удобный день, чтобы всё разложить",
+    advice: "Определите опорные точки и сразу оставьте запас для изменений.",
+  },
+  care: {
+    verdict: "подходящий день для заботы о себе",
+    advice: "Выберите мягкий формат и ориентируйтесь на собственное самочувствие.",
+  },
+  release: {
+    verdict: "проще отпустить лишнее",
+    advice: "Начните с заметной части и остановитесь, когда почувствуете достаточно.",
+  },
+};
+
+const archetypeDayCopy: Record<Exclude<Rating, "excellent" | "good">, Record<Intent["archetype"], ResultCopy>> = {
+  caution: {
+    growth: {
+      verdict: "лучше двигаться без рывка",
+      advice: "Начните с пробной версии и не требуйте от себя быстрого результата.",
+    },
+    connection: {
+      verdict: "разговору нужен мягкий темп",
+      advice: "Оставьте место для пауз и не пытайтесь решить всё за один подход.",
+    },
+    planning: {
+      verdict: "плану пригодится запас",
+      advice: "Проверьте ключевые детали и заложите больше времени на изменения.",
+    },
+    care: {
+      verdict: "выберите бережный режим",
+      advice: "Снизьте интенсивность и оставьте достаточно времени на восстановление.",
+    },
+    release: {
+      verdict: "освобождайте пространство постепенно",
+      advice: "Возьмите одну понятную часть и не старайтесь закончить всё сразу.",
+    },
+  },
+  neutral: {
+    growth: {
+      verdict: "день для небольшого шага",
+      advice: "Проверьте идею в малом масштабе, прежде чем набирать скорость.",
+    },
+    connection: {
+      verdict: "сначала присмотритесь к настроению",
+      advice: "Начните с лёгкого контакта и переходите к главному только по готовности.",
+    },
+    planning: {
+      verdict: "сначала уточните детали",
+      advice: "Соберите недостающую информацию и пока не фиксируйте план слишком жёстко.",
+    },
+    care: {
+      verdict: "ориентируйтесь на самочувствие",
+      advice: "Выберите привычный формат и сократите нагрузку, если это потребуется.",
+    },
+    release: {
+      verdict: "начните с самого простого",
+      advice: "Уберите один источник лишнего и оцените, хочется ли продолжать.",
+    },
+  },
+  low: {
+    growth: {
+      verdict: "лучше не форсировать старт",
+      advice: "Если дата уже выбрана, ограничьтесь подготовкой и сохраните силы на продолжение.",
+    },
+    connection: {
+      verdict: "сложные темы лучше не торопить",
+      advice: "Если разговор нельзя перенести, говорите короче и оставьте выводы на потом.",
+    },
+    planning: {
+      verdict: "план может потребовать пересмотра",
+      advice: "Не принимайте необратимых решений и сначала проверьте исходные данные.",
+    },
+    care: {
+      verdict: "день просит больше отдыха",
+      advice: "Откажитесь от лишней нагрузки и выберите самый мягкий доступный вариант.",
+    },
+    release: {
+      verdict: "не берите всё сразу",
+      advice: "Если дело нельзя перенести, ограничьте объём и заранее обозначьте точку остановки.",
+    },
+  },
+};
+
 function buildResultCopy(intent: Intent, day: Day) {
-  const specific = intentResultCopy[intent.id];
-  if (specific) return specific;
-  if (day.rating === "low" || day.rating === "caution") {
-    return {
-      verdict: "день просит меньше спешки",
-      advice: "Если дата уже выбрана, оставьте больше времени и не перегружайте план.",
-    };
+  if (day.rating === "excellent" || day.rating === "good") {
+    return intentResultCopy[intent.id] ?? archetypePositiveCopy[intent.archetype];
   }
-  return {
-    verdict: "ритм дня поддерживает ваше дело",
-    advice: "Выберите один ясный шаг и заранее освободите для него время.",
-  };
+  return archetypeDayCopy[day.rating][intent.archetype];
 }
 
 function buildResultHeading(verdict: string, isBestDay: boolean) {
@@ -839,10 +925,11 @@ export default function Home() {
   const [scoreInfoOpen, setScoreInfoOpen] = useState(false);
   const [personalizationOpen, setPersonalizationOpen] = useState(false);
   const [personalization, setPersonalization] = useState<PersonalizationData | null>(null);
-  const [personalizationBubbleVisible, setPersonalizationBubbleVisible] = useState(false);
+  const [personalizationBubblePhase, setPersonalizationBubblePhase] = useState<"hidden" | "visible" | "leaving">("hidden");
   const [calendarExpanded, setCalendarExpanded] = useState(false);
   const calendarStatusTimer = useRef<number | null>(null);
   const feedbackStatusTimer = useRef<number | null>(null);
+  const personalizationBubbleHasAppeared = useRef(false);
 
   const active = days.find((day) => day.id === activeId) ?? calendarDays.find((day) => day.id === activeId) ?? days[1];
   const resultCopy = buildResultCopy(intent, active);
@@ -855,10 +942,41 @@ export default function Home() {
     : "";
 
   useEffect(() => {
-    if (screen !== "result" || pendingReveal) return;
-    const timer = window.setTimeout(() => setPersonalizationBubbleVisible(true), 2200);
-    return () => window.clearTimeout(timer);
-  }, [active.id, pendingReveal, screen]);
+    if (screen !== "result" || pendingReveal || personalizationOpen) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const timer = window.setTimeout(() => setPersonalizationBubblePhase("visible"), 2200);
+      return () => window.clearTimeout(timer);
+    }
+
+    const timers: number[] = [];
+    let cancelled = false;
+    const schedule = (callback: () => void, delay: number) => {
+      const timer = window.setTimeout(callback, delay);
+      timers.push(timer);
+    };
+    const showBubble = (delay: number) => {
+      schedule(() => {
+        if (cancelled) return;
+        personalizationBubbleHasAppeared.current = true;
+        setPersonalizationBubblePhase("visible");
+        schedule(() => {
+          if (cancelled) return;
+          setPersonalizationBubblePhase("leaving");
+          schedule(() => {
+            if (cancelled) return;
+            setPersonalizationBubblePhase("hidden");
+            showBubble(18000);
+          }, 360);
+        }, 6500);
+      }, delay);
+    };
+
+    showBubble(personalizationBubbleHasAppeared.current ? 18000 : 2200);
+    return () => {
+      cancelled = true;
+      timers.forEach((timer) => window.clearTimeout(timer));
+    };
+  }, [active.id, pendingReveal, personalizationOpen, screen]);
 
   useEffect(() => () => {
     if (calendarStatusTimer.current) window.clearTimeout(calendarStatusTimer.current);
@@ -887,7 +1005,7 @@ export default function Home() {
       const requestedDate = params.get("date");
       const restoredDay = restoredCalendarDays.find((day) => day.dateIso === requestedDate) ?? pickPreferredDay(restoredDays);
       setIntent(restoredIntent);
-      setPersonalizationBubbleVisible(false);
+      setPersonalizationBubblePhase("hidden");
       setHasChosenIntent(true);
       setScreen("result");
       setActiveId(restoredDay.id);
@@ -922,7 +1040,8 @@ export default function Home() {
     const nextDays = buildCurrentWeek(nextIntent, 62).slice(0, 14);
     const nextDay = pickPreferredDay(nextDays);
     setIntent(nextIntent);
-    setPersonalizationBubbleVisible(false);
+    personalizationBubbleHasAppeared.current = false;
+    setPersonalizationBubblePhase("hidden");
     setHasChosenIntent(true);
     setPickerOpen(false);
     setActiveId(nextDay.id);
@@ -951,7 +1070,7 @@ export default function Home() {
 
   function chooseDay(day: Day) {
     if (day.id === activeId) return;
-    setPersonalizationBubbleVisible(false);
+    setPersonalizationBubblePhase("hidden");
     if (calendarStatusTimer.current) window.clearTimeout(calendarStatusTimer.current);
     setActiveId(day.id);
     setSaved(false);
@@ -1084,7 +1203,7 @@ export default function Home() {
               setScreen("start");
               setHasChosenIntent(false);
               setCalendarExpanded(false);
-              setPersonalizationBubbleVisible(false);
+              setPersonalizationBubblePhase("hidden");
             }}
             aria-label="Вернуться и выбрать другое дело"
           >
@@ -1099,8 +1218,15 @@ export default function Home() {
         <article className="result-cosmic-card" key={active.id} aria-live="polite">
           <div className="moon-stage">
             <MoonPhaseIllustration angle={active.moonPhaseAngle} label={active.moonPhaseLabel} />
-            {personalizationBubbleVisible && (
-              <button type="button" className="personalization-bubble" onClick={() => setPersonalizationOpen(true)}>
+            {personalizationBubblePhase !== "hidden" && (
+              <button
+                type="button"
+                className={`personalization-bubble ${personalizationBubblePhase === "leaving" ? "is-leaving" : ""}`}
+                onClick={() => {
+                  setPersonalizationBubblePhase("hidden");
+                  setPersonalizationOpen(true);
+                }}
+              >
                 <span className="personalization-dot personalization-dot-one" aria-hidden="true" />
                 <span className="personalization-dot personalization-dot-two" aria-hidden="true" />
                 <span className="personalization-bubble-body">
