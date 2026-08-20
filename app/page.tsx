@@ -28,6 +28,7 @@ import RevealTransition from "./reveal-transition";
 import type { Icon } from "@phosphor-icons/react";
 import {
   AirplaneTilt,
+  ArrowsLeftRight,
   Bed,
   BookOpenText,
   Briefcase,
@@ -36,9 +37,12 @@ import {
   CalendarPlus,
   Check,
   ChatCircle,
+  Compass,
   CookingPot,
+  Crosshair,
   FlowerLotus,
   Gift,
+  GlobeHemisphereEast,
   Heart,
   HouseLine,
   Info,
@@ -501,9 +505,13 @@ function ScoreInfoSheet({ day, onClose }: { day: Day; onClose: () => void }) {
             <span className="score-track"><span style={{ width: `${day.zodiacScore}%` }} /></span>
           </div>
         </div>
-        <p className="score-footnote">фазовый угол дня — {Math.round(day.moonPhaseAngle)}°, символическая точка дела — {day.targetPhaseAngle}°, расстояние — {Math.round(day.phaseDistance)}°</p>
-        <p className="score-footnote">эклиптическая долгота луны — {Math.round(day.lunarLongitude)}°, знак — {day.zodiacSignName.toLowerCase()}</p>
-        <p className="score-footnote">день недели и близость даты не добавляют баллы, ближайшая дата получает приоритет только при равном результате</p>
+        <div className="score-technical" aria-label="технические параметры расчёта">
+          <div><MoonStars weight="regular" aria-hidden="true" /><span>фазовый угол дня</span><strong>{Math.round(day.moonPhaseAngle)}°</strong></div>
+          <div><Crosshair weight="regular" aria-hidden="true" /><span>точка выбранного дела</span><strong>{day.targetPhaseAngle}°</strong></div>
+          <div><ArrowsLeftRight weight="regular" aria-hidden="true" /><span>расстояние между точками</span><strong>{Math.round(day.phaseDistance)}°</strong></div>
+          <div><Compass weight="regular" aria-hidden="true" /><span>долгота луны</span><strong>{Math.round(day.lunarLongitude)}°</strong></div>
+          <div><GlobeHemisphereEast weight="regular" aria-hidden="true" /><span>луна в знаке</span><strong>{day.zodiacSignName.toLowerCase()}</strong></div>
+        </div>
       </section>
     </div>
   );
@@ -821,7 +829,7 @@ export default function Home() {
 
   const active = days.find((day) => day.id === activeId) ?? calendarDays.find((day) => day.id === activeId) ?? days[1];
   const resultCopy = buildResultCopy(intent, active);
-  const ResultGuidanceIcon = intent.Icon;
+  const resultAdvice = `${resultCopy.advice.charAt(0).toLowerCase()}${resultCopy.advice.slice(1)}`.replace(/[.!?]+$/, "");
 
   useEffect(() => {
     if (screen !== "result" || pendingReveal) return;
@@ -1084,11 +1092,8 @@ export default function Home() {
           </div>
 
           <div className="result-guidance">
-            <p>
-              <strong>{active.rating === "excellent" ? "лучший " : ""}{resultCopy.verdict}.</strong>
-              <ResultGuidanceIcon className="result-guidance-icon" weight="regular" aria-hidden="true" />
-              <span>{resultCopy.advice.charAt(0).toLowerCase() + resultCopy.advice.slice(1)}</span>
-            </p>
+            <h2>{active.rating === "excellent" ? "лучший " : ""}{resultCopy.verdict}</h2>
+            <p>{resultAdvice}</p>
           </div>
 
           <button type="button" className={`result-score-row status-${active.rating}`} onClick={() => setScoreInfoOpen(true)}>

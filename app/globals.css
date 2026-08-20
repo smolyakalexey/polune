@@ -1086,7 +1086,28 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .score-factor strong { flex: 0 0 auto; font-size: 15px; font-weight: 500; }
 .score-track { height: 8px; border-radius: 999px; background: #ecebf0; display: block; overflow: hidden; }
 .score-track > span { height: 100%; border-radius: inherit; background: var(--ink); display: block; }
-.score-footnote { margin: 22px 0 0; padding-top: 18px; border-top: 1px solid #e7e5ea; color: var(--muted); font-size: 13px; line-height: 18px; }
+.score-technical {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255,255,255,.08);
+  display: grid;
+  gap: 7px;
+}
+.score-technical > div {
+  min-height: 40px;
+  padding: 8px 10px;
+  border-radius: 13px;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  color: var(--muted);
+  background: rgba(255,255,255,.035);
+  font-size: 16px;
+  line-height: 22px;
+}
+.score-technical svg { width: 18px; height: 18px; color: rgba(155,140,255,.78); }
+.score-technical strong { color: rgba(255,255,255,.78); font-size: 16px; font-weight: 500; }
 
 @keyframes sheet-in {
   from { opacity: 0; transform: translateY(24px); }
@@ -1413,27 +1434,21 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   line-height: 64px;
   letter-spacing: -2px;
 }
-.result-guidance { margin-top: 32px; }
-.result-guidance p {
+.result-guidance {
   width: 362px;
   max-width: 100%;
+  margin-top: 32px;
+  text-align: center;
+}
+.result-guidance h2,
+.result-guidance p {
   margin: 0;
-  color: #fff;
   font-size: 28px;
   line-height: 32px;
   letter-spacing: -.382px;
-  text-align: center;
 }
-.result-guidance p strong { font-weight: 500; }
-.result-guidance p > span { color: rgba(255,255,255,.58); }
-.result-guidance p svg.result-guidance-icon {
-  display: inline-block;
-  width: 32px;
-  height: 32px;
-  margin: 0 5px 0 1px;
-  vertical-align: 4px;
-  color: rgba(255,255,255,.62);
-}
+.result-guidance h2 { color: #fff; font-weight: 500; }
+.result-guidance p { margin-top: 5px; color: rgba(255,255,255,.58); font-weight: 400; }
 .result-score-row {
   min-height: 44px;
   margin-top: 24px;
@@ -1604,10 +1619,9 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .result-screen .score-sheet .round-button { color: #fff; background: rgba(255,255,255,.08); }
 .result-screen .score-sheet header p,
 .result-screen .score-explainer,
-.result-screen .score-footnote { color: rgba(255,255,255,.5); }
+.result-screen .score-technical > div { color: rgba(255,255,255,.5); }
 .result-screen .score-track { background: rgba(255,255,255,.1); }
 .result-screen .score-track > span { background: linear-gradient(180deg, #7b68f7, #4d4be7); }
-.result-screen .score-footnote { border-top-color: rgba(255,255,255,.08); }
 
 /* Shared dark-glass language for every bottom sheet. */
 .picker-backdrop,
@@ -1686,7 +1700,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .result-date-line { margin-top: 12px; }
   .result-date-line strong { font-size: 56px; line-height: 54px; }
   .result-guidance { margin-top: 24px; }
-  .result-guidance p { font-size: 24px; line-height: 28px; }
+  .result-guidance h2, .result-guidance p { font-size: 24px; line-height: 28px; }
   .result-score-row { margin-top: 14px; }
   .result-calendar-action { top: auto; bottom: 160px; min-height: 56px; }
 }
