@@ -1019,16 +1019,23 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .profile-sheet-lead { margin: 18px 0 20px; color: var(--result-secondary); font-size: 15px; line-height: 22px; }
 .zodiac-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
 .zodiac-grid button {
-  min-height: 48px;
-  padding: 6px;
+  min-height: 72px;
+  padding: 9px 5px 8px;
   border: 1px solid var(--result-border);
   border-radius: 17px;
   color: var(--ink);
   background: var(--result-soft);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  text-align: center;
   font-size: 14px;
   cursor: pointer;
 }
 .zodiac-grid button.selected { border-color: var(--brand-mid); color: #fff; background: var(--brand-mid); box-shadow: 0 8px 20px rgba(77, 75, 231, .2); }
+.zodiac-symbol { min-height: 28px; display: grid; place-items: center; font-size: 26px; line-height: 28px; }
 .profile-primary,
 .profile-secondary {
   width: 100%;
@@ -1043,6 +1050,8 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .result-screen.theme-dark .profile-primary { color: #020002; background: #fff; }
 .profile-primary:disabled { opacity: .3; cursor: default; }
 .profile-secondary { margin-top: 6px; color: var(--ink); background: transparent; }
+.profile-inline-error { margin: 12px 4px -8px; color: #ff8175; font-size: 13px; line-height: 18px; text-align: center; }
+.profile-back-link { width: 100%; min-height: 40px; margin-top: 2px; border: 0; color: rgba(255,255,255,.5); background: transparent; font-size: 13px; cursor: pointer; }
 .profile-field { display: grid; gap: 7px; margin-top: 14px; }
 .profile-field > span { color: var(--result-secondary); font-size: 13px; font-weight: 500; line-height: 18px; }
 .profile-field small { color: var(--muted); font-size: 12px; font-weight: 400; }
@@ -1295,6 +1304,8 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   height: 128px;
   overflow: hidden;
   border-radius: 50%;
+  -webkit-mask: url("/figma/moon-base.png") center / 100% 100% no-repeat;
+  mask: url("/figma/moon-base.png") center / 100% 100% no-repeat;
   filter: drop-shadow(0 0 18px rgba(181,194,255,.16));
   animation: moon-arrive .72s cubic-bezier(.16,1,.3,1) both;
 }
@@ -1311,12 +1322,12 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   object-fit: cover;
 }
 .phase-moon-shadow {
-  inset: -2px;
-  width: calc(100% + 4px);
-  height: calc(100% + 4px);
+  inset: 0;
+  width: 100%;
+  height: 100%;
   background: #020002;
   filter: blur(3px);
-  box-shadow: 0 0 10px rgba(0,0,0,.72);
+  box-shadow: none;
   transform: translateX(var(--moon-shadow-shift));
   transition: transform .55s cubic-bezier(.2,.8,.2,1);
 }
@@ -1343,13 +1354,14 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 }
 .personalization-dot {
   position: absolute;
-  z-index: 0;
+  z-index: 2;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 9px 24px rgba(0,0,0,.22);
+  box-shadow: none;
   transform: scale(0);
 }
 .personalization-dot-one {
+  z-index: 3;
   left: 185px;
   top: 46px;
   width: 5px;
@@ -1418,8 +1430,8 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   display: inline-block;
   width: 32px;
   height: 32px;
-  margin: 0 -6px 0 -3px;
-  vertical-align: 5px;
+  margin: 0 5px 0 1px;
+  vertical-align: 4px;
   color: rgba(255,255,255,.62);
 }
 .result-score-row {
@@ -1464,7 +1476,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   left: 0;
   z-index: 20;
   height: 144px;
-  padding: 6px 0 max(18px, env(safe-area-inset-bottom));
+  padding: 0 0 max(18px, env(safe-area-inset-bottom));
   overflow: hidden;
   border-radius: 32px 32px 0 0;
   color: #fff;
@@ -1476,26 +1488,41 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   -webkit-backdrop-filter: blur(24px) saturate(125%);
   transition: height .46s cubic-bezier(.16,1,.3,1), background-color .3s ease;
 }
+.result-calendar::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 5;
+  height: 32px;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(9,11,12,.72));
+}
 .result-calendar.is-expanded {
   height: 80%;
   background: linear-gradient(180deg, rgba(32,32,34,.78), rgba(17,17,18,.72));
   overflow: hidden;
 }
+.result-calendar.is-expanded::after { display: none; }
 .calendar-grabber {
   position: relative;
   z-index: 8;
   flex: 0 0 auto;
   width: 100%;
-  height: 22px;
-  padding: 0;
+  height: 28px;
+  padding: 8px 0 0;
   border: 0;
   display: grid;
   place-items: start center;
-  background: linear-gradient(180deg, rgba(27,27,28,.35), transparent);
+  border-radius: 31px 31px 0 0;
+  background: linear-gradient(180deg, rgba(40,40,42,.58), rgba(28,28,30,.18));
   cursor: ns-resize;
   touch-action: none;
 }
 .calendar-grabber span { width: 44px; height: 5px; border-radius: 99px; background: rgba(255,255,255,.42); }
+.calendar-grabber:focus-visible { outline: none; }
+.calendar-grabber:focus-visible span { box-shadow: 0 0 0 3px rgba(255,255,255,.08); }
 .calendar-peek {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -1521,7 +1548,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .calendar-peek-day small { display: inline-flex; align-items: center; gap: 2px; font-size: 14px; line-height: 18px; }
 .calendar-peek-day img { width: 14px; height: 14px; }
 .calendar-months {
-  height: calc(100% - 22px);
+  height: calc(100% - 28px);
   padding: 0 16px 48px;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -1552,7 +1579,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   align-content: center;
   gap: 2px;
 }
-.calendar-month-grid button.selected { color: #fff; background: #6263f5; box-shadow: 0 10px 22px rgba(69,64,190,.3); }
+.calendar-month-grid button.selected { color: inherit; background: rgba(255,255,255,.08); box-shadow: inset 0 0 0 1px rgba(255,255,255,.035); }
 .calendar-month-grid button span { font-size: 18px; line-height: 24px; }
 .calendar-month-grid button img { width: 14px; height: 14px; }
 
@@ -1581,6 +1608,76 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .result-screen .score-track { background: rgba(255,255,255,.1); }
 .result-screen .score-track > span { background: linear-gradient(180deg, #7b68f7, #4d4be7); }
 .result-screen .score-footnote { border-top-color: rgba(255,255,255,.08); }
+
+/* Shared dark-glass language for every bottom sheet. */
+.picker-backdrop,
+.profile-sheet-backdrop,
+.score-sheet-backdrop {
+  padding: max(8px, env(safe-area-inset-top)) 0 0;
+  align-items: flex-end;
+  background: rgba(0,4,6,.42);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+.start-screen.theme-dark .picker,
+.profile-sheet,
+.score-sheet,
+.result-screen .score-sheet {
+  width: min(100%, 402px);
+  border: 1px solid rgba(255,255,255,.08);
+  border-bottom: 0;
+  border-radius: 32px 32px 0 0;
+  color: #fff;
+  background: linear-gradient(180deg, rgba(32,32,34,.82), rgba(15,16,17,.76));
+  box-shadow: 0 -24px 70px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.04);
+  backdrop-filter: blur(24px) saturate(125%);
+  -webkit-backdrop-filter: blur(24px) saturate(125%);
+}
+.start-screen.theme-dark .round-button,
+.profile-sheet .round-button,
+.result-screen .score-sheet .round-button {
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255,255,255,.09);
+  color: #fff;
+  background: rgba(18,22,23,.64);
+  box-shadow: 0 8px 28px rgba(0,0,0,.2);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.start-screen.theme-dark .picker-search,
+.profile-field input,
+.zodiac-grid button {
+  border: 1px solid rgba(255,255,255,.07);
+  color: #fff;
+  background: rgba(255,255,255,.06);
+}
+.start-screen.theme-dark .picker-options button {
+  color: #fff;
+  background: rgba(255,255,255,.055);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.02);
+}
+.start-screen.theme-dark .picker-options button.selected,
+.zodiac-grid button.selected {
+  border-color: rgba(141,126,255,.5);
+  color: #fff;
+  background: rgba(98,99,245,.24);
+  box-shadow: inset 0 0 0 1px rgba(141,126,255,.16);
+}
+.profile-sheet > header p { color: #9b8cff; }
+.profile-sheet-lead,
+.profile-field > span,
+.profile-check { color: rgba(255,255,255,.58); }
+.profile-primary,
+.result-screen.theme-dark .profile-primary {
+  color: #090a0b;
+  background: #fff;
+}
+.profile-secondary {
+  border: 1px solid rgba(255,255,255,.08);
+  color: #fff;
+  background: rgba(255,255,255,.055);
+}
 
 @media (max-height: 720px) {
   .result-content { padding-top: 68px; }

@@ -28,7 +28,6 @@ import RevealTransition from "./reveal-transition";
 import type { Icon } from "@phosphor-icons/react";
 import {
   AirplaneTilt,
-  ArrowCircleUpLeft,
   Bed,
   BookOpenText,
   Briefcase,
@@ -93,8 +92,18 @@ type PersonalizationData = {
 };
 
 const zodiacSigns = [
-  "овен", "телец", "близнецы", "рак", "лев", "дева",
-  "весы", "скорпион", "стрелец", "козерог", "водолей", "рыбы",
+  { name: "овен", symbol: "♈︎" },
+  { name: "телец", symbol: "♉︎" },
+  { name: "близнецы", symbol: "♊︎" },
+  { name: "рак", symbol: "♋︎" },
+  { name: "лев", symbol: "♌︎" },
+  { name: "дева", symbol: "♍︎" },
+  { name: "весы", symbol: "♎︎" },
+  { name: "скорпион", symbol: "♏︎" },
+  { name: "стрелец", symbol: "♐︎" },
+  { name: "козерог", symbol: "♑︎" },
+  { name: "водолей", symbol: "♒︎" },
+  { name: "рыбы", symbol: "♓︎" },
 ];
 
 const catalogIcons: Record<CatalogIconKey, Icon> = {
@@ -310,7 +319,7 @@ function splitIntentLabel(label: string) {
     const firstLength = words.slice(0, index).join(" ").length;
     const secondLength = words.slice(index).join(" ").length;
     const difference = Math.abs(firstLength - secondLength);
-    if (difference <= smallestDifference) {
+    if (difference < smallestDifference) {
       splitAt = index;
       smallestDifference = difference;
     }
@@ -322,12 +331,10 @@ function IntentLine({
   intent,
   onClick,
   animated = false,
-  showCaret = false,
 }: {
   intent: Intent;
   onClick: () => void;
   animated?: boolean;
-  showCaret?: boolean;
 }) {
   const IntentIcon = intent.Icon;
   const [firstLine, secondLine] = splitIntentLabel(intent.label);
@@ -341,16 +348,14 @@ function IntentLine({
     >
       <span className="intent-copy" key={animated ? intent.id : undefined}>
         <span className="intent-first-line">
-          {showCaret && intent.id === "haircut"
+          {intent.id === "haircut"
             ? <img className="intent-leading-image" src="/figma/intent-scissors.svg" alt="" />
             : <IntentIcon weight="bold" aria-hidden="true" />}
           <span className="intent-text-line">{firstLine}</span>
-          {showCaret && !secondLine && <img className="intent-caret" src="/figma/start-caret.svg" alt="" />}
         </span>
         {secondLine && (
           <span className="intent-second-row">
             <span className="intent-text-line intent-second-line">{secondLine}</span>
-            {showCaret && <img className="intent-caret" src="/figma/start-caret.svg" alt="" />}
           </span>
         )}
       </span>
@@ -519,6 +524,8 @@ function PersonalizationSheet({
   const [birthTime, setBirthTime] = useState(current?.birthTime ?? "");
   const [birthPlace, setBirthPlace] = useState(current?.birthPlace ?? "");
   const [timeUnknown, setTimeUnknown] = useState(current?.timeUnknown ?? true);
+  const [zodiacError, setZodiacError] = useState(false);
+  const [birthError, setBirthError] = useState(false);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -531,6 +538,24 @@ function PersonalizationSheet({
   function finish() {
     if (!zodiac) return;
     onComplete({ zodiac, birthDate, birthTime: timeUnknown ? "" : birthTime, birthPlace, timeUnknown });
+  }
+
+  function continueToBirth() {
+    if (!zodiac) {
+      setZodiacError(true);
+      return;
+    }
+    setZodiacError(false);
+    setStep("birth");
+  }
+
+  function finishWithBirthData() {
+    if (!birthDate) {
+      setBirthError(true);
+      return;
+    }
+    setBirthError(false);
+    finish();
   }
 
   return (
@@ -550,30 +575,37 @@ function PersonalizationSheet({
 
         {step === "zodiac" ? (
           <>
-            <p className="profile-sheet-lead">Этого достаточно для быстрого персонального уточнения. Регистрация пока не нужна.</p>
+            <p className="profile-sheet-lead">этого достаточно для быстрого персонального уточнения. регистрация пока не нужна.</p>
             <div className="zodiac-grid" role="radiogroup" aria-label="Знак зодиака">
               {zodiacSigns.map((sign) => (
                 <button
                   type="button"
                   role="radio"
-                  aria-checked={zodiac === sign}
-                  className={zodiac === sign ? "selected" : ""}
-                  key={sign}
-                  onClick={() => setZodiac(sign)}
+                  aria-checked={zodiac === sign.name}
+                  className={zodiac === sign.name ? "selected" : ""}
+                  key={sign.name}
+                  onClick={() => {
+                    setZodiac(sign.name);
+                    setZodiacError(false);
+                  }}
                 >
-                  {sign}
+                  <span className="zodiac-symbol" aria-hidden="true">{sign.symbol}</span>
+                  <span>{sign.name}</span>
                 </button>
               ))}
             </div>
-            <button type="button" className="profile-primary" disabled={!zodiac} onClick={finish}>уточнить результат</button>
-            <button type="button" className="profile-secondary" onClick={() => setStep("birth")}>указать дату рождения</button>
+            {zodiacError && <p className="profile-inline-error" role="status">сначала выберите знак зодиака</p>}
+            <button type="button" className="profile-primary" onClick={continueToBirth}>далее</button>
           </>
         ) : (
           <>
-            <p className="profile-sheet-lead">Эти данные сохранятся только после входа. Пока они используются как черновик на этом экране.</p>
+            <p className="profile-sheet-lead">данные рождения можно пропустить. они используются только для более точной персонализации результата.</p>
             <label className="profile-field">
               <span>дата рождения</span>
-              <input type="date" value={birthDate} onChange={(event) => setBirthDate(event.target.value)} />
+              <input type="date" value={birthDate} onChange={(event) => {
+                setBirthDate(event.target.value);
+                setBirthError(false);
+              }} />
             </label>
             <label className="profile-check">
               <input type="checkbox" checked={timeUnknown} onChange={(event) => setTimeUnknown(event.target.checked)} />
@@ -589,8 +621,10 @@ function PersonalizationSheet({
               <span>место рождения <small>необязательно</small></span>
               <input value={birthPlace} onChange={(event) => setBirthPlace(event.target.value.slice(0, 80))} placeholder="город" maxLength={80} />
             </label>
-            <button type="button" className="profile-primary" disabled={!zodiac} onClick={finish}>применить данные</button>
-            <button type="button" className="profile-secondary" onClick={() => setStep("zodiac")}>назад к выбору знака</button>
+            {birthError && <p className="profile-inline-error" role="status">укажите дату рождения или пропустите этот шаг</p>}
+            <button type="button" className="profile-primary" onClick={finishWithBirthData}>уточнить результат</button>
+            <button type="button" className="profile-secondary" onClick={finish}>пропустить</button>
+            <button type="button" className="profile-back-link" onClick={() => setStep("zodiac")}>назад к выбору знака</button>
           </>
         )}
       </section>
@@ -787,6 +821,7 @@ export default function Home() {
 
   const active = days.find((day) => day.id === activeId) ?? calendarDays.find((day) => day.id === activeId) ?? days[1];
   const resultCopy = buildResultCopy(intent, active);
+  const ResultGuidanceIcon = intent.Icon;
 
   useEffect(() => {
     if (screen !== "result" || pendingReveal) return;
@@ -983,7 +1018,6 @@ export default function Home() {
             <IntentLine
               intent={previewIntents[previewIndex]}
               animated={!pickerOpen}
-              showCaret
               onClick={() => setPickerOpen(true)}
             />
           </div>
@@ -1052,7 +1086,7 @@ export default function Home() {
           <div className="result-guidance">
             <p>
               <strong>{active.rating === "excellent" ? "лучший " : ""}{resultCopy.verdict}.</strong>
-              <ArrowCircleUpLeft className="result-guidance-icon" weight="regular" aria-hidden="true" />
+              <ResultGuidanceIcon className="result-guidance-icon" weight="regular" aria-hidden="true" />
               <span>{resultCopy.advice.charAt(0).toLowerCase() + resultCopy.advice.slice(1)}</span>
             </p>
           </div>
