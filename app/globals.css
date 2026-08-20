@@ -1118,3 +1118,344 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
   .week-selection { transition: none !important; }
 }
+
+/* Cosmic v2 — the atmosphere is generated in CSS, not baked into a background image. */
+.starfield {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 22%, rgba(30, 128, 150, .16), transparent 28%),
+    radial-gradient(circle at 82% 58%, rgba(55, 65, 133, .12), transparent 32%),
+    linear-gradient(180deg, #010708 0%, #000405 48%, #020203 100%);
+  pointer-events: none;
+}
+.star-nebula {
+  position: absolute;
+  inset: -18%;
+  opacity: .32;
+  background:
+    radial-gradient(ellipse at 20% 40%, rgba(63, 211, 221, .25), transparent 20%),
+    radial-gradient(ellipse at 68% 72%, rgba(66, 135, 181, .2), transparent 24%);
+  filter: blur(32px);
+  transform: rotate(-14deg);
+}
+.star {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(225, 255, 255, .74);
+  box-shadow: 0 0 5px rgba(117, 236, 255, .48);
+  animation: star-twinkle ease-in-out infinite alternate;
+}
+.star-bright {
+  background: #efffff;
+  box-shadow: 0 0 4px #d9ffff, 0 0 12px rgba(80, 224, 255, .65);
+}
+.shooting-star {
+  position: absolute;
+  width: 52px;
+  height: 1px;
+  border-radius: 999px;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, rgba(225,255,255,.78));
+  transform: rotate(-34deg);
+  animation: shooting-star 12s linear infinite;
+}
+.shooting-star-one { top: 18%; left: 76%; animation-delay: 4.8s; }
+.shooting-star-two { top: 48%; left: 14%; animation-delay: 10.6s; animation-duration: 17s; }
+@keyframes star-twinkle {
+  0%, 35% { opacity: .22; transform: scale(.78); }
+  65%, 100% { opacity: .92; transform: scale(1.12); }
+}
+@keyframes shooting-star {
+  0%, 86% { opacity: 0; transform: translate(0, 0) rotate(-34deg); }
+  87% { opacity: .72; }
+  91% { opacity: 0; transform: translate(-110px, 76px) rotate(-34deg); }
+  100% { opacity: 0; }
+}
+
+.start-screen,
+.result-screen {
+  color: #fff;
+  background: #010506;
+}
+.start-screen.theme-light,
+.result-screen.theme-light { color: #fff; background: #010506; }
+.start-screen .starfield,
+.result-screen .starfield { display: block; }
+.start-screen .start-logo img,
+.start-screen .start-header-action img,
+.result-screen .result-icon-button img { filter: none; }
+.start-screen .intent-hint { color: rgba(255,255,255,.46); }
+.start-screen .start-header-action { color: #fff; border-color: rgba(255,255,255,.1); background: rgba(8,14,15,.46); }
+.start-screen .start-logo { top: 34%; }
+.start-screen .start-prompt { top: 39.5%; }
+
+.result-screen {
+  height: 100dvh;
+  min-height: 650px;
+  overflow: hidden;
+  --ink: #fff;
+  --muted: rgba(255,255,255,.5);
+  --result-secondary: rgba(255,255,255,.62);
+  --result-soft: rgba(255,255,255,.1);
+  --result-surface: rgba(20,24,25,.72);
+  --result-surface-solid: #171a1b;
+  --result-border: rgba(255,255,255,.09);
+}
+.result-screen::before { display: none; }
+.result-content {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  min-height: 0;
+  padding: max(18px, env(safe-area-inset-top)) 16px 166px;
+}
+.result-topbar {
+  height: 44px;
+  padding: 0;
+  grid-template-columns: 44px 1fr 44px;
+}
+.result-icon-button {
+  color: #fff;
+  border-color: rgba(255,255,255,.09);
+  background: rgba(18,22,23,.64);
+  box-shadow: 0 8px 28px rgba(0,0,0,.2);
+  backdrop-filter: blur(14px);
+}
+.result-icon-button img { filter: invert(1) brightness(1.7) !important; }
+.result-cosmic-card {
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.moon-stage {
+  position: relative;
+  width: 100%;
+  height: clamp(100px, 16.8dvh, 148px);
+  display: grid;
+  place-items: center;
+}
+.phase-moon {
+  position: relative;
+  width: clamp(86px, 25vw, 112px);
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 50%;
+  filter: drop-shadow(0 0 18px rgba(181,194,255,.16));
+  animation: moon-arrive .72s cubic-bezier(.16,1,.3,1) both;
+}
+.phase-moon-surface,
+.phase-moon-shadow {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.phase-moon-surface {
+  background:
+    radial-gradient(circle at 30% 26%, rgba(65,68,86,.42) 0 5%, transparent 6%),
+    radial-gradient(circle at 67% 36%, rgba(83,86,104,.34) 0 7%, transparent 8%),
+    radial-gradient(circle at 41% 72%, rgba(76,78,96,.3) 0 9%, transparent 10%),
+    radial-gradient(circle at 69% 76%, rgba(220,222,239,.45) 0 4%, transparent 5%),
+    radial-gradient(circle at 38% 35%, #dfe1f3, #aeb1cc 62%, #7e819d 100%);
+  box-shadow: inset -10px -8px 18px rgba(31,31,45,.32), inset 8px 7px 14px rgba(255,255,255,.18);
+}
+.phase-moon-shadow {
+  background: radial-gradient(circle at 38% 34%, #080b0d 0%, #010405 72%);
+  box-shadow: 0 0 10px rgba(0,0,0,.55);
+  transform: translateX(var(--moon-shadow-shift));
+  transition: transform .55s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes moon-arrive {
+  from { opacity: 0; transform: translateY(-12px) scale(.88); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.personalization-bubble {
+  position: absolute;
+  left: calc(50% + 8px);
+  bottom: 2px;
+  z-index: 3;
+  width: max-content;
+  min-height: 31px;
+  padding: 5px 10px 5px 7px;
+  border: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #111;
+  background: #fff;
+  box-shadow: 0 9px 24px rgba(0,0,0,.28);
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transform-origin: 18px 50%;
+  animation: personalization-grow .58s cubic-bezier(.16,1.22,.34,1) both;
+}
+.personalization-bubble svg { width: 16px; height: 16px; color: #7466ef; }
+@keyframes personalization-grow {
+  0% { opacity: 0; transform: translateX(-6px) scale(.12); }
+  66% { opacity: 1; transform: translateX(0) scale(1.06); }
+  100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+.result-date-line { margin-top: -2px; }
+.result-date-line strong {
+  font-size: clamp(34px, 10.5vw, 44px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -.042em;
+}
+.result-guidance { margin-top: clamp(14px, 2.6dvh, 24px); }
+.result-guidance h1 {
+  max-width: 350px;
+  margin: 0;
+  font-size: clamp(20px, 5.8vw, 25px);
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: -.025em;
+}
+.result-guidance p {
+  max-width: 338px;
+  margin: 4px 0 0;
+  color: rgba(255,255,255,.58);
+  font-size: clamp(15px, 4.2vw, 18px);
+  line-height: 1.18;
+}
+.result-guidance p svg {
+  display: inline-block;
+  vertical-align: -2px;
+  width: 1.08em;
+  height: 1.08em;
+  margin: 0 4px -2px 0;
+  color: #786df5;
+}
+.result-score-row {
+  min-height: 44px;
+  margin-top: 3px;
+  padding: 8px;
+  border: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.result-score-row img { width: 17px; height: 17px; }
+.result-score-row svg { width: 14px; height: 14px; color: rgba(255,255,255,.4); }
+.result-calendar-action {
+  position: absolute;
+  right: 20px;
+  bottom: 177px;
+  left: 20px;
+  min-height: 56px;
+  border: 0;
+  border-radius: 16px;
+  color: #080909;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(0,0,0,.18);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.result-calendar-action.saved { color: #fff; background: var(--green); }
+
+.result-calendar {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 20;
+  height: 144px;
+  padding: 6px 0 max(18px, env(safe-area-inset-bottom));
+  overflow: hidden;
+  border-radius: 32px 32px 0 0;
+  color: #fff;
+  background: rgba(20,20,21,.8);
+  box-shadow: 0 -16px 42px rgba(0,0,0,.18);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: height .46s cubic-bezier(.16,1,.3,1), background-color .3s ease;
+}
+.result-calendar.is-expanded {
+  height: 80%;
+  background: rgba(19,19,20,.97);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.calendar-grabber {
+  width: 100%;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  display: grid;
+  place-items: start center;
+  background: transparent;
+  cursor: ns-resize;
+  touch-action: none;
+}
+.calendar-grabber span { width: 44px; height: 5px; border-radius: 99px; background: rgba(255,255,255,.42); }
+.calendar-peek {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-auto-rows: 56px;
+  gap: 2px;
+  padding: 0 10px;
+}
+.calendar-peek-day {
+  min-width: 0;
+  height: 56px;
+  padding: 8px 2px 9px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.calendar-peek-day.selected { background: rgba(255,255,255,.08); }
+.calendar-peek-day > span { font-size: 14px; line-height: 19px; }
+.calendar-peek-day small { display: inline-flex; align-items: center; gap: 2px; font-size: 10px; line-height: 13px; }
+.calendar-peek-day img { width: 9px; height: 9px; }
+.calendar-months { padding: 0 16px 48px; }
+.calendar-months > section + section { margin-top: 38px; }
+.calendar-months h2 {
+  margin: 15px 0 18px;
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 38px;
+  letter-spacing: -.035em;
+  text-transform: capitalize;
+}
+.calendar-weekdays,
+.calendar-month-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.calendar-weekdays { margin-bottom: 8px; color: rgba(255,255,255,.35); font-size: 11px; text-align: center; }
+.calendar-month-grid button {
+  min-width: 0;
+  height: 48px;
+  padding: 5px 2px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 1px;
+}
+.calendar-month-grid button.selected { color: #fff; background: #6263f5; box-shadow: 0 10px 22px rgba(69,64,190,.3); }
+.calendar-month-grid button span { font-size: 15px; line-height: 18px; }
+.calendar-month-grid button img { width: 10px; height: 10px; }
+
+@media (max-height: 720px) {
+  .moon-stage { height: 94px; }
+  .phase-moon { width: 78px; }
+  .result-guidance { margin-top: 10px; }
+  .result-calendar-action { bottom: 166px; min-height: 50px; }
+}

@@ -4,7 +4,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import Link from "next/link";
 import Fuse from "fuse.js";
 import { EclipticGeoMoon, MoonPhase } from "astronomy-engine";
 import {
@@ -29,6 +28,7 @@ import RevealTransition from "./reveal-transition";
 import type { Icon } from "@phosphor-icons/react";
 import {
   AirplaneTilt,
+  ArrowLeft,
   Bed,
   BookOpenText,
   Briefcase,
@@ -156,9 +156,10 @@ function currentMoscowDate() {
   return new Date(Date.UTC(value("year"), value("month") - 1, value("day"), 12));
 }
 
-function buildCurrentWeek(intent: Pick<Intent, "archetype" | "zodiacProfile">): Day[] {
+function buildCurrentWeek(intent: Pick<Intent, "archetype" | "zodiacProfile">, count = 14, fromMonthStart = false): Day[] {
   const anchor = currentMoscowDate();
-  const calculatedDays = Array.from({ length: 14 }, (_, index) => {
+  if (fromMonthStart) anchor.setUTCDate(1);
+  const calculatedDays = Array.from({ length: count }, (_, index) => {
     const date = new Date(anchor);
     date.setUTCDate(anchor.getUTCDate() + index);
     const day = String(date.getUTCDate());
@@ -282,14 +283,6 @@ function buildResultCopy(intent: Intent, day: Day) {
   };
 }
 
-function Brand() {
-  return (
-    <a className="brand" href="#top" aria-label="Polune — на главную">
-      <img src="/figma/polune-mark.svg" alt="" />
-    </a>
-  );
-}
-
 function StartLogo() {
   return (
     <a className="start-logo" href="#top" aria-label="polune — на главную">
@@ -316,16 +309,6 @@ function StartControls({ theme, onToggleTheme }: { theme: "dark" | "light"; onTo
         <img src="/figma/start-user.svg" alt="" />
       </button>
     </header>
-  );
-}
-
-function LegalLinks({ feedbackHref = "/feedback" }: { feedbackHref?: string }) {
-  return (
-    <nav className="legal-links" aria-label="Информация о сервисе">
-      <Link href={feedbackHref}>обратная связь</Link>
-      <Link href="/methodology">методика</Link>
-      <Link href="/privacy">конфиденциальность</Link>
-    </nav>
   );
 }
 
@@ -627,76 +610,149 @@ function PersonalizationSheet({
   );
 }
 
-function WeekStrip({ days, activeId, onSelect }: { days: Day[]; activeId: string; onSelect: (day: Day) => void }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [fadeEdges, setFadeEdges] = useState({ left: false, right: true });
-  const [scrollPosition, setScrollPosition] = useState(0);
-  const selectedIndex = Math.max(0, days.findIndex((day) => day.id === activeId));
-  const selectionStyle = {
-    "--selection-offset": `${18 + selectedIndex * 54 - scrollPosition}px`,
-  } as CSSProperties;
+const starSeeds = Array.from({ length: 74 }, (_, index) => ({
+  left: (index * 47 + 13) % 101,
+  top: (index * 83 + 7) % 101,
+  size: index % 13 === 0 ? 2.5 : index % 5 === 0 ? 1.7 : 1,
+  delay: -((index * 0.73) % 6),
+  duration: 3.8 + (index % 7) * 0.54,
+}));
 
-  useEffect(() => {
-    const viewport = scrollRef.current;
-    if (!viewport) return;
-    const target = selectedIndex * 54 - viewport.clientWidth / 2 + 26;
-    viewport.scrollTo({
-      left: Math.max(0, target),
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+function Starfield() {
+  return (
+    <div className="starfield" aria-hidden="true">
+      <div className="star-nebula" />
+      {starSeeds.map((star, index) => (
+        <i
+          className={index % 9 === 0 ? "star star-bright" : "star"}
+          key={index}
+          style={{
+            left: `${star.left}%`,
+            top: `${star.top}%`,
+            width: star.size,
+            height: star.size,
+            animationDelay: `${star.delay}s`,
+            animationDuration: `${star.duration}s`,
+          }}
+        />
+      ))}
+      <i className="shooting-star shooting-star-one" />
+      <i className="shooting-star shooting-star-two" />
+    </div>
+  );
+}
+
+function MoonPhaseIllustration({ angle, label }: { angle: number; label: string }) {
+  const normalized = ((angle % 360) + 360) % 360;
+  const waxing = normalized <= 180;
+  const illumination = (1 - Math.cos((normalized * Math.PI) / 180)) / 2;
+  const shadowShift = (waxing ? -1 : 1) * illumination * 110;
+  return (
+    <div
+      className={`phase-moon ${waxing ? "is-waxing" : "is-waning"}`}
+      role="img"
+      aria-label={`${label}, освещено ${Math.round(illumination * 100)}%`}
+      style={{ "--moon-shadow-shift": `${shadowShift}%` } as CSSProperties}
+    >
+      <span className="phase-moon-surface" />
+      <span className="phase-moon-shadow" />
+    </div>
+  );
+}
+
+function ResultCalendar({
+  days,
+  activeId,
+  expanded,
+  onExpandedChange,
+  onSelect,
+}: {
+  days: Day[];
+  activeId: string;
+  expanded: boolean;
+  onExpandedChange: (expanded: boolean) => void;
+  onSelect: (day: Day) => void;
+}) {
+  const dragStart = useRef<number | null>(null);
+  const visibleDays = days.slice(0, 62);
+  const todayIso = currentMoscowDate().toISOString().slice(0, 10);
+  const peekDays = visibleDays.filter((day) => day.dateIso >= todayIso).slice(0, 14);
+  const monthGroups = visibleDays.reduce<Array<{ key: string; title: string; days: Day[] }>>((groups, day) => {
+    const key = day.dateIso.slice(0, 7);
+    const last = groups.at(-1);
+    if (last?.key === key) last.days.push(day);
+    else groups.push({
+      key,
+      title: new Intl.DateTimeFormat("ru-RU", { month: "long", timeZone: "UTC" }).format(new Date(`${day.dateIso}T12:00:00Z`)),
+      days: [day],
     });
-  }, [selectedIndex]);
-
-  useEffect(() => {
-    const viewport = scrollRef.current;
-    if (!viewport) return;
-
-    const updateFadeEdges = () => {
-      const maxScroll = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
-      setFadeEdges({
-        left: viewport.scrollLeft > 2,
-        right: viewport.scrollLeft < maxScroll - 2,
-      });
-      setScrollPosition(viewport.scrollLeft);
-    };
-
-    updateFadeEdges();
-    viewport.addEventListener("scroll", updateFadeEdges, { passive: true });
-    const resizeObserver = new ResizeObserver(updateFadeEdges);
-    resizeObserver.observe(viewport);
-
-    return () => {
-      viewport.removeEventListener("scroll", updateFadeEdges);
-      resizeObserver.disconnect();
-    };
-  }, [days.length]);
+    return groups;
+  }, []).slice(0, 2);
 
   return (
-    <div className="week-strip-frame">
-      <div
-        className="week-strip-scroll"
-        ref={scrollRef}
-        aria-label="Ближайшие четырнадцать дней"
-        data-fade-left={fadeEdges.left}
-        data-fade-right={fadeEdges.right}
-      >
-        <div className="week-strip">
-          {days.map((day) => (
+    <section className={`result-calendar ${expanded ? "is-expanded" : ""}`} aria-label="Календарь подходящих дней">
+      <button
+        type="button"
+        className="calendar-grabber"
+        aria-expanded={expanded}
+        aria-label={expanded ? "Свернуть календарь" : "Развернуть календарь"}
+        onClick={() => onExpandedChange(!expanded)}
+        onPointerDown={(event) => {
+          dragStart.current = event.clientY;
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }}
+        onPointerUp={(event) => {
+          if (dragStart.current === null) return;
+          const distance = dragStart.current - event.clientY;
+          if (Math.abs(distance) > 24) onExpandedChange(distance > 0);
+          dragStart.current = null;
+        }}
+      ><span /></button>
+
+      {!expanded ? (
+        <div className="calendar-peek">
+          {peekDays.map((day) => (
             <button
               type="button"
               key={day.id}
-              className={`day-cell status-${day.rating} ${day.id === activeId ? "selected" : ""}`}
+              className={`calendar-peek-day status-${day.rating} ${day.id === activeId ? "selected" : ""}`}
               onClick={() => onSelect(day)}
-              aria-pressed={day.id === activeId}
-              aria-label={`${day.longDate}: ${day.score} из 100, ${ratingLabels[day.rating]}`}
+              aria-label={`${day.longDate}: ${day.score}%`}
             >
-              <span className="day-number">{day.day}</span>
-              <span className="day-meta"><img src={statusIcons[day.rating]} alt="" />{day.weekday}</span>
+              <span>{day.day}</span>
+              <small><img src={statusIcons[day.rating]} alt="" />{day.weekday}</small>
             </button>
           ))}
         </div>
-      </div>
-      <span className="week-selection" style={selectionStyle} aria-hidden="true" />
-    </div>
+      ) : (
+        <div className="calendar-months">
+          {monthGroups.map((group) => (
+            <section key={group.key}>
+              <h2>{group.title}</h2>
+              <div className="calendar-weekdays" aria-hidden="true">
+                {['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'].map((weekday) => <span key={weekday}>{weekday}</span>)}
+              </div>
+              <div className="calendar-month-grid">
+                {group.days.map((day, index) => (
+                  <button
+                    type="button"
+                    key={day.id}
+                    className={`status-${day.rating} ${day.id === activeId ? "selected" : ""}`}
+                    onClick={() => onSelect(day)}
+                    style={index === 0
+                      ? { gridColumnStart: ((new Date(`${day.dateIso}T12:00:00Z`).getUTCDay() + 6) % 7) + 1 }
+                      : undefined}
+                  >
+                    <span>{day.day}</span>
+                    <img src={statusIcons[day.rating]} alt="" />
+                  </button>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -708,6 +764,7 @@ export default function Home() {
   const [intent, setIntent] = useState(intents[0]);
   const [previewIndex, setPreviewIndex] = useState(0);
   const days = useMemo(() => buildCurrentWeek(intent), [intent]);
+  const calendarDays = useMemo(() => buildCurrentWeek(intent, 62, true), [intent]);
   const initialBestId = pickPreferredDay(days).id;
   const [hasChosenIntent, setHasChosenIntent] = useState(false);
   const [activeId, setActiveId] = useState(initialBestId);
@@ -718,26 +775,19 @@ export default function Home() {
   const [scoreInfoOpen, setScoreInfoOpen] = useState(false);
   const [personalizationOpen, setPersonalizationOpen] = useState(false);
   const [personalization, setPersonalization] = useState<PersonalizationData | null>(null);
+  const [personalizationBubbleVisible, setPersonalizationBubbleVisible] = useState(false);
+  const [calendarExpanded, setCalendarExpanded] = useState(false);
   const calendarStatusTimer = useRef<number | null>(null);
   const feedbackStatusTimer = useRef<number | null>(null);
 
-  const active = days.find((day) => day.id === activeId) ?? days[1];
-  const bestDay = pickPreferredDay(days);
-  const alternatives = useMemo(
-    () => {
-      const goodDays = days
-        .filter((day) => day.rating === "good")
-        .sort((left, right) => right.score - left.score);
-
-      if (active.id === bestDay.id) return goodDays.slice(0, 2);
-      if (active.rating === "good") {
-        return [bestDay, ...goodDays.filter((day) => day.id !== active.id)].slice(0, 2);
-      }
-      return [bestDay];
-    },
-    [active.id, active.rating, bestDay, days],
-  );
+  const active = days.find((day) => day.id === activeId) ?? calendarDays.find((day) => day.id === activeId) ?? days[1];
   const resultCopy = buildResultCopy(intent, active);
+
+  useEffect(() => {
+    if (screen !== "result" || pendingReveal) return;
+    const timer = window.setTimeout(() => setPersonalizationBubbleVisible(true), 2200);
+    return () => window.clearTimeout(timer);
+  }, [active.id, pendingReveal, screen]);
 
   useEffect(() => () => {
     if (calendarStatusTimer.current) window.clearTimeout(calendarStatusTimer.current);
@@ -770,10 +820,12 @@ export default function Home() {
         return;
       }
 
+      const restoredCalendarDays = buildCurrentWeek(restoredIntent, 62, true);
       const restoredDays = buildCurrentWeek(restoredIntent);
       const requestedDate = params.get("date");
-      const restoredDay = restoredDays.find((day) => day.dateIso === requestedDate) ?? pickPreferredDay(restoredDays);
+      const restoredDay = restoredCalendarDays.find((day) => day.dateIso === requestedDate) ?? pickPreferredDay(restoredDays);
       setIntent(restoredIntent);
+      setPersonalizationBubbleVisible(false);
       setHasChosenIntent(true);
       setScreen("result");
       setActiveId(restoredDay.id);
@@ -805,9 +857,10 @@ export default function Home() {
   }, [pendingReveal, pickerOpen, screen]);
 
   function chooseIntent(nextIntent: Intent) {
-    const nextDays = buildCurrentWeek(nextIntent);
+    const nextDays = buildCurrentWeek(nextIntent, 62).slice(0, 14);
     const nextDay = pickPreferredDay(nextDays);
     setIntent(nextIntent);
+    setPersonalizationBubbleVisible(false);
     setHasChosenIntent(true);
     setPickerOpen(false);
     setActiveId(nextDay.id);
@@ -844,6 +897,7 @@ export default function Home() {
 
   function chooseDay(day: Day) {
     if (day.id === activeId) return;
+    setPersonalizationBubbleVisible(false);
     if (calendarStatusTimer.current) window.clearTimeout(calendarStatusTimer.current);
     setActiveId(day.id);
     setSaved(false);
@@ -932,6 +986,7 @@ export default function Home() {
   if (screen === "start") {
     return (
       <main className={`app-shell start-screen theme-${startTheme}`} id="top">
+        <Starfield />
         <div className="start-content">
           <StartControls theme={startTheme} onToggleTheme={toggleStartTheme} />
           <StartLogo />
@@ -947,10 +1002,6 @@ export default function Home() {
           <button className="start-primary" type="button" onClick={() => setPickerOpen(true)}>
             выбрать дело
           </button>
-        </div>
-        <div className="start-decoration" aria-hidden="true">
-          <img className="start-glow" src="/reveal/figma-glow.svg" alt="" />
-          <img className="start-shell" src="/reveal/figma-shell-closed.png" alt="" />
         </div>
         {pendingReveal && (
           <RevealTransition
@@ -968,94 +1019,59 @@ export default function Home() {
 
   return (
     <main className={`app-shell result-screen theme-${startTheme}`} id="top">
+      <Starfield />
       <div className="result-content">
         <header className="result-topbar">
           <button
             className="result-icon-button"
             type="button"
-            onClick={toggleStartTheme}
-            aria-label={startTheme === "dark" ? "включить светлую тему" : "включить тёмную тему"}
+            onClick={() => {
+              window.history.pushState({}, "", window.location.pathname);
+              setScreen("start");
+              setHasChosenIntent(false);
+              setCalendarExpanded(false);
+              setPersonalizationBubbleVisible(false);
+            }}
+            aria-label="Вернуться и выбрать другое дело"
           >
-            {startTheme === "dark" ? <img src="/figma/start-sun.svg" alt="" /> : <Moon weight="regular" aria-hidden="true" />}
+            <ArrowLeft weight="regular" aria-hidden="true" />
           </button>
-          <Brand />
-          <Link className="result-icon-button" href="/profile" aria-label="Открыть профиль">
-            <UserCircle weight="regular" aria-hidden="true" />
-          </Link>
+          <span />
+          <button className="result-icon-button" type="button" onClick={shareResult} aria-label="Поделиться результатом">
+            {shared ? <Check size={22} weight="bold" /> : <img src="/figma/share.svg" alt="" />}
+          </button>
         </header>
 
-        <header className="result-hero">
-          <h1>благоприятный<br />день, чтобы</h1>
-          <IntentLine intent={intent} onClick={() => setPickerOpen(true)} />
-          <p className="calculation-mode">
-            {personalization ? `черновик профиля · ${personalization.zodiac}` : "общий расчёт · без персональных данных"}
-          </p>
-        </header>
-
-        <WeekStrip days={days} activeId={active.id} onSelect={chooseDay} />
-
-        <article className="featured-card" key={active.id} aria-live="polite">
-          <div className="featured-meta">
-            <span className="period-badge"><Sparkle weight="fill" aria-hidden="true" />лучший среди ближайших</span>
-            <span className={`score-label status-${active.rating}`}>
-              <img src={statusIcons[active.rating]} alt="" />
-              {active.score}% совпадение
-            </span>
+        <article className="result-cosmic-card" key={active.id} aria-live="polite">
+          <div className="moon-stage">
+            <MoonPhaseIllustration angle={active.moonPhaseAngle} label={active.moonPhaseLabel} />
+            {personalizationBubbleVisible && (
+              <button type="button" className="personalization-bubble" onClick={() => setPersonalizationOpen(true)}>
+                <UserCircle weight="fill" aria-hidden="true" />
+                {personalization ? `для вас · ${personalization.zodiac}` : "персонализировать под вас"}
+              </button>
+            )}
           </div>
 
-          <div className="featured-date">
-            <strong>{active.day}</strong>
-            <span>{active.monthLabel}</span>
+          <div className="result-date-line">
+            <strong>{active.day} {active.monthLabel.split(",")[0]}</strong>
           </div>
 
-          <div className="result-message">
-            <h2>{resultCopy.verdict}</h2>
-            <p>{resultCopy.advice}</p>
+          <div className="result-guidance">
+            <h1>{resultCopy.verdict}</h1>
+            <p><intent.Icon weight="regular" aria-hidden="true" />{resultCopy.advice}</p>
           </div>
 
-          <button type="button" className="how-calculated" onClick={() => setScoreInfoOpen(true)}>
-            как посчитали
-            <Info size={18} weight="regular" aria-hidden="true" />
+          <button type="button" className={`result-score-row status-${active.rating}`} onClick={() => setScoreInfoOpen(true)}>
+            <img src={statusIcons[active.rating]} alt="" />
+            <span>{active.score}% совпадение</span>
+            <Info weight="regular" aria-hidden="true" />
           </button>
 
-          <div className="calculation-note">
-            <span>Что сейчас учитываем</span>
-            <strong>дело + дата</strong>
-          </div>
-
-          <div className="featured-actions">
-            <button type="button" className={`calendar-button ${saved ? "saved" : ""}`} onClick={addToCalendar} disabled={saved} aria-live="polite">
-              {saved ? "файл события готов" : "добавить событие"}
-            </button>
-            <button type="button" className="share-button" onClick={shareResult} aria-label="Поделиться результатом">
-              {shared ? <Check size={28} weight="bold" /> : <img src="/figma/share.svg" alt="" />}
-            </button>
-          </div>
+          <button type="button" className={`result-calendar-action ${saved ? "saved" : ""}`} onClick={addToCalendar} disabled={saved} aria-live="polite">
+            {saved ? "добавлено в календарь" : "добавить в календарь"}
+          </button>
         </article>
-
-        <section className={`personalization-card ${personalization ? "is-complete" : ""}`}>
-          <div className="personalization-icon" aria-hidden="true"><UserCircle weight="regular" /></div>
-          <div>
-            <p>{personalization ? "данные для профиля готовы" : "сделать рекомендацию личнее"}</p>
-            <h2>{personalization ? "Вы выбрали свой знак" : "Посмотрите, изменится ли результат для вас"}</h2>
-            <span>
-              {personalization
-                ? `Знак «${personalization.zodiac}» пока не меняет оценку: персональную методику подключим отдельно и покажем, что именно повлияло на результат.`
-                : "Сейчас учитываем только дело и дату. Для первого шага достаточно выбрать знак."}
-            </span>
-          </div>
-          <button type="button" className="personalization-action" onClick={() => setPersonalizationOpen(true)}>
-            {personalization ? "изменить данные" : "уточнить для себя"}
-          </button>
-          {personalization && (
-            <Link
-              className="save-profile-link"
-              href={`/profile?zodiac=${encodeURIComponent(personalization.zodiac)}&birth_date=${encodeURIComponent(personalization.birthDate)}&birth_time=${encodeURIComponent(personalization.birthTime)}&birth_place=${encodeURIComponent(personalization.birthPlace)}&time_unknown=${personalization.timeUnknown ? "1" : "0"}`}
-            >
-              сохранить профиль через ChatGPT
-            </Link>
-          )}
-        </section>
 
         {feedbackVisible && (
           <section className="result-feedback" aria-live="polite" aria-label="Обратная связь о рекомендации">
@@ -1077,35 +1093,18 @@ export default function Home() {
           </section>
         )}
 
-        <section className="alternative-days" key={`alternatives-${active.id}`} aria-label="Быстрый выбор подходящего дня">
-          {alternatives.map((day, index) => (
-            <button
-              type="button"
-              key={day.id}
-              style={{ animationDelay: `${index * 45}ms` }}
-              onClick={() => chooseDay(day)}
-              aria-label={`Открыть ${day.longDate}: ${day.score} из 100, ${ratingLabels[day.rating]}`}
-            >
-              <span className="alternative-date">
-                <span>{day.longDate}</span>
-              </span>
-              <span className={`alternative-score status-${day.rating}`}>
-                <img src={statusIcons[day.rating]} alt="" />{day.score}%
-              </span>
-            </button>
-          ))}
-        </section>
-
-        <section className="trust-panel">
-          <h2>наш подход — подсказка,<br />а не предсказание</h2>
-          <ol>
-            <li><span>01</span>используем реальные фазы луны и одну последовательную традицию</li>
-            <li><span>02</span>отделяем астрономический факт от символической интерпретации</li>
-            <li><span>03</span>не советуем откладывать медицинские, финансовые и другие важные решения</li>
-          </ol>
-        </section>
-        <LegalLinks feedbackHref={`/feedback?intent=${intent.id}&date=${active.dateIso}&score=${active.score}`} />
       </div>
+
+      <ResultCalendar
+        days={calendarDays}
+        activeId={active.id}
+        expanded={calendarExpanded}
+        onExpandedChange={setCalendarExpanded}
+        onSelect={(day) => {
+          chooseDay(day);
+          if (calendarExpanded) setCalendarExpanded(false);
+        }}
+      />
 
       {pickerOpen && <IntentPicker current={intent} showSelection={hasChosenIntent} onClose={() => setPickerOpen(false)} onSelect={chooseIntent} />}
       {pendingReveal && (
