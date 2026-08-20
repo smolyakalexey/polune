@@ -68,9 +68,9 @@ export function calculateMethodScore(
 }
 
 export function ratingForScore(score: number): Rating {
-  if (score >= 92) return "good";
-  if (score >= 75) return "caution";
-  if (score >= 35) return "neutral";
+  if (score >= 75) return "good";
+  if (score >= 50) return "neutral";
+  if (score >= 25) return "caution";
   return "low";
 }
 
