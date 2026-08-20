@@ -71,7 +71,7 @@ function createTransitionStars(count: number): TransitionStar[] {
   });
 }
 
-const transitionStars = createTransitionStars(780);
+const transitionStars = createTransitionStars(960);
 const reelDays = Array.from({ length: 62 }, (_, index) => index % 31 + 1);
 
 function clamp(value: number) {
@@ -122,6 +122,7 @@ const StarCanvas = memo(function StarCanvas() {
         const curvedFront = waveFront + edge * edge * .055;
         const distance = (normalizedY - curvedFront) / .09;
         const impulse = wave > 0 && wave < 1 ? Math.exp(-(distance * distance)) : 0;
+        const crest = wave > 0 && wave < 1 ? Math.exp(-(distance * distance) * 4.4) : 0;
         const twinkle = .93 + Math.sin(now * .0018 + star.twinkleOffset) * .07;
         const waveScale = star.depth === 0 ? .78 : star.depth === 1 ? 1.05 : .55;
         const calmScale = star.depth === 0 ? .78 : star.depth === 1 ? .86 : .92;
@@ -131,7 +132,7 @@ const StarCanvas = memo(function StarCanvas() {
           * (1 - calm * (1 - calmScale))
           * finalScale;
         const settleOpacity = star.depth === 0 ? .36 : star.depth === 1 ? .52 : .62;
-        const densityBoost = impulse * (star.depth === 0 ? .16 : .09);
+        const densityBoost = impulse * (star.depth === 0 ? .16 : .09) + crest * (star.depth === 0 ? .08 : .14);
         const opacity = Math.min(1, baseOpacity * easedBirth * twinkle * (1 + impulse * 1.15) + densityBoost)
           * (1 - calm * .16)
           * (1 - settle * (1 - settleOpacity));
@@ -144,16 +145,17 @@ const StarCanvas = memo(function StarCanvas() {
 
         const color = star.depth === 0 ? "195, 231, 238" : star.depth === 1 ? "215, 249, 252" : "188, 234, 241";
         context.fillStyle = `rgba(${color}, ${opacity})`;
-        if (star.depth === 2) {
-          context.shadowColor = `rgba(135, 224, 239, ${Math.min(.5, opacity)})`;
-          context.shadowBlur = 4 + impulse * 3;
+        const crestGlow = crest > .12 && star.id % 5 === 0;
+        if (star.depth === 2 || crestGlow) {
+          context.shadowColor = `rgba(145, 235, 247, ${Math.min(.72, opacity + crest * .24)})`;
+          context.shadowBlur = star.depth === 2 ? 4 + impulse * 3 : 3 + crest * 8;
         }
 
         context.beginPath();
         context.arc(x, y, Math.max(.42, radius), 0, Math.PI * 2);
         context.fill();
 
-        if (star.depth === 2) context.shadowBlur = 0;
+        if (star.depth === 2 || crestGlow) context.shadowBlur = 0;
       }
 
       if (elapsed < 5600) frameId = window.requestAnimationFrame(draw);

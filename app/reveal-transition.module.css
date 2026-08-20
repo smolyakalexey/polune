@@ -53,13 +53,15 @@
 .counterCluster {
   position: absolute;
   top: 60%;
-  right: 20px;
-  left: 20px;
+  left: 50%;
+  width: min(100%, 402px);
+  padding-inline: 20px;
+  box-sizing: border-box;
   z-index: 3;
   display: grid;
   justify-items: center;
   text-align: center;
-  transform: translateY(28px);
+  transform: translate(-50%, 28px);
   opacity: 0;
   transition:
     top .86s cubic-bezier(.16, 1, .3, 1),
@@ -69,13 +71,13 @@
 
 .transition:is([data-phase="count"], [data-phase="wave"], [data-phase="lock"]) .counterCluster {
   opacity: 1;
-  transform: translateY(0);
+  transform: translate(-50%, 0);
 }
 
 .transition:is([data-phase="lift"], [data-phase="reveal"], [data-phase="leave"]) .counterCluster {
   top: 26.4%;
   opacity: 1;
-  transform: translateY(0);
+  transform: translate(-50%, 0);
 }
 
 .reelViewport {
@@ -113,7 +115,7 @@
   flex: 0 0 92px;
   color: rgba(255,255,255,.82);
   font-size: 58px;
-  font-weight: 400;
+  font-weight: 500;
   line-height: 84px;
   letter-spacing: -2.5px;
   text-align: center;
@@ -122,6 +124,7 @@
 }
 
 .lockedDate {
+  width: 100%;
   min-height: 84px;
   display: flex;
   align-items: baseline;
@@ -133,9 +136,9 @@
 
 .lockedDate strong {
   font-size: 78px;
-  font-weight: 400;
+  font-weight: 500;
   line-height: 84px;
-  letter-spacing: -3px;
+  letter-spacing: -2px;
   font-variant-numeric: tabular-nums;
   text-shadow: 0 0 28px rgba(183, 242, 255, .2);
   transition: font-size .86s cubic-bezier(.16, 1, .3, 1), line-height .86s cubic-bezier(.16, 1, .3, 1);
@@ -143,9 +146,9 @@
 
 .lockedDate span {
   font-size: 56px;
-  font-weight: 400;
+  font-weight: 500;
   line-height: 64px;
-  letter-spacing: -1.7px;
+  letter-spacing: -2px;
   transition: font-size .86s cubic-bezier(.16, 1, .3, 1), line-height .86s cubic-bezier(.16, 1, .3, 1);
 }
 
@@ -168,6 +171,7 @@
 }
 
 .counterCopy {
+  width: 100%;
   max-width: 318px;
   margin: 8px 0 0;
   display: grid;
@@ -189,18 +193,19 @@
 .finalCopy {
   position: absolute;
   top: 37.5%;
-  right: 35px;
-  left: 35px;
+  left: 50%;
+  width: 332px;
+  max-width: calc(100% - 40px);
   z-index: 3;
   text-align: center;
   opacity: 0;
-  transform: translateY(32px);
+  transform: translate(-50%, 32px);
   transition: opacity .58s ease, transform .72s cubic-bezier(.16, 1, .3, 1);
 }
 
 .transition:is([data-phase="reveal"], [data-phase="leave"]) .finalCopy {
   opacity: 1;
-  transform: translateY(0);
+  transform: translate(-50%, 0);
 }
 
 .finalCopy h2,
@@ -218,10 +223,10 @@
 @media (prefers-reduced-motion: reduce) {
   .transition { transition: opacity 140ms ease; }
   .starCanvas, .spaceGlow { display: none; }
-  .counterCluster { top: 26.4%; opacity: 1; transform: none; transition: none; }
+  .counterCluster { top: 26.4%; opacity: 1; transform: translateX(-50%); transition: none; }
   .counterCopy { display: none; }
   .lockedDate strong, .lockedDate span { font-size: 68px; line-height: 64px; }
-  .finalCopy { opacity: 1; transform: none; transition: none; }
+  .finalCopy { opacity: 1; transform: translateX(-50%); transition: none; }
 }
 
 @media (max-height: 720px) {
