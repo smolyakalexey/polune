@@ -1360,30 +1360,35 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   position: relative;
   width: 132px;
   height: 128px;
-  overflow: hidden;
-  border-radius: 0;
-  clip-path: circle(41.25% at 50% 50%);
+  overflow: visible;
   filter: drop-shadow(0 0 18px rgba(181,194,255,.16));
   animation: moon-arrive .72s cubic-bezier(.16,1,.3,1) both;
 }
-.phase-moon-surface,
+.phase-moon-surface {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+.phase-moon-mask {
+  position: absolute;
+  left: 9.0909%;
+  top: 7.8125%;
+  width: 81.8182%;
+  height: 84.375%;
+  overflow: hidden;
+  border-radius: 50%;
+}
 .phase-moon-shadow {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  border-radius: 0;
-}
-.phase-moon-surface {
-  display: block;
-  object-fit: cover;
-}
-.phase-moon-shadow {
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  border-radius: 50%;
   background: #020002;
-  filter: blur(2.5px);
+  filter: blur(8px);
   box-shadow: none;
   transform: translateX(var(--moon-shadow-shift));
   transition: transform .55s cubic-bezier(.2,.8,.2,1);

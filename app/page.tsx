@@ -798,7 +798,7 @@ function MoonPhaseIllustration({ angle, label }: { angle: number; label: string 
   const normalized = ((angle % 360) + 360) % 360;
   const waxing = normalized <= 180;
   const illumination = (1 - Math.cos((normalized * Math.PI) / 180)) / 2;
-  const shadowShift = (waxing ? -1 : 1) * illumination * 112;
+  const shadowShift = (waxing ? -1 : 1) * illumination * 100;
   return (
     <div
       className={`phase-moon ${waxing ? "is-waxing" : "is-waning"}`}
@@ -807,7 +807,9 @@ function MoonPhaseIllustration({ angle, label }: { angle: number; label: string 
       style={{ "--moon-shadow-shift": `${shadowShift}%` } as CSSProperties}
     >
       <img className="phase-moon-surface" src="/figma/moon-base.png" alt="" />
-      <span className="phase-moon-shadow" />
+      <span className="phase-moon-mask" aria-hidden="true">
+        <span className="phase-moon-shadow" />
+      </span>
     </div>
   );
 }
