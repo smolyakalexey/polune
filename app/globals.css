@@ -1051,7 +1051,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .profile-primary:disabled { opacity: .3; cursor: default; }
 .profile-secondary { margin-top: 6px; color: var(--ink); background: transparent; }
 .profile-inline-error { margin: 12px 4px -8px; color: #ff8175; font-size: 13px; line-height: 18px; text-align: center; }
-.profile-back-link { width: 100%; min-height: 40px; margin-top: 2px; border: 0; color: rgba(255,255,255,.5); background: transparent; font-size: 13px; cursor: pointer; }
+.profile-back-link { width: 100%; min-height: 44px; margin-top: 2px; border: 0; color: #fff; background: transparent; font-size: 16px; font-weight: 500; cursor: pointer; }
 .profile-field { display: grid; gap: 7px; margin-top: 14px; }
 .profile-field > span { color: var(--result-secondary); font-size: 13px; font-weight: 500; line-height: 18px; }
 .profile-field small { color: var(--muted); font-size: 12px; font-weight: 400; }
@@ -1067,8 +1067,39 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   font-size: 16px;
 }
 .profile-field input:focus { border-color: var(--brand-mid); box-shadow: 0 0 0 3px rgba(98, 99, 245, .12); }
-.profile-check { min-height: 50px; margin-top: 10px; display: flex; align-items: center; gap: 10px; color: var(--result-secondary); font-size: 14px; }
-.profile-check input { width: 20px; height: 20px; accent-color: var(--brand-mid); }
+.profile-input-shell { position: relative; display: block; }
+.profile-input-shell input { padding-right: 48px; }
+.profile-input-shell > svg {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  width: 20px;
+  height: 20px;
+  color: #fff;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+.profile-field input[type="date"],
+.profile-field input[type="time"] { color-scheme: dark; }
+.profile-field input[type="date"]::-webkit-calendar-picker-indicator,
+.profile-field input[type="time"]::-webkit-calendar-picker-indicator { position: absolute; inset: 0; width: auto; height: auto; opacity: 0; cursor: pointer; }
+.profile-check { position: relative; min-height: 46px; margin-top: 7px; display: flex; align-items: center; gap: 11px; color: var(--result-secondary); font-size: 14px; cursor: pointer; }
+.profile-check input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.profile-check-control {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  border: 1px solid rgba(255,255,255,.26);
+  border-radius: 7px;
+  color: transparent;
+  background: rgba(255,255,255,.055);
+  display: grid;
+  place-items: center;
+  transition: color .18s ease, background .18s ease, border-color .18s ease, transform .18s ease;
+}
+.profile-check-control svg { width: 15px; height: 15px; }
+.profile-check input:checked + .profile-check-control { border-color: #fff; color: #090a0b; background: #fff; transform: scale(1.03); }
+.profile-check input:focus-visible + .profile-check-control { outline: 3px solid rgba(155,140,255,.3); outline-offset: 2px; }
 .score-sheet {
   width: min(100%, 402px);
   padding: 24px 20px max(24px, env(safe-area-inset-bottom));

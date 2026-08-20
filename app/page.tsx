@@ -33,10 +33,12 @@ import {
   BookOpenText,
   Briefcase,
   Broom,
+  CalendarBlank,
   CalendarCheck,
   CalendarPlus,
   Check,
   ChatCircle,
+  Clock,
   Compass,
   CookingPot,
   Crosshair,
@@ -539,7 +541,7 @@ function PersonalizationSheet({
   const [birthDate, setBirthDate] = useState(current?.birthDate ?? "");
   const [birthTime, setBirthTime] = useState(current?.birthTime ?? "");
   const [birthPlace, setBirthPlace] = useState(current?.birthPlace ?? "");
-  const [timeUnknown, setTimeUnknown] = useState(current?.timeUnknown ?? true);
+  const [timeUnknown, setTimeUnknown] = useState(current?.timeUnknown ?? false);
   const [zodiacError, setZodiacError] = useState(false);
   const [birthError, setBirthError] = useState(false);
 
@@ -581,7 +583,7 @@ function PersonalizationSheet({
       <section className="profile-sheet" role="dialog" aria-modal="true" aria-labelledby="profile-sheet-title">
         <header>
           <div>
-            <p>{step === "zodiac" ? "шаг 1 из 2" : "необязательный шаг"}</p>
+            <p>{step === "zodiac" ? "шаг 1 из 2" : "шаг 2 из 2"}</p>
             <h2 id="profile-sheet-title">{step === "zodiac" ? "кто вы по знаку" : "данные рождения"}</h2>
           </div>
           <button type="button" className="round-button" onClick={onClose} aria-label="Закрыть персонализацию">
@@ -615,31 +617,38 @@ function PersonalizationSheet({
           </>
         ) : (
           <>
-            <p className="profile-sheet-lead">данные рождения можно пропустить. они используются только для более точной персонализации результата.</p>
+            <p className="profile-sheet-lead">добавьте детали рождения, чтобы точнее настроить результат под ваш личный ритм.</p>
             <label className="profile-field">
               <span>дата рождения</span>
-              <input type="date" value={birthDate} onChange={(event) => {
-                setBirthDate(event.target.value);
-                setBirthError(false);
-              }} />
-            </label>
-            <label className="profile-check">
-              <input type="checkbox" checked={timeUnknown} onChange={(event) => setTimeUnknown(event.target.checked)} />
-              <span>не знаю точное время рождения</span>
+              <span className="profile-input-shell">
+                <input type="date" value={birthDate} onChange={(event) => {
+                  setBirthDate(event.target.value);
+                  setBirthError(false);
+                }} />
+                <CalendarBlank weight="regular" aria-hidden="true" />
+              </span>
             </label>
             {!timeUnknown && (
               <label className="profile-field">
                 <span>время рождения</span>
-                <input type="time" value={birthTime} onChange={(event) => setBirthTime(event.target.value)} />
+                <span className="profile-input-shell">
+                  <input type="time" value={birthTime} onChange={(event) => setBirthTime(event.target.value)} />
+                  <Clock weight="regular" aria-hidden="true" />
+                </span>
               </label>
             )}
+            <label className="profile-check">
+              <input type="checkbox" checked={timeUnknown} onChange={(event) => setTimeUnknown(event.target.checked)} />
+              <span className="profile-check-control" aria-hidden="true"><Check weight="bold" /></span>
+              <span>не знаю точное время рождения</span>
+            </label>
             <label className="profile-field">
-              <span>место рождения <small>необязательно</small></span>
+              <span>место рождения</span>
               <input value={birthPlace} onChange={(event) => setBirthPlace(event.target.value.slice(0, 80))} placeholder="город" maxLength={80} />
             </label>
             {birthError && <p className="profile-inline-error" role="status">укажите дату рождения или пропустите этот шаг</p>}
-            <button type="button" className="profile-primary" onClick={finishWithBirthData}>уточнить результат</button>
-            <button type="button" className="profile-secondary" onClick={finish}>пропустить</button>
+            <button type="button" className="profile-primary" onClick={finishWithBirthData}>сохранить</button>
+            <button type="button" className="profile-secondary" onClick={finish}>пропустить шаг</button>
             <button type="button" className="profile-back-link" onClick={() => setStep("zodiac")}>назад к выбору знака</button>
           </>
         )}
