@@ -583,7 +583,7 @@ function ScoreInfoSheet({ day, onClose }: { day: Day; onClose: () => void }) {
       <section className="score-sheet" role="dialog" aria-modal="true" aria-labelledby="score-sheet-title">
         <header>
           <div>
-            <p>прозрачная формула mvp</p>
+            <p>прозрачная формула</p>
             <h2 id="score-sheet-title">как получили {day.score} из 100</h2>
           </div>
           <button type="button" className="round-button" onClick={onClose} aria-label="Закрыть объяснение">
@@ -1100,6 +1100,12 @@ export default function Home() {
     setScreen("result");
     setPendingReveal(null);
     window.history.pushState({}, "", resultUrl(nextIntent.id, nextDay.dateIso));
+    trackEvent("reveal_viewed", {
+      intentId: nextIntent.id,
+      archetype: nextIntent.archetype,
+      selectedDate: nextDay.dateIso,
+      score: nextDay.score,
+    });
     trackEvent("result_viewed", {
       intentId: nextIntent.id,
       archetype: nextIntent.archetype,
@@ -1128,6 +1134,17 @@ export default function Home() {
         selectedDate: day.dateIso,
         score: day.score,
       });
+      const distanceFromToday = Math.round(
+        (new Date(`${day.dateIso}T12:00:00Z`).getTime() - currentMoscowDate().getTime()) / 86_400_000,
+      );
+      if (distanceFromToday >= 14) {
+        trackEvent("distant_day_selected", {
+          intentId: intent.id,
+          archetype: intent.archetype,
+          selectedDate: day.dateIso,
+          score: day.score,
+        });
+      }
       setDayMotionPhase("in");
       window.requestAnimationFrame(() => window.requestAnimationFrame(() => setDayMotionPhase("idle")));
     }, 150);
@@ -1201,6 +1218,17 @@ export default function Home() {
     });
     if (feedbackStatusTimer.current) window.clearTimeout(feedbackStatusTimer.current);
     feedbackStatusTimer.current = window.setTimeout(() => setFeedbackVisible(false), 1800);
+  }
+
+  function openPersonalization() {
+    setPersonalizationBubblePhase("hidden");
+    setPersonalizationOpen(true);
+    trackEvent("personalization_started", {
+      intentId: intent.id,
+      archetype: intent.archetype,
+      selectedDate: active.dateIso,
+      score: active.score,
+    });
   }
 
   if (screen === "start") {
@@ -1278,7 +1306,15 @@ export default function Home() {
               <p>{resultAdvice}</p>
             </div>
 
-            <button type="button" className={`result-score-row status-${activeDisplayRating}`} onClick={() => setScoreInfoOpen(true)}>
+            <button type="button" className={`result-score-row status-${activeDisplayRating}`} onClick={() => {
+              setScoreInfoOpen(true);
+              trackEvent("score_explanation_opened", {
+                intentId: intent.id,
+                archetype: intent.archetype,
+                selectedDate: active.dateIso,
+                score: active.score,
+              });
+            }}>
               <img src={statusIcons[activeDisplayRating]} alt="" />
               <span>{active.score}% совпадение</span>
               <Info weight="regular" aria-hidden="true" />
@@ -1290,10 +1326,7 @@ export default function Home() {
               <button
                 type="button"
                 className={`personalization-bubble ${personalizationBubblePhase === "leaving" ? "is-leaving" : ""}`}
-                onClick={() => {
-                  setPersonalizationBubblePhase("hidden");
-                  setPersonalizationOpen(true);
-                }}
+                onClick={openPersonalization}
               >
                 <span className="personalization-dot personalization-dot-one" aria-hidden="true" />
                 <span className="personalization-dot personalization-dot-two" aria-hidden="true" />
@@ -1307,10 +1340,7 @@ export default function Home() {
               <button
                 type="button"
                 className="result-personalization-action"
-                onClick={() => {
-                  setPersonalizationBubblePhase("hidden");
-                  setPersonalizationOpen(true);
-                }}
+                onClick={openPersonalization}
               >
                 указать свои данные о рождении
               </button>
@@ -1349,7 +1379,17 @@ export default function Home() {
           activeId={active.id}
           preferredId={preferredId}
           expanded={calendarExpanded}
-          onExpandedChange={setCalendarExpanded}
+          onExpandedChange={(expanded) => {
+            setCalendarExpanded(expanded);
+            if (expanded) {
+              trackEvent("calendar_expanded", {
+                intentId: intent.id,
+                archetype: intent.archetype,
+                selectedDate: active.dateIso,
+                score: active.score,
+              });
+            }
+          }}
           onSelect={(day) => {
             chooseDay(day);
             if (calendarExpanded) setCalendarExpanded(false);
@@ -1378,7 +1418,12 @@ export default function Home() {
             window.localStorage.setItem(PERSONALIZATION_STORAGE_KEY, JSON.stringify(data));
             setPersonalizationBubblePhase("hidden");
             setPersonalizationOpen(false);
-            trackEvent("personalization_completed", { intentId: intent.id, selectedDate: active.dateIso });
+            trackEvent("personalization_completed", {
+              intentId: intent.id,
+              archetype: intent.archetype,
+              selectedDate: active.dateIso,
+              score: active.score,
+            });
           }}
         />
       )}

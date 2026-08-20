@@ -2,19 +2,9 @@ import { getDb } from "../../../db";
 import { analyticsEvents } from "../../../db/schema";
 import { intentCatalog } from "../../../lib/intent-catalog";
 import { METHOD_VERSION } from "../../../lib/methodology";
+import { ANALYTICS_EVENT_NAMES } from "../../../lib/analytics-events";
 
-const eventNames = new Set([
-  "page_view",
-  "intent_selected",
-  "result_viewed",
-  "day_selected",
-  "calendar_added",
-  "result_shared",
-  "feedback_helpful",
-  "feedback_not_helpful",
-  "feedback_form_opened",
-  "feedback_form_submitted",
-]);
+const eventNames = new Set<string>(ANALYTICS_EVENT_NAMES);
 const intentIds = new Set(intentCatalog.map((intent) => intent.id));
 const archetypes = new Set(["growth", "connection", "planning", "care", "release"]);
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

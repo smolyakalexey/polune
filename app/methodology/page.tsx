@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function MethodologyPage() {
   return (
-    <InfoLayout eyebrow="методика 0.5" title="как мы выбираем день">
+    <InfoLayout eyebrow="методика 0.6" title="как мы выбираем день">
       <p className="info-lead">оценка показывает символическое совпадение даты с выбранным делом, а не вероятность успеха и не обещание результата</p>
 
       <section>

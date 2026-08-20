@@ -1,0 +1,20 @@
+export const ANALYTICS_EVENT_NAMES = [
+  "page_view",
+  "intent_selected",
+  "reveal_viewed",
+  "result_viewed",
+  "day_selected",
+  "distant_day_selected",
+  "calendar_expanded",
+  "calendar_added",
+  "result_shared",
+  "score_explanation_opened",
+  "personalization_started",
+  "personalization_completed",
+  "feedback_helpful",
+  "feedback_not_helpful",
+  "feedback_form_opened",
+  "feedback_form_submitted",
+] as const;
+
+export type AnalyticsEventName = typeof ANALYTICS_EVENT_NAMES[number];

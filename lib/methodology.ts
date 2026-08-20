@@ -3,7 +3,7 @@ export type ZodiacProfile = "beauty" | "body" | "learning" | "career" | "social"
 
 export type Rating = "low" | "excellent" | "neutral" | "good" | "caution";
 
-export const METHOD_VERSION = "0.5";
+export const METHOD_VERSION = "0.6";
 export const PHASE_WEIGHT = 0.55;
 export const ZODIAC_WEIGHT = 0.45;
 export const PREFERRED_SCORE_TOLERANCE = 7;
