@@ -683,10 +683,11 @@ function PersonalizationSheet({
           </button>
         </header>
 
+        <div className="profile-sheet-scroll">
         <p className="profile-sheet-lead">{keepRussianPrepositionsWithNextWord("укажите дату — знак зодиака определится автоматически. данные сохраняются только на этом устройстве.")}</p>
         <label className="profile-field">
           <span>дата рождения</span>
-          <span className="profile-input-shell profile-place-shell">
+          <span className="profile-input-shell">
             <input
               type="text"
               inputMode="numeric"
@@ -787,7 +788,7 @@ function PersonalizationSheet({
         )}
         <label className="profile-field">
           <span>место рождения</span>
-          <span className="profile-input-shell">
+          <span className="profile-input-shell profile-place-shell">
             <input
               value={birthPlace}
               onChange={(event) => {
@@ -840,7 +841,10 @@ function PersonalizationSheet({
         {formError === "date" && <p className="profile-inline-error" role="status">введите корректную дату в&nbsp;формате дд.мм.гггг</p>}
         {formError === "time" && <p className="profile-inline-error" role="status">введите время от&nbsp;00:00 до&nbsp;23:59</p>}
         {formError === "place" && <p className="profile-inline-error" role="status">найдите и выберите населённый пункт</p>}
-        <button type="button" className="profile-primary" onClick={finish} disabled={placeSearchPending}>{placeSearchPending ? "ищем место…" : "применить"}</button>
+        </div>
+        <footer className="profile-sheet-footer">
+          <button type="button" className="profile-primary" onClick={finish} disabled={placeSearchPending}>{placeSearchPending ? "ищем место…" : "применить"}</button>
+        </footer>
       </section>
     </div>
   );
