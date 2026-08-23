@@ -26,6 +26,7 @@ import { intentZodiacProfiles } from "@/lib/intent-profiles";
 import { classifyQuerySafety, isConfidentCatalogMatch } from "@/lib/query-safety";
 import { configureAnalyticsFromUrl, trackEvent } from "@/lib/analytics";
 import { keepRussianPrepositionsWithNextWord } from "@/lib/typography";
+import { buildGoogleCalendarUrl, buildIcsCalendarEvent } from "@/lib/calendar-actions";
 import {
   birthDateInputFromIso,
   formatBirthDateInput,
@@ -703,6 +704,55 @@ function PersonalizationSheet({
   );
 }
 
+function CalendarActionSheet({
+  onClose,
+  onApple,
+  onGoogle,
+}: {
+  onClose: () => void;
+  onApple: () => void;
+  onGoogle: () => void;
+}) {
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <div className="calendar-action-backdrop" role="presentation" onMouseDown={(event) => {
+      if (event.target === event.currentTarget) onClose();
+    }}>
+      <section className="calendar-action-sheet" role="dialog" aria-modal="true" aria-labelledby="calendar-action-title">
+        <header>
+          <div>
+            <p>сохранить дату</p>
+            <h2 id="calendar-action-title">выберите календарь</h2>
+          </div>
+          <button type="button" className="round-button" onClick={onClose} aria-label="Закрыть выбор календаря">
+            <X weight="regular" />
+          </button>
+        </header>
+        <p className="calendar-action-lead">
+          {keepRussianPrepositionsWithNextWord("мы не добавляем событие напрямую: для Apple подготовим файл, для Google откроем форму события")}
+        </p>
+        <div className="calendar-action-options">
+          <button type="button" onClick={onApple}>
+            <span className="calendar-action-icon"><CalendarBlank weight="regular" aria-hidden="true" /></span>
+            <span><strong>Apple Calendar</strong><small>подготовить файл .ics</small></span>
+          </button>
+          <button type="button" onClick={onGoogle}>
+            <span className="calendar-action-icon"><GlobeHemisphereEast weight="regular" aria-hidden="true" /></span>
+            <span><strong>Google Calendar</strong><small>открыть форму события</small></span>
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function createStarSeeds(count: number) {
   let seed = 0x51f15e;
   const random = () => {
@@ -884,7 +934,8 @@ export default function Home() {
   const initialBestId = pickPreferredDay(days).id;
   const [hasChosenIntent, setHasChosenIntent] = useState(false);
   const [activeId, setActiveId] = useState(initialBestId);
-  const [saved, setSaved] = useState(false);
+  const [calendarActionOpen, setCalendarActionOpen] = useState(false);
+  const [calendarActionStatus, setCalendarActionStatus] = useState<"ics_prepared" | "google_opened" | "google_blocked" | null>(null);
   const [shared, setShared] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [feedbackAnswer, setFeedbackAnswer] = useState<"helpful" | "not_helpful" | null>(null);
@@ -1014,7 +1065,8 @@ export default function Home() {
       setHasChosenIntent(true);
       setScreen("result");
       setActiveId(restoredDay.id);
-      setSaved(false);
+      setCalendarActionOpen(false);
+      setCalendarActionStatus(null);
       if (feedbackStatusTimer.current) window.clearTimeout(feedbackStatusTimer.current);
       setFeedbackVisible(false);
       setFeedbackAnswer(null);
@@ -1052,7 +1104,8 @@ export default function Home() {
     setHasChosenIntent(true);
     setPickerOpen(false);
     setActiveId(nextDay.id);
-    setSaved(false);
+    setCalendarActionOpen(false);
+    setCalendarActionStatus(null);
     if (feedbackStatusTimer.current) window.clearTimeout(feedbackStatusTimer.current);
     setFeedbackVisible(false);
     setFeedbackAnswer(null);
@@ -1090,7 +1143,8 @@ export default function Home() {
     dayMotionTimer.current = window.setTimeout(() => {
       dayMotionTimer.current = null;
       setActiveId(day.id);
-      setSaved(false);
+      setCalendarActionOpen(false);
+      setCalendarActionStatus(null);
       if (feedbackStatusTimer.current) window.clearTimeout(feedbackStatusTimer.current);
       setFeedbackVisible(false);
       setFeedbackAnswer(null);
@@ -1117,38 +1171,63 @@ export default function Home() {
     }, 150);
   }
 
-  function addToCalendar() {
-    const start = active.dateIso.replaceAll("-", "");
-    const next = new Date(`${active.dateIso}T12:00:00Z`);
-    next.setUTCDate(next.getUTCDate() + 1);
-    const end = next.toISOString().slice(0, 10).replaceAll("-", "");
-    const body = [
-      "BEGIN:VCALENDAR",
-      "VERSION:2.0",
-      "BEGIN:VEVENT",
-      `DTSTART;VALUE=DATE:${start}`,
-      `DTEND;VALUE=DATE:${end}`,
-      `SUMMARY:polune — ${intent.label}`,
-      `DESCRIPTION:${active.score} из 100 · ${ratingLabels[active.rating]}`,
-      "END:VEVENT",
-      "END:VCALENDAR",
-    ].join("\r\n");
+  function calendarEventInput() {
+    return {
+      dateIso: active.dateIso,
+      intentId: intent.id,
+      intentLabel: intent.label,
+      description: `${active.score} из 100 · ${ratingLabels[active.rating]}`,
+      resultUrl: resultUrl(intent.id, active.dateIso).toString(),
+    };
+  }
+
+  function showCalendarStatus(status: "ics_prepared" | "google_opened" | "google_blocked") {
+    setCalendarActionStatus(status);
+    if (calendarStatusTimer.current) window.clearTimeout(calendarStatusTimer.current);
+    calendarStatusTimer.current = window.setTimeout(() => setCalendarActionStatus(null), 3200);
+  }
+
+  function prepareAppleCalendarFile() {
+    const body = buildIcsCalendarEvent(calendarEventInput());
     const url = URL.createObjectURL(new Blob([body], { type: "text/calendar;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;
     link.download = `polune-${active.dateIso}.ics`;
     link.click();
-    URL.revokeObjectURL(url);
-    setSaved(true);
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setCalendarActionOpen(false);
+    showCalendarStatus("ics_prepared");
     if (!feedbackAnswer) setFeedbackVisible(true);
-    trackEvent("calendar_added", {
+    trackEvent("calendar_ics_prepared", {
       intentId: intent.id,
       archetype: intent.archetype,
       selectedDate: active.dateIso,
       score: active.score,
     });
-    if (calendarStatusTimer.current) window.clearTimeout(calendarStatusTimer.current);
-    calendarStatusTimer.current = window.setTimeout(() => setSaved(false), 2600);
+  }
+
+  function openGoogleCalendar() {
+    const googleWindow = window.open(buildGoogleCalendarUrl(calendarEventInput()), "_blank");
+    if (googleWindow) {
+      googleWindow.opener = null;
+      setCalendarActionOpen(false);
+      showCalendarStatus("google_opened");
+      if (!feedbackAnswer) setFeedbackVisible(true);
+      trackEvent("calendar_google_opened", {
+        intentId: intent.id,
+        archetype: intent.archetype,
+        selectedDate: active.dateIso,
+        score: active.score,
+      });
+      return;
+    }
+    showCalendarStatus("google_blocked");
+    trackEvent("calendar_google_blocked", {
+      intentId: intent.id,
+      archetype: intent.archetype,
+      selectedDate: active.dateIso,
+      score: active.score,
+    });
   }
 
   async function shareResult() {
@@ -1324,8 +1403,22 @@ export default function Home() {
                 <small>пока не&nbsp;влияют на&nbsp;индекс</small>
               </button>
             )}
-            <button type="button" className={`result-calendar-action ${saved ? "saved" : ""}`} onClick={addToCalendar} disabled={saved} aria-live="polite">
-              {saved ? "добавлено в календарь" : "добавить в календарь"}
+            <button type="button" className={`result-calendar-action ${calendarActionStatus ? "has-status" : ""} ${calendarActionStatus === "google_blocked" ? "has-error" : ""}`} onClick={() => {
+              setCalendarActionOpen(true);
+              trackEvent("calendar_options_opened", {
+                intentId: intent.id,
+                archetype: intent.archetype,
+                selectedDate: active.dateIso,
+                score: active.score,
+              });
+            }} aria-live="polite">
+              {calendarActionStatus === "ics_prepared"
+                ? "файл .ics подготовлен"
+                : calendarActionStatus === "google_opened"
+                  ? "Google Calendar открыт"
+                  : calendarActionStatus === "google_blocked"
+                    ? "Google Calendar не открылся"
+                    : "добавить в календарь"}
             </button>
           </div>
         </article>
@@ -1388,6 +1481,13 @@ export default function Home() {
         />
       )}
       {scoreInfoOpen && <ScoreInfoSheet day={active} onClose={() => setScoreInfoOpen(false)} />}
+      {calendarActionOpen && (
+        <CalendarActionSheet
+          onClose={() => setCalendarActionOpen(false)}
+          onApple={prepareAppleCalendarFile}
+          onGoogle={openGoogleCalendar}
+        />
+      )}
       {personalizationOpen && (
         <PersonalizationSheet
           current={personalization}

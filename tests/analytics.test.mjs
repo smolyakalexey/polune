@@ -16,7 +16,10 @@ test("analytics covers the main product and personalization funnels", () => {
     "personalization_started",
     "personalization_completed",
     "calendar_expanded",
-    "calendar_added",
+    "calendar_options_opened",
+    "calendar_ics_prepared",
+    "calendar_google_opened",
+    "calendar_google_blocked",
     "result_shared",
   ]) {
     assert.ok(ANALYTICS_EVENT_NAMES.includes(eventName));
