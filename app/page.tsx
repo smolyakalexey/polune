@@ -52,7 +52,6 @@ import {
   CalendarBlank,
   CalendarCheck,
   CalendarPlus,
-  CaretDown,
   Check,
   ChatCircle,
   Clock,
@@ -1455,26 +1454,15 @@ export default function Home() {
                 <small>пока не&nbsp;влияют на&nbsp;индекс</small>
               </button>
             )}
-            <div className={`result-calendar-actions ${preferredCalendarProvider ? "has-preference" : ""}`}>
-              <button type="button" className={`result-calendar-action ${calendarActionStatus ? "has-status" : ""} ${calendarActionStatus === "google_blocked" ? "has-error" : ""}`} onClick={() => performCalendarAction(preferredCalendarProvider)} aria-live="polite">
-                {calendarActionStatus === "ics_prepared"
-                  ? "файл .ics подготовлен"
-                  : calendarActionStatus === "google_opened"
-                    ? "Google Calendar открыт"
-                    : calendarActionStatus === "google_blocked"
-                      ? "Google Calendar не открылся"
-                      : preferredCalendarProvider === "apple"
-                        ? "добавить в Apple Calendar"
-                        : preferredCalendarProvider === "google"
-                          ? "добавить в Google Calendar"
-                          : "добавить в календарь"}
-              </button>
-              {preferredCalendarProvider && (
-                <button type="button" className="result-calendar-alternative" onClick={openCalendarOptions} aria-label="Выбрать другой календарь">
-                  <CaretDown weight="bold" aria-hidden="true" />
-                </button>
-              )}
-            </div>
+            <button type="button" className={`result-calendar-action ${calendarActionStatus ? "has-status" : ""} ${calendarActionStatus === "google_blocked" ? "has-error" : ""}`} onClick={() => performCalendarAction(preferredCalendarProvider)} aria-live="polite">
+              {calendarActionStatus === "ics_prepared"
+                ? "файл .ics подготовлен"
+                : calendarActionStatus === "google_opened"
+                  ? "календарь открыт"
+                  : calendarActionStatus === "google_blocked"
+                    ? "календарь не открылся"
+                    : "добавить в календарь"}
+            </button>
           </div>
         </article>
 
