@@ -7,6 +7,7 @@ import {
   pickPreferredDay,
   ratingForScore,
 } from "../lib/methodology.ts";
+import { calculateNatalProfile } from "../lib/natal.ts";
 import { calculatePersonalizedDayScore } from "../lib/personal-methodology.ts";
 
 const DAY_COUNT = 730;
@@ -23,25 +24,27 @@ const astronomy = Array.from({ length: DAY_COUNT }, (_, index) => {
   };
 });
 
-const sunGrid = Array.from({ length: 12 }, (_, index) => index * 30);
+const birthDates = [1995, 2005].flatMap((year) => (
+  Array.from({ length: 12 }, (_, month) => `${year}-${String(month + 1).padStart(2, "0")}-15`)
+));
+const periods = ["night", "morning", "day", "evening"];
+const exactTimes = ["03:00", "09:00", "15:00", "21:00"];
+const locations = [
+  { timeZone: "Europe/Moscow", latitude: 55.7558, longitude: 37.6173 },
+  { timeZone: "Europe/London", latitude: 51.5072, longitude: -0.1276 },
+  { timeZone: "America/New_York", latitude: 40.7128, longitude: -74.006 },
+  { timeZone: "Asia/Tokyo", latitude: 35.6762, longitude: 139.6503 },
+];
 const profiles = {
-  date: sunGrid.map((natalSunLongitude) => ({
-    level: "date",
-    natalSunLongitude,
-  })),
-  approximate: sunGrid.flatMap((natalSunLongitude) => [0, 60, 120, 180, 240, 300].map((offset) => ({
-    level: "approximate",
-    natalSunLongitude,
-    natalMoonLongitude: (natalSunLongitude + offset) % 360,
+  date: birthDates.map((dateIso) => calculateNatalProfile({ dateIso })),
+  approximate: birthDates.flatMap((dateIso) => periods.map((period) => calculateNatalProfile({
+    dateIso,
+    period,
+    timeZone: "Europe/Moscow",
   }))),
-  exact: sunGrid.flatMap((natalSunLongitude) => [0, 60, 120, 180, 240, 300].flatMap((moonOffset) => (
-    [0, 90, 180, 270].map((ascendantOffset) => ({
-      level: "exact",
-      natalSunLongitude,
-      natalMoonLongitude: (natalSunLongitude + moonOffset) % 360,
-      ascendantLongitude: (natalSunLongitude + ascendantOffset) % 360,
-    }))
-  ))),
+  exact: birthDates.flatMap((dateIso) => locations.flatMap((location) => exactTimes.map((time) => (
+    calculateNatalProfile({ dateIso, time, ...location })
+  )))),
 };
 
 function preferredDate(scores, windowStart) {
