@@ -56,6 +56,7 @@ Polune — mobile-first веб‑сервис выбора даты для ни�
 
 - текущее состояние и handoff: `docs/CURRENT_STATE.md`;
 - методика: `docs/METHODOLOGY.md`;
+- персональная методика-кандидат: `docs/PERSONALIZATION_METHOD.md`;
 - открытые задачи: `docs/TODO_V2.md`;
 - приоритеты: `docs/ROADMAP_V2.md`;
 - принятые решения: `docs/IMPLEMENTATION_LOG.md`;
