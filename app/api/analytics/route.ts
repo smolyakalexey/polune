@@ -2,6 +2,7 @@ import { getDb } from "../../../db";
 import { analyticsEvents } from "../../../db/schema";
 import { intentCatalog } from "../../../lib/intent-catalog";
 import { METHOD_VERSION } from "../../../lib/methodology";
+import { PERSONAL_METHOD_VERSION } from "../../../lib/personal-methodology";
 import { ANALYTICS_EVENT_NAMES } from "../../../lib/analytics-events";
 
 const eventNames = new Set<string>(ANALYTICS_EVENT_NAMES);
@@ -43,7 +44,9 @@ export async function POST(request: Request) {
       archetype: payload.archetype ?? null,
       selectedDate: payload.selectedDate ?? null,
       score: payload.score ?? null,
-      methodVersion: payload.methodVersion === METHOD_VERSION ? payload.methodVersion : METHOD_VERSION,
+      methodVersion: payload.methodVersion === PERSONAL_METHOD_VERSION
+        ? PERSONAL_METHOD_VERSION
+        : METHOD_VERSION,
     });
 
     return new Response(null, { status: 204 });

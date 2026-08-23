@@ -1,4 +1,5 @@
 import { METHOD_VERSION } from "@/lib/methodology";
+import { PERSONAL_METHOD_VERSION } from "@/lib/personal-methodology";
 import type { AnalyticsEventName } from "@/lib/analytics-events";
 
 type AnalyticsProperties = {
@@ -6,6 +7,7 @@ type AnalyticsProperties = {
   archetype?: string;
   selectedDate?: string;
   score?: number;
+  methodVersion?: string;
 };
 
 const SESSION_KEY = "lunora_anonymous_session";
@@ -46,11 +48,17 @@ export function getAnonymousSessionId() {
 export function trackEvent(eventName: AnalyticsEventName, properties: AnalyticsProperties = {}) {
   if (typeof window === "undefined" || analyticsDisabled()) return;
 
+  const requestedMethodVersion = properties.methodVersion
+    ?? new URLSearchParams(window.location.search).get("method");
+  const methodVersion = requestedMethodVersion === PERSONAL_METHOD_VERSION
+    ? PERSONAL_METHOD_VERSION
+    : METHOD_VERSION;
+
   const payload = JSON.stringify({
     sessionId: getAnonymousSessionId(),
     eventName,
-    methodVersion: METHOD_VERSION,
     ...properties,
+    methodVersion,
   });
 
   if (navigator.sendBeacon) {

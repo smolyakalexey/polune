@@ -32,6 +32,12 @@ import type { CalendarProvider } from "@/lib/calendar-preference";
 import type { GeocodedBirthPlace } from "@/lib/geocoding";
 import type { BirthTimePeriod } from "@/lib/natal";
 import {
+  personalizeCalendar,
+  resolvePersonalProfile,
+} from "@/lib/personal-calendar";
+import type { PersonalizedCalendarDay } from "@/lib/personal-calendar";
+import { PERSONAL_METHOD_VERSION } from "@/lib/personal-methodology";
+import {
   birthDateInputFromIso,
   formatBirthDateInput,
   formatPersonalizationSummary,
@@ -87,7 +93,7 @@ import {
 } from "@phosphor-icons/react";
 
 type Intent = Omit<IntentDefinition, "icon"> & { Icon: Icon; zodiacProfile: ZodiacProfile };
-type Day = CalendarDay;
+type Day = CalendarDay & Partial<Omit<PersonalizedCalendarDay, keyof CalendarDay>>;
 
 type PersonalizationData = {
   zodiac: string;
@@ -141,13 +147,13 @@ const intents: Intent[] = intentCatalog.map(({ icon, ...intent }) => ({
   zodiacProfile: intentZodiacProfiles[intent.id],
 }));
 
-function resultUrl(intentId: string, dateIso: string) {
+function resultUrl(intentId: string, dateIso: string, methodVersion = METHOD_VERSION) {
   const url = new URL(window.location.href);
   url.hash = "";
   url.search = "";
   url.searchParams.set("intent", intentId);
   url.searchParams.set("date", dateIso);
-  url.searchParams.set("method", METHOD_VERSION);
+  url.searchParams.set("method", methodVersion);
   return url;
 }
 
@@ -498,6 +504,12 @@ function IntentPicker({
 }
 
 function ScoreInfoSheet({ day, onClose }: { day: Day; onClose: () => void }) {
+  const isPersonalized = day.personalLevel !== undefined
+    && day.generalScore !== undefined
+    && day.personalScore !== undefined
+    && day.personalWeight !== undefined;
+  const generalWeight = isPersonalized ? 1 - day.personalWeight! : 1;
+
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
@@ -522,14 +534,41 @@ function ScoreInfoSheet({ day, onClose }: { day: Day; onClose: () => void }) {
         </header>
         <p className="score-explainer">{keepRussianPrepositionsWithNextWord("это индекс совпадения по нашей методике, а не вероятность события и не обещание результата")}</p>
         <div className="score-factors">
-          <div className="score-factor">
-            <div><span>фаза луны · {Math.round(PHASE_WEIGHT * 100)}%</span><strong>{day.phaseScore} / 100</strong></div>
-            <span className="score-track"><span style={{ width: `${day.phaseScore}%` }} /></span>
-          </div>
-          <div className="score-factor">
-            <div><span>луна в&nbsp;{day.zodiacSignName.toLowerCase()} · {Math.round(ZODIAC_WEIGHT * 100)}%</span><strong>{day.zodiacScore} / 100</strong></div>
-            <span className="score-track"><span style={{ width: `${day.zodiacScore}%` }} /></span>
-          </div>
+          {isPersonalized ? (
+            <>
+              <div className="score-factor">
+                <div><span>общая основа · {Math.round(generalWeight * 100)}%</span><strong>{day.generalScore} / 100</strong></div>
+                <span className="score-track"><span style={{ width: `${day.generalScore}%` }} /></span>
+                <small>фаза Луны {day.phaseScore} · знак Луны {day.zodiacScore}</small>
+              </div>
+              <div className="score-factor">
+                <div><span>личные факторы · {Math.round(day.personalWeight! * 100)}%</span><strong>{day.personalScore} / 100</strong></div>
+                <span className="score-track"><span style={{ width: `${day.personalScore}%` }} /></span>
+                <small>{keepRussianPrepositionsWithNextWord(day.personalLevel === "date"
+                  ? "по дате рождения"
+                  : day.personalLevel === "approximate"
+                    ? "по дате и примерному времени рождения"
+                    : "по дате, времени и месту рождения")}</small>
+              </div>
+              <div className="score-personal-details" aria-label="использованные личные факторы">
+                <div><span>натальное Солнце{day.personalLevel === "approximate" ? " · 55% личной части" : day.personalLevel === "exact" ? " · 40% личной части" : ""}</span><strong>{day.sunScore} / 100</strong></div>
+                {day.moonScore !== undefined && <div><span>натальная Луна · {day.personalLevel === "exact" ? "35" : "45"}% личной части</span><strong>{day.moonScore} / 100</strong></div>}
+                {day.ascendantScore !== undefined && <div><span>Асцендент · 25% личной части</span><strong>{day.ascendantScore} / 100</strong></div>}
+              </div>
+              <p className="score-personal-note">{keepRussianPrepositionsWithNextWord("личная часть сравнивает Луну выбранного дня с рассчитанными точками карты рождения по символической шкале аспектов")}</p>
+            </>
+          ) : (
+            <>
+              <div className="score-factor">
+                <div><span>фаза луны · {Math.round(PHASE_WEIGHT * 100)}%</span><strong>{day.phaseScore} / 100</strong></div>
+                <span className="score-track"><span style={{ width: `${day.phaseScore}%` }} /></span>
+              </div>
+              <div className="score-factor">
+                <div><span>луна в&nbsp;{day.zodiacSignName.toLowerCase()} · {Math.round(ZODIAC_WEIGHT * 100)}%</span><strong>{day.zodiacScore} / 100</strong></div>
+                <span className="score-track"><span style={{ width: `${day.zodiacScore}%` }} /></span>
+              </div>
+            </>
+          )}
         </div>
         <div className="score-technical" aria-label="технические параметры расчёта">
           <div><MoonStars weight="regular" aria-hidden="true" /><span>фазовый угол дня</span><strong>{Math.round(day.moonPhaseAngle)}°</strong></div>
@@ -1075,9 +1114,9 @@ export default function Home() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [intent, setIntent] = useState(intents[0]);
   const [previewIndex, setPreviewIndex] = useState(0);
-  const days = useMemo(() => buildCalendarDays(intent), [intent]);
-  const calendarDays = useMemo(() => buildTwoMonthCalendarDays(intent), [intent]);
-  const initialBestId = pickPreferredDay(days).id;
+  const generalDays = useMemo(() => buildCalendarDays(intent), [intent]);
+  const generalCalendarDays = useMemo(() => buildTwoMonthCalendarDays(intent), [intent]);
+  const initialBestId = pickPreferredDay(generalDays).id;
   const [hasChosenIntent, setHasChosenIntent] = useState(false);
   const [activeId, setActiveId] = useState(initialBestId);
   const [calendarActionOpen, setCalendarActionOpen] = useState(false);
@@ -1097,10 +1136,29 @@ export default function Home() {
   const dayMotionTimer = useRef<number | null>(null);
   const personalizationBubbleHasAppeared = useRef(false);
 
+  const resolvedPersonalization = useMemo(() => {
+    if (!personalization) return null;
+    try {
+      return resolvePersonalProfile(personalization);
+    } catch {
+      return null;
+    }
+  }, [personalization]);
+  const personalizedCalendar = useMemo(() => (
+    resolvedPersonalization
+      ? personalizeCalendar(generalCalendarDays, generalDays, resolvedPersonalization.profile)
+      : null
+  ), [generalCalendarDays, generalDays, resolvedPersonalization]);
+  const days: Day[] = personalizedCalendar?.recommendationDays ?? generalDays;
+  const calendarDays: Day[] = personalizedCalendar?.calendarDays ?? generalCalendarDays;
+  const methodVersion = personalizedCalendar ? PERSONAL_METHOD_VERSION : METHOD_VERSION;
+
   const active = days.find((day) => day.id === activeId) ?? calendarDays.find((day) => day.id === activeId) ?? days[1];
   const resultCopy = buildResultCopy(intent, active);
   const isPreferredInResultWindow = days.some((day) => day.id === active.id && day.isPreferred);
   const preferredId = pickPreferredDay(days).id;
+  const generalPreferredId = pickPreferredDay(generalDays).id;
+  const personalRecommendationChanged = Boolean(personalizedCalendar && preferredId !== generalPreferredId);
   const activeDisplayRating: Rating = isPreferredInResultWindow ? "excellent" : active.rating;
   const resultHeading = keepRussianPrepositionsWithNextWord(buildResultHeading(resultCopy.verdict, isPreferredInResultWindow));
   const resultAdvice = keepRussianPrepositionsWithNextWord(
@@ -1116,6 +1174,22 @@ export default function Home() {
       )
     : "";
   const personalizationSummary = personalization ? formatPersonalizationSummary(personalization) : "";
+  const personalizationResultLabel = !resolvedPersonalization
+    ? "личный расчёт не удалось применить"
+    : resolvedPersonalization.fellBackToDate
+      ? "применён расчёт по дате рождения"
+      : personalRecommendationChanged
+        ? "рекомендация изменилась для вас"
+        : active.id === preferredId
+          ? "персональный расчёт подтвердил эту дату"
+          : "персональный расчёт применён ко всем датам";
+
+  useEffect(() => {
+    if (screen !== "result" || !personalizedCalendar) return;
+    const currentMethod = new URLSearchParams(window.location.search).get("method");
+    if (currentMethod === PERSONAL_METHOD_VERSION) return;
+    window.history.replaceState({}, "", resultUrl(intent.id, active.dateIso, PERSONAL_METHOD_VERSION));
+  }, [active.dateIso, intent.id, personalizedCalendar, screen]);
 
   useEffect(() => {
     if (personalization) return;
@@ -1272,7 +1346,14 @@ export default function Home() {
   }, [pendingReveal, pickerOpen, screen]);
 
   function chooseIntent(nextIntent: Intent) {
-    const nextDays = buildCalendarDays(nextIntent);
+    const nextGeneralDays = buildCalendarDays(nextIntent);
+    const nextDays = resolvedPersonalization
+      ? personalizeCalendar(
+          buildTwoMonthCalendarDays(nextIntent),
+          nextGeneralDays,
+          resolvedPersonalization.profile,
+        ).recommendationDays
+      : nextGeneralDays;
     const nextDay = pickPreferredDay(nextDays);
     if (dayMotionTimer.current) window.clearTimeout(dayMotionTimer.current);
     setDayMotionPhase("idle");
@@ -1297,7 +1378,7 @@ export default function Home() {
     const { intent: nextIntent, day: nextDay } = pendingReveal;
     setScreen("result");
     setPendingReveal(null);
-    window.history.pushState({}, "", resultUrl(nextIntent.id, nextDay.dateIso));
+    window.history.pushState({}, "", resultUrl(nextIntent.id, nextDay.dateIso, methodVersion));
     trackEvent("reveal_viewed", {
       intentId: nextIntent.id,
       archetype: nextIntent.archetype,
@@ -1326,7 +1407,7 @@ export default function Home() {
       if (feedbackStatusTimer.current) window.clearTimeout(feedbackStatusTimer.current);
       setFeedbackVisible(false);
       setFeedbackAnswer(null);
-      window.history.pushState({}, "", resultUrl(intent.id, day.dateIso));
+      window.history.pushState({}, "", resultUrl(intent.id, day.dateIso, methodVersion));
       trackEvent("day_selected", {
         intentId: intent.id,
         archetype: intent.archetype,
@@ -1355,7 +1436,7 @@ export default function Home() {
       intentId: intent.id,
       intentLabel: intent.label,
       description: `${active.score} из 100 · ${ratingLabels[active.rating]}`,
-      resultUrl: resultUrl(intent.id, active.dateIso).toString(),
+      resultUrl: resultUrl(intent.id, active.dateIso, methodVersion).toString(),
     };
   }
 
@@ -1436,7 +1517,7 @@ export default function Home() {
 
   async function shareResult() {
     const text = `${active.longDate} — ${active.score} из 100 для дела «${intent.label}» · подсказка polune`;
-    const url = resultUrl(intent.id, active.dateIso).toString();
+    const url = resultUrl(intent.id, active.dateIso, methodVersion).toString();
     try {
       if (navigator.share) {
         await navigator.share({ title: "polune", text, url });
@@ -1600,11 +1681,11 @@ export default function Home() {
                 type="button"
                 className="result-personalization-summary"
                 onClick={openPersonalization}
-                aria-label={`Изменить данные рождения: ${personalizationSummary}. Пока не влияют на индекс`}
+                aria-label={`Изменить данные рождения: ${personalizationSummary}. ${personalizationResultLabel}`}
               >
                 <span><strong>данные рождения</strong><em>изменить</em></span>
                 <small title={personalizationSummary}>{personalizationSummary}</small>
-                <small>пока не&nbsp;влияют на&nbsp;индекс</small>
+                <small>{keepRussianPrepositionsWithNextWord(personalizationResultLabel)}</small>
               </button>
             )}
             <button type="button" className={`result-calendar-action ${calendarActionStatus ? "has-status" : ""} ${calendarActionStatus === "google_blocked" ? "has-error" : ""}`} onClick={() => performCalendarAction(preferredCalendarProvider)} aria-live="polite">
@@ -1689,15 +1770,21 @@ export default function Home() {
           current={personalization}
           onClose={() => setPersonalizationOpen(false)}
           onComplete={(data) => {
+            const resolved = resolvePersonalProfile(data);
+            const nextCalendar = personalizeCalendar(generalCalendarDays, generalDays, resolved.profile);
+            const nextDay = pickPreferredDay(nextCalendar.recommendationDays);
             setPersonalization(data);
+            setActiveId(nextDay.id);
             window.localStorage.setItem(PERSONALIZATION_STORAGE_KEY, JSON.stringify(data));
+            window.history.pushState({}, "", resultUrl(intent.id, nextDay.dateIso, PERSONAL_METHOD_VERSION));
             setPersonalizationBubblePhase("hidden");
             setPersonalizationOpen(false);
             trackEvent("personalization_completed", {
               intentId: intent.id,
               archetype: intent.archetype,
-              selectedDate: active.dateIso,
-              score: active.score,
+              selectedDate: nextDay.dateIso,
+              score: nextDay.score,
+              methodVersion: PERSONAL_METHOD_VERSION,
             });
           }}
         />

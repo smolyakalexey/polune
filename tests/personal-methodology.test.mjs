@@ -87,6 +87,7 @@ test("day score exposes its factors for a future explanation", () => {
   }), {
     score: 58,
     generalScore: 50,
+    personalScore: 75,
     personalWeight: 0.35,
     sunScore: 85,
     moonScore: 100,

@@ -104,6 +104,7 @@ export function calculatePersonalizedDayScore(
   return {
     ...personal,
     generalScore: clampScore(generalScore),
+    personalScore: personal.score,
     personalWeight: PERSONAL_FACTOR_WEIGHTS[profile.level],
     score: blendPersonalScore(generalScore, personal.score, profile.level),
   };
