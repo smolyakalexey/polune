@@ -5,21 +5,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import Fuse from "fuse.js";
-import { EclipticGeoMoon, MoonPhase } from "astronomy-engine";
 import {
-  angularDistance,
-  annotatePreferredDays,
-  archetypeTargets,
-  calculateMethodScore,
   METHOD_VERSION,
   PHASE_WEIGHT,
   pickPreferredDay,
-  ratingForScore,
   ZODIAC_WEIGHT,
-  zodiacSignIndex,
-  zodiacSignNames,
 } from "@/lib/methodology";
 import type { Rating, ZodiacProfile } from "@/lib/methodology";
+import {
+  buildCalendarDays,
+  buildTwoMonthCalendarDays,
+  currentMoscowDate,
+  moscowDateIso,
+  resolveRequestedCalendarDay,
+} from "@/lib/calendar";
+import type { CalendarDay } from "@/lib/calendar";
 import { intentCatalog } from "@/lib/intent-catalog";
 import type { CatalogIconKey, IntentDefinition } from "@/lib/intent-catalog";
 import { intentZodiacProfiles } from "@/lib/intent-profiles";
@@ -82,26 +82,7 @@ import {
 } from "@phosphor-icons/react";
 
 type Intent = Omit<IntentDefinition, "icon"> & { Icon: Icon; zodiacProfile: ZodiacProfile };
-
-type Day = {
-  id: string;
-  dateIso: string;
-  day: string;
-  weekday: string;
-  longDate: string;
-  monthLabel: string;
-  score: number;
-  phaseScore: number;
-  zodiacScore: number;
-  rating: Rating;
-  isPreferred: boolean;
-  moonPhaseAngle: number;
-  moonPhaseLabel: string;
-  targetPhaseAngle: number;
-  phaseDistance: number;
-  lunarLongitude: number;
-  zodiacSignName: string;
-};
+type Day = CalendarDay;
 
 type PersonalizationData = {
   zodiac: string;
@@ -157,66 +138,6 @@ function resultUrl(intentId: string, dateIso: string) {
   url.searchParams.set("date", dateIso);
   url.searchParams.set("method", METHOD_VERSION);
   return url;
-}
-
-function currentMoscowDate() {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Moscow",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(new Date());
-  const value = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((part) => part.type === type)?.value);
-  return new Date(Date.UTC(value("year"), value("month") - 1, value("day"), 12));
-}
-
-function buildCurrentWeek(intent: Pick<Intent, "archetype" | "zodiacProfile">, count = 14, fromMonthStart = false): Day[] {
-  const anchor = currentMoscowDate();
-  if (fromMonthStart) anchor.setUTCDate(1);
-  const calculatedDays = Array.from({ length: count }, (_, index) => {
-    const date = new Date(anchor);
-    date.setUTCDate(anchor.getUTCDate() + index);
-    const day = String(date.getUTCDate());
-    const dateIso = date.toISOString().slice(0, 10);
-    const weekday = new Intl.DateTimeFormat("ru-RU", { weekday: "short", timeZone: "UTC" }).format(date).replace(".", "");
-    const monthLabel = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", timeZone: "UTC" })
-      .formatToParts(date)
-      .find((part) => part.type === "month")?.value ?? "";
-    const moonPhaseAngle = MoonPhase(date);
-    const lunarLongitude = EclipticGeoMoon(date).lon;
-    const { score, phaseScore, zodiacScore } = calculateMethodScore(
-      moonPhaseAngle,
-      lunarLongitude,
-      intent.archetype,
-      intent.zodiacProfile,
-    );
-    const moonPhaseLabel = moonPhaseAngle < 15 || moonPhaseAngle >= 345
-      ? "новолуние"
-      : moonPhaseAngle < 165
-        ? "растущая луна"
-        : moonPhaseAngle < 195
-          ? "полнолуние"
-          : "убывающая луна";
-    return {
-      id: dateIso,
-      dateIso,
-      day,
-      weekday,
-      longDate: `${day} ${monthLabel}, ${weekday}`,
-      monthLabel: `${monthLabel}, ${weekday}`,
-      score,
-      phaseScore,
-      zodiacScore,
-      rating: ratingForScore(score),
-      moonPhaseAngle,
-      moonPhaseLabel,
-      targetPhaseAngle: archetypeTargets[intent.archetype],
-      phaseDistance: angularDistance(moonPhaseAngle, archetypeTargets[intent.archetype]),
-      lunarLongitude,
-      zodiacSignName: zodiacSignNames[zodiacSignIndex(lunarLongitude)],
-    };
-  });
-  return annotatePreferredDays(calculatedDays);
 }
 
 const intentSearch = new Fuse(intents, {
@@ -867,9 +788,8 @@ function ResultCalendar({
   onSelect: (day: Day) => void;
 }) {
   const dragStart = useRef<number | null>(null);
-  const visibleDays = days.slice(0, 62);
-  const todayIso = currentMoscowDate().toISOString().slice(0, 10);
-  const upcomingDays = visibleDays.filter((day) => day.dateIso >= todayIso);
+  const todayIso = moscowDateIso();
+  const upcomingDays = days.filter((day) => day.dateIso >= todayIso);
   const peekDays = upcomingDays.slice(0, 14);
   const monthGroups = upcomingDays.reduce<Array<{ key: string; title: string; days: Day[] }>>((groups, day) => {
     const key = day.dateIso.slice(0, 7);
@@ -959,8 +879,8 @@ export default function Home() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [intent, setIntent] = useState(intents[0]);
   const [previewIndex, setPreviewIndex] = useState(0);
-  const days = useMemo(() => buildCurrentWeek(intent), [intent]);
-  const calendarDays = useMemo(() => buildCurrentWeek(intent, 62, true), [intent]);
+  const days = useMemo(() => buildCalendarDays(intent), [intent]);
+  const calendarDays = useMemo(() => buildTwoMonthCalendarDays(intent), [intent]);
   const initialBestId = pickPreferredDay(days).id;
   const [hasChosenIntent, setHasChosenIntent] = useState(false);
   const [activeId, setActiveId] = useState(initialBestId);
@@ -1084,12 +1004,10 @@ export default function Home() {
         return;
       }
 
-      const restoredCalendarDays = buildCurrentWeek(restoredIntent, 62, true);
-      const restoredDays = buildCurrentWeek(restoredIntent);
+      const restoredCalendarDays = buildTwoMonthCalendarDays(restoredIntent);
+      const restoredDays = buildCalendarDays(restoredIntent);
       const requestedDate = params.get("date");
-      const todayIso = currentMoscowDate().toISOString().slice(0, 10);
-      const restoredDay = restoredCalendarDays.find((day) => day.dateIso === requestedDate && day.dateIso >= todayIso)
-        ?? pickPreferredDay(restoredDays);
+      const restoredDay = resolveRequestedCalendarDay(requestedDate, restoredCalendarDays, restoredDays, moscowDateIso());
       setIntent(restoredIntent);
       setPersonalizationBubblePhase("hidden");
       setDayMotionPhase("idle");
@@ -1124,7 +1042,7 @@ export default function Home() {
   }, [pendingReveal, pickerOpen, screen]);
 
   function chooseIntent(nextIntent: Intent) {
-    const nextDays = buildCurrentWeek(nextIntent);
+    const nextDays = buildCalendarDays(nextIntent);
     const nextDay = pickPreferredDay(nextDays);
     if (dayMotionTimer.current) window.clearTimeout(dayMotionTimer.current);
     setDayMotionPhase("idle");
