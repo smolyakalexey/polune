@@ -1,6 +1,7 @@
 import { METHOD_VERSION } from "@/lib/methodology";
 import { PERSONAL_METHOD_VERSION } from "@/lib/personal-methodology";
 import type { AnalyticsEventName } from "@/lib/analytics-events";
+import { createAnonymousSessionId } from "@/lib/session-id";
 
 type AnalyticsProperties = {
   intentId?: string;
@@ -34,14 +35,22 @@ export function configureAnalyticsFromUrl() {
 }
 
 export function getAnonymousSessionId() {
+  const createId = () => createAnonymousSessionId({
+    randomUUID: typeof window.crypto?.randomUUID === "function"
+      ? () => window.crypto.randomUUID()
+      : undefined,
+    getRandomValues: typeof window.crypto?.getRandomValues === "function"
+      ? (values) => window.crypto.getRandomValues(values)
+      : undefined,
+  });
   try {
     const existing = window.localStorage.getItem(SESSION_KEY);
     if (existing) return existing;
-    const created = window.crypto.randomUUID();
+    const created = createId();
     window.localStorage.setItem(SESSION_KEY, created);
     return created;
   } catch {
-    return window.crypto.randomUUID();
+    return createId();
   }
 }
 
