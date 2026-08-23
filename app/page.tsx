@@ -866,8 +866,9 @@ function ResultCalendar({
   const dragStart = useRef<number | null>(null);
   const visibleDays = days.slice(0, 62);
   const todayIso = currentMoscowDate().toISOString().slice(0, 10);
-  const peekDays = visibleDays.filter((day) => day.dateIso >= todayIso).slice(0, 14);
-  const monthGroups = visibleDays.reduce<Array<{ key: string; title: string; days: Day[] }>>((groups, day) => {
+  const upcomingDays = visibleDays.filter((day) => day.dateIso >= todayIso);
+  const peekDays = upcomingDays.slice(0, 14);
+  const monthGroups = upcomingDays.reduce<Array<{ key: string; title: string; days: Day[] }>>((groups, day) => {
     const key = day.dateIso.slice(0, 7);
     const last = groups.at(-1);
     if (last?.key === key) last.days.push(day);
@@ -1076,7 +1077,9 @@ export default function Home() {
       const restoredCalendarDays = buildCurrentWeek(restoredIntent, 62, true);
       const restoredDays = buildCurrentWeek(restoredIntent);
       const requestedDate = params.get("date");
-      const restoredDay = restoredCalendarDays.find((day) => day.dateIso === requestedDate) ?? pickPreferredDay(restoredDays);
+      const todayIso = currentMoscowDate().toISOString().slice(0, 10);
+      const restoredDay = restoredCalendarDays.find((day) => day.dateIso === requestedDate && day.dateIso >= todayIso)
+        ?? pickPreferredDay(restoredDays);
       setIntent(restoredIntent);
       setPersonalizationBubblePhase("hidden");
       setDayMotionPhase("idle");
