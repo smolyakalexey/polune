@@ -1675,10 +1675,27 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   white-space: nowrap;
 }
 .result-personalization-summary small:last-child { color: rgba(255,255,255,.42); }
+.result-calendar-actions { min-width: 0; display: grid; grid-template-columns: 1fr; gap: 4px; }
+.result-calendar-actions.has-preference { grid-template-columns: minmax(0, 1fr) 64px; }
 .result-calendar-action {
+  width: 100%;
   color: #080909;
   background: #fff;
 }
+.result-calendar-alternative {
+  width: 64px;
+  min-height: 64px;
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  color: #080909;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(0,0,0,.18), inset 0 0 12px rgba(255,255,255,.3);
+  cursor: pointer;
+}
+.result-calendar-alternative svg { width: 20px; height: 20px; }
 .result-calendar-action.has-status { color: #fff; background: #277a50; }
 .result-calendar-action.has-error { background: #8f3d37; }
 
@@ -1907,6 +1924,8 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .result-personalization-action,
   .result-personalization-summary,
   .result-calendar-action { min-height: 56px; }
+  .result-calendar-actions.has-preference { grid-template-columns: minmax(0, 1fr) 56px; }
+  .result-calendar-alternative { width: 56px; min-height: 56px; }
 }
 
 /* Real mobile browsers expose a wider, shorter visual viewport than the
@@ -2023,6 +2042,8 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .result-calendar-action {
     min-height: 56px;
   }
+  .result-calendar-actions.has-preference { grid-template-columns: minmax(0, 1fr) 56px; }
+  .result-calendar-alternative { width: 56px; min-height: 56px; }
 
   .result-calendar {
     width: 100%;
@@ -2060,6 +2081,8 @@ button:focus-visible, input:focus-visible, a:focus-visible {
     min-height: 54px;
     font-size: 17px;
   }
+  .result-calendar-actions.has-preference { grid-template-columns: minmax(0, 1fr) 54px; }
+  .result-calendar-alternative { width: 54px; min-height: 54px; }
 }
 
 @media (max-width: 559px) and (max-height: 780px) {
@@ -2082,6 +2105,8 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .result-personalization-action,
   .result-personalization-summary,
   .result-calendar-action { min-height: 50px; }
+  .result-calendar-actions.has-preference { grid-template-columns: minmax(0, 1fr) 50px; }
+  .result-calendar-alternative { width: 50px; min-height: 50px; }
 }
 
 @media (max-width: 559px) and (max-height: 680px) {
@@ -2100,6 +2125,8 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .result-personalization-action,
   .result-personalization-summary,
   .result-calendar-action { min-height: 48px; }
+  .result-calendar-actions.has-preference { grid-template-columns: minmax(0, 1fr) 48px; }
+  .result-calendar-alternative { width: 48px; min-height: 48px; }
   .result-calendar { height: 134px; }
 }
 

@@ -27,6 +27,8 @@ import { classifyQuerySafety, isConfidentCatalogMatch } from "@/lib/query-safety
 import { configureAnalyticsFromUrl, trackEvent } from "@/lib/analytics";
 import { keepRussianPrepositionsWithNextWord } from "@/lib/typography";
 import { buildGoogleCalendarUrl, buildIcsCalendarEvent } from "@/lib/calendar-actions";
+import { detectCalendarProvider } from "@/lib/calendar-preference";
+import type { CalendarProvider } from "@/lib/calendar-preference";
 import {
   birthDateInputFromIso,
   formatBirthDateInput,
@@ -50,6 +52,7 @@ import {
   CalendarBlank,
   CalendarCheck,
   CalendarPlus,
+  CaretDown,
   Check,
   ChatCircle,
   Clock,
@@ -94,6 +97,7 @@ type PersonalizationData = {
 };
 
 const PERSONALIZATION_STORAGE_KEY = "polune-personalization-v1";
+const CALENDAR_PREFERENCE_STORAGE_KEY = "polune-calendar-preference-v1";
 
 const catalogIcons: Record<CatalogIconKey, Icon> = {
   airplane: AirplaneTilt,
@@ -936,6 +940,7 @@ export default function Home() {
   const [activeId, setActiveId] = useState(initialBestId);
   const [calendarActionOpen, setCalendarActionOpen] = useState(false);
   const [calendarActionStatus, setCalendarActionStatus] = useState<"ics_prepared" | "google_opened" | "google_blocked" | null>(null);
+  const [preferredCalendarProvider, setPreferredCalendarProvider] = useState<CalendarProvider | null>(null);
   const [shared, setShared] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [feedbackAnswer, setFeedbackAnswer] = useState<"helpful" | "not_helpful" | null>(null);
@@ -1030,6 +1035,27 @@ export default function Home() {
     return () => {
       if (restoreTimer !== null) window.clearTimeout(restoreTimer);
     };
+  }, []);
+
+  useEffect(() => {
+    let provider: CalendarProvider | null = null;
+    try {
+      const savedProvider = window.localStorage.getItem(CALENDAR_PREFERENCE_STORAGE_KEY);
+      if (savedProvider === "apple" || savedProvider === "google") provider = savedProvider;
+    } catch {
+      // Platform detection remains available when storage is blocked.
+    }
+    if (!provider) {
+      const navigatorWithHints = navigator as Navigator & { userAgentData?: { platform?: string } };
+      provider = detectCalendarProvider({
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        maxTouchPoints: navigator.maxTouchPoints,
+        userAgentDataPlatform: navigatorWithHints.userAgentData?.platform,
+      });
+    }
+    const timer = window.setTimeout(() => setPreferredCalendarProvider(provider), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => () => {
@@ -1230,6 +1256,32 @@ export default function Home() {
     });
   }
 
+  function openCalendarOptions() {
+    setCalendarActionOpen(true);
+    trackEvent("calendar_options_opened", {
+      intentId: intent.id,
+      archetype: intent.archetype,
+      selectedDate: active.dateIso,
+      score: active.score,
+    });
+  }
+
+  function performCalendarAction(provider: CalendarProvider | null) {
+    if (provider === "apple") prepareAppleCalendarFile();
+    else if (provider === "google") openGoogleCalendar();
+    else openCalendarOptions();
+  }
+
+  function chooseCalendarProvider(provider: CalendarProvider) {
+    setPreferredCalendarProvider(provider);
+    try {
+      window.localStorage.setItem(CALENDAR_PREFERENCE_STORAGE_KEY, provider);
+    } catch {
+      // The choice still applies to the current page when storage is unavailable.
+    }
+    performCalendarAction(provider);
+  }
+
   async function shareResult() {
     const text = `${active.longDate} — ${active.score} из 100 для дела «${intent.label}» · подсказка polune`;
     const url = resultUrl(intent.id, active.dateIso).toString();
@@ -1403,23 +1455,26 @@ export default function Home() {
                 <small>пока не&nbsp;влияют на&nbsp;индекс</small>
               </button>
             )}
-            <button type="button" className={`result-calendar-action ${calendarActionStatus ? "has-status" : ""} ${calendarActionStatus === "google_blocked" ? "has-error" : ""}`} onClick={() => {
-              setCalendarActionOpen(true);
-              trackEvent("calendar_options_opened", {
-                intentId: intent.id,
-                archetype: intent.archetype,
-                selectedDate: active.dateIso,
-                score: active.score,
-              });
-            }} aria-live="polite">
-              {calendarActionStatus === "ics_prepared"
-                ? "файл .ics подготовлен"
-                : calendarActionStatus === "google_opened"
-                  ? "Google Calendar открыт"
-                  : calendarActionStatus === "google_blocked"
-                    ? "Google Calendar не открылся"
-                    : "добавить в календарь"}
-            </button>
+            <div className={`result-calendar-actions ${preferredCalendarProvider ? "has-preference" : ""}`}>
+              <button type="button" className={`result-calendar-action ${calendarActionStatus ? "has-status" : ""} ${calendarActionStatus === "google_blocked" ? "has-error" : ""}`} onClick={() => performCalendarAction(preferredCalendarProvider)} aria-live="polite">
+                {calendarActionStatus === "ics_prepared"
+                  ? "файл .ics подготовлен"
+                  : calendarActionStatus === "google_opened"
+                    ? "Google Calendar открыт"
+                    : calendarActionStatus === "google_blocked"
+                      ? "Google Calendar не открылся"
+                      : preferredCalendarProvider === "apple"
+                        ? "добавить в Apple Calendar"
+                        : preferredCalendarProvider === "google"
+                          ? "добавить в Google Calendar"
+                          : "добавить в календарь"}
+              </button>
+              {preferredCalendarProvider && (
+                <button type="button" className="result-calendar-alternative" onClick={openCalendarOptions} aria-label="Выбрать другой календарь">
+                  <CaretDown weight="bold" aria-hidden="true" />
+                </button>
+              )}
+            </div>
           </div>
         </article>
 
@@ -1484,8 +1539,8 @@ export default function Home() {
       {calendarActionOpen && (
         <CalendarActionSheet
           onClose={() => setCalendarActionOpen(false)}
-          onApple={prepareAppleCalendarFile}
-          onGoogle={openGoogleCalendar}
+          onApple={() => chooseCalendarProvider("apple")}
+          onGoogle={() => chooseCalendarProvider("google")}
         />
       )}
       {personalizationOpen && (
