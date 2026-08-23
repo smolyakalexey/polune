@@ -25,6 +25,16 @@ import type { CatalogIconKey, IntentDefinition } from "@/lib/intent-catalog";
 import { intentZodiacProfiles } from "@/lib/intent-profiles";
 import { classifyQuerySafety, isConfidentCatalogMatch } from "@/lib/query-safety";
 import { configureAnalyticsFromUrl, trackEvent } from "@/lib/analytics";
+import {
+  birthDateInputFromIso,
+  formatBirthDateInput,
+  formatBirthTimeInput,
+  isValidBirthPlace,
+  isValidBirthTime,
+  normalizeBirthPlace,
+  parseBirthDateInput,
+  zodiacForBirthDate,
+} from "@/lib/personalization";
 import RevealTransition from "./reveal-transition";
 import type { Icon } from "@phosphor-icons/react";
 import {
@@ -100,21 +110,6 @@ type PersonalizationData = {
 };
 
 const PERSONALIZATION_STORAGE_KEY = "polune-personalization-v1";
-
-const zodiacSigns = [
-  { name: "овен", symbol: "♈︎" },
-  { name: "телец", symbol: "♉︎" },
-  { name: "близнецы", symbol: "♊︎" },
-  { name: "рак", symbol: "♋︎" },
-  { name: "лев", symbol: "♌︎" },
-  { name: "дева", symbol: "♍︎" },
-  { name: "весы", symbol: "♎︎" },
-  { name: "скорпион", symbol: "♏︎" },
-  { name: "стрелец", symbol: "♐︎" },
-  { name: "козерог", symbol: "♑︎" },
-  { name: "водолей", symbol: "♒︎" },
-  { name: "рыбы", symbol: "♓︎" },
-];
 
 const catalogIcons: Record<CatalogIconKey, Icon> = {
   airplane: AirplaneTilt,
@@ -622,14 +617,14 @@ function PersonalizationSheet({
   onClose: () => void;
   onComplete: (data: PersonalizationData) => void;
 }) {
-  const [step, setStep] = useState<"zodiac" | "birth">("zodiac");
-  const [zodiac, setZodiac] = useState(current?.zodiac ?? "");
-  const [birthDate, setBirthDate] = useState(current?.birthDate ?? "");
+  const [birthDateInput, setBirthDateInput] = useState(birthDateInputFromIso(current?.birthDate ?? ""));
   const [birthTime, setBirthTime] = useState(current?.birthTime ?? "");
   const [birthPlace, setBirthPlace] = useState(current?.birthPlace ?? "");
   const [timeUnknown, setTimeUnknown] = useState(current?.timeUnknown ?? false);
-  const [zodiacError, setZodiacError] = useState(false);
-  const [birthError, setBirthError] = useState(false);
+  const [formError, setFormError] = useState<"date" | "time" | "place" | null>(null);
+  const datePickerRef = useRef<HTMLInputElement>(null);
+  const birthDate = parseBirthDateInput(birthDateInput);
+  const zodiac = birthDate ? zodiacForBirthDate(birthDate) : null;
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -640,26 +635,33 @@ function PersonalizationSheet({
   }, [onClose]);
 
   function finish() {
-    if (!zodiac) return;
-    onComplete({ zodiac, birthDate, birthTime: timeUnknown ? "" : birthTime, birthPlace, timeUnknown });
-  }
-
-  function continueToBirth() {
-    if (!zodiac) {
-      setZodiacError(true);
+    if (!birthDate || !zodiac) {
+      setFormError("date");
       return;
     }
-    setZodiacError(false);
-    setStep("birth");
-  }
-
-  function finishWithBirthData() {
-    if (!birthDate) {
-      setBirthError(true);
+    if (!timeUnknown && birthTime && !isValidBirthTime(birthTime)) {
+      setFormError("time");
       return;
     }
-    setBirthError(false);
-    finish();
+    if (birthPlace && !isValidBirthPlace(birthPlace)) {
+      setFormError("place");
+      return;
+    }
+    setFormError(null);
+    onComplete({
+      zodiac: zodiac.name,
+      birthDate,
+      birthTime: timeUnknown ? "" : birthTime,
+      birthPlace: normalizeBirthPlace(birthPlace),
+      timeUnknown,
+    });
+  }
+
+  function openDatePicker() {
+    const picker = datePickerRef.current;
+    if (!picker) return;
+    if (typeof picker.showPicker === "function") picker.showPicker();
+    else picker.click();
   }
 
   return (
@@ -669,75 +671,109 @@ function PersonalizationSheet({
       <section className="profile-sheet" role="dialog" aria-modal="true" aria-labelledby="profile-sheet-title">
         <header>
           <div>
-            <p>{step === "zodiac" ? "шаг 1 из 2" : "шаг 2 из 2"}</p>
-            <h2 id="profile-sheet-title">{step === "zodiac" ? "кто вы по знаку" : "данные рождения"}</h2>
+            <p>персонализация</p>
+            <h2 id="profile-sheet-title">данные рождения</h2>
           </div>
           <button type="button" className="round-button" onClick={onClose} aria-label="Закрыть персонализацию">
             <X weight="regular" />
           </button>
         </header>
 
-        {step === "zodiac" ? (
-          <>
-            <p className="profile-sheet-lead">этого достаточно для быстрого персонального уточнения. регистрация пока не нужна.</p>
-            <div className="zodiac-grid" role="radiogroup" aria-label="Знак зодиака">
-              {zodiacSigns.map((sign) => (
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={zodiac === sign.name}
-                  className={zodiac === sign.name ? "selected" : ""}
-                  key={sign.name}
-                  onClick={() => {
-                    setZodiac(sign.name);
-                    setZodiacError(false);
-                  }}
-                >
-                  <span className="zodiac-symbol" aria-hidden="true">{sign.symbol}</span>
-                  <span>{sign.name}</span>
-                </button>
-              ))}
-            </div>
-            {zodiacError && <p className="profile-inline-error" role="status">сначала выберите знак зодиака</p>}
-            <button type="button" className="profile-primary" onClick={continueToBirth}>далее</button>
-          </>
-        ) : (
-          <>
-            <p className="profile-sheet-lead">добавьте детали рождения, чтобы точнее настроить результат под ваш личный ритм.</p>
-            <label className="profile-field">
-              <span>дата рождения</span>
-              <span className="profile-input-shell">
-                <input type="date" value={birthDate} onChange={(event) => {
-                  setBirthDate(event.target.value);
-                  setBirthError(false);
-                }} />
-                <CalendarBlank weight="regular" aria-hidden="true" />
-              </span>
-            </label>
-            {!timeUnknown && (
-              <label className="profile-field">
-                <span>время рождения</span>
-                <span className="profile-input-shell">
-                  <input type="time" value={birthTime} onChange={(event) => setBirthTime(event.target.value)} />
-                  <Clock weight="regular" aria-hidden="true" />
-                </span>
-              </label>
-            )}
-            <label className="profile-check">
-              <input type="checkbox" checked={timeUnknown} onChange={(event) => setTimeUnknown(event.target.checked)} />
-              <span className="profile-check-control" aria-hidden="true"><Check weight="bold" /></span>
-              <span>не знаю точное время рождения</span>
-            </label>
-            <label className="profile-field">
-              <span>место рождения</span>
-              <input value={birthPlace} onChange={(event) => setBirthPlace(event.target.value.slice(0, 80))} placeholder="город" maxLength={80} />
-            </label>
-            {birthError && <p className="profile-inline-error" role="status">укажите дату рождения или пропустите этот шаг</p>}
-            <button type="button" className="profile-primary" onClick={finishWithBirthData}>сохранить</button>
-            <button type="button" className="profile-secondary" onClick={finish}>пропустить шаг</button>
-            <button type="button" className="profile-back-link" onClick={() => setStep("zodiac")}>назад к выбору знака</button>
-          </>
+        <p className="profile-sheet-lead">укажите дату — знак зодиака определится автоматически. данные сохраняются только на этом устройстве.</p>
+        <label className="profile-field">
+          <span>дата рождения</span>
+          <span className="profile-input-shell">
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="bday"
+              placeholder="дд.мм.гггг"
+              value={birthDateInput}
+              maxLength={10}
+              aria-invalid={formError === "date"}
+              onChange={(event) => {
+                setBirthDateInput(formatBirthDateInput(event.target.value));
+                setFormError(null);
+              }}
+            />
+            <button type="button" className="profile-input-action" onClick={openDatePicker} aria-label="Выбрать дату в календаре">
+              <CalendarBlank weight="regular" aria-hidden="true" />
+            </button>
+            <input
+              ref={datePickerRef}
+              className="profile-native-picker"
+              type="date"
+              min="1900-01-01"
+              max={new Date().toISOString().slice(0, 10)}
+              tabIndex={-1}
+              aria-hidden="true"
+              onChange={(event) => {
+                setBirthDateInput(birthDateInputFromIso(event.target.value));
+                setFormError(null);
+              }}
+            />
+          </span>
+        </label>
+        {zodiac && (
+          <div className="profile-zodiac-result" aria-live="polite">
+            <span className="zodiac-symbol" aria-hidden="true">{zodiac.symbol}</span>
+            <span><small>ваш знак зодиака</small><strong>{zodiac.name}</strong></span>
+          </div>
         )}
+        {!timeUnknown && (
+          <label className="profile-field">
+            <span>время рождения</span>
+            <span className="profile-input-shell">
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="bday-time"
+                placeholder="чч:мм"
+                value={birthTime}
+                maxLength={5}
+                aria-invalid={formError === "time"}
+                onKeyDown={(event) => {
+                  if (event.key === "Backspace" && birthTime.endsWith(":")) {
+                    event.preventDefault();
+                    setBirthTime(birthTime.slice(0, -2));
+                  }
+                }}
+                onChange={(event) => {
+                  setBirthTime(formatBirthTimeInput(event.target.value));
+                  setFormError(null);
+                }}
+              />
+              <Clock weight="regular" aria-hidden="true" />
+            </span>
+          </label>
+        )}
+        <label className="profile-check">
+          <input type="checkbox" checked={timeUnknown} onChange={(event) => {
+            setTimeUnknown(event.target.checked);
+            setFormError(null);
+          }} />
+          <span className="profile-check-control" aria-hidden="true"><Check weight="bold" /></span>
+          <span>не знаю точное время рождения</span>
+        </label>
+        <label className="profile-field">
+          <span>место рождения</span>
+          <input
+            value={birthPlace}
+            onChange={(event) => {
+              setBirthPlace(event.target.value.slice(0, 80));
+              setFormError(null);
+            }}
+            placeholder="город"
+            maxLength={80}
+            autoComplete="address-level2"
+            aria-invalid={formError === "place"}
+          />
+          <small>пока сохраняется для будущего персонального расчёта</small>
+        </label>
+        {formError === "date" && <p className="profile-inline-error" role="status">введите корректную дату в формате дд.мм.гггг</p>}
+        {formError === "time" && <p className="profile-inline-error" role="status">введите время от 00:00 до 23:59</p>}
+        {formError === "place" && <p className="profile-inline-error" role="status">проверьте название населённого пункта</p>}
+        <button type="button" className="profile-primary" onClick={finish}>применить</button>
       </section>
     </div>
   );

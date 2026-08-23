@@ -1056,10 +1056,12 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .profile-field > span { color: var(--result-secondary); font-size: 13px; font-weight: 500; line-height: 18px; }
 .profile-field small { color: var(--muted); font-size: 12px; font-weight: 400; }
 .profile-field input {
+  box-sizing: border-box;
   display: block;
   width: 100%;
   min-width: 0;
   max-width: 100%;
+  height: 54px;
   min-height: 54px;
   padding: 0 15px;
   border: 1px solid var(--result-border);
@@ -1071,6 +1073,9 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   appearance: none;
   font-family: inherit;
   font-size: 16px;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
 }
 .profile-field input:focus { border-color: var(--brand-mid); box-shadow: 0 0 0 3px rgba(98, 99, 245, .12); }
 .profile-input-shell { position: relative; display: block; width: 100%; min-width: 0; max-width: 100%; }
@@ -1085,6 +1090,52 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   pointer-events: none;
   transform: translateY(-50%);
 }
+.profile-input-action {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  right: 6px;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 0;
+  border-radius: 13px;
+  color: #fff;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+.profile-input-action svg { width: 21px; height: 21px; }
+.profile-input-action:focus-visible { outline: 3px solid rgba(155,140,255,.3); outline-offset: -2px; }
+.profile-field .profile-native-picker {
+  position: absolute;
+  width: 1px;
+  min-height: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.profile-zodiac-result {
+  min-height: 58px;
+  margin-top: 9px;
+  padding: 9px 13px;
+  border: 1px solid rgba(155,140,255,.22);
+  border-radius: 17px;
+  color: #fff;
+  background: rgba(98,99,245,.13);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: result-day-in .24s cubic-bezier(.16,1,.3,1) both;
+}
+.profile-zodiac-result .zodiac-symbol { width: 32px; flex: 0 0 32px; color: #b3a8ff; font-size: 28px; }
+.profile-zodiac-result > span:last-child { display: grid; gap: 1px; }
+.profile-zodiac-result small { color: rgba(255,255,255,.5); font-size: 11px; line-height: 15px; }
+.profile-zodiac-result strong { font-size: 16px; font-weight: 500; line-height: 21px; }
 .profile-field input[type="date"],
 .profile-field input[type="time"] { color-scheme: dark; }
 .profile-field input[type="date"]::-webkit-calendar-picker-indicator,
