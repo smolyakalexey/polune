@@ -1532,7 +1532,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   letter-spacing: -2px;
 }
 .result-guidance {
-  width: 332px;
+  width: 344px;
   max-width: 100%;
   margin-top: 32px;
   text-align: center;
@@ -1604,7 +1604,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   padding: 10px 16px;
   border: 1px solid rgba(255,255,255,.12);
   color: #fff;
-  background: rgba(255,255,255,.07);
+  background: linear-gradient(180deg, #202224, #17191a);
   text-align: left;
 }
 .result-personalization-summary > span {
@@ -1644,7 +1644,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   overflow: hidden;
   border-radius: 32px 32px 0 0;
   color: #fff;
-  background: linear-gradient(180deg, rgba(31,32,33,.78), rgba(11,13,14,.9));
+  background: linear-gradient(180deg, #202223, #0d0f10);
   border: 1px solid rgba(255,255,255,.08);
   border-bottom: 0;
   box-shadow: 0 -18px 46px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.035);
@@ -1665,7 +1665,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 }
 .result-calendar.is-expanded {
   height: 80%;
-  background: linear-gradient(180deg, rgba(32,32,34,.78), rgba(17,17,18,.72));
+  background: linear-gradient(180deg, #222224, #111112);
   overflow: hidden;
 }
 .result-calendar.is-expanded::after { display: none; }
@@ -1791,7 +1791,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   border-bottom: 0;
   border-radius: 32px 32px 0 0;
   color: #fff;
-  background: linear-gradient(180deg, rgba(32,32,34,.82), rgba(15,16,17,.76));
+  background: linear-gradient(180deg, #232325, #111213);
   box-shadow: 0 -24px 70px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.04);
   backdrop-filter: blur(24px) saturate(125%);
   -webkit-backdrop-filter: blur(24px) saturate(125%);
@@ -1940,7 +1940,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   }
 
   .result-guidance {
-    width: min(310px, calc(100vw - 52px));
+    width: min(322px, calc(100vw - 40px));
     margin-top: clamp(16px, 2.4dvh, 22px);
   }
 
@@ -1988,7 +1988,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .result-date-line { margin-top: 4px; }
   .result-date-line strong { font-size: 56px; line-height: .94; }
   .result-guidance {
-    width: min(300px, calc(100vw - 54px));
+    width: min(312px, calc(100vw - 42px));
     margin-top: 12px;
   }
   .result-guidance h2 { font-size: 22px; line-height: 25px; }
@@ -2015,7 +2015,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .phase-moon { width: 92px; height: 89px; }
   .result-date-line strong { font-size: 50px; }
   .result-guidance {
-    width: min(286px, calc(100vw - 58px));
+    width: min(298px, calc(100vw - 46px));
     margin-top: 8px;
   }
   .result-guidance h2 { font-size: 20px; line-height: 23px; }
@@ -2037,7 +2037,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .phase-moon { width: 80px; height: 78px; }
   .result-date-line strong { font-size: 44px; }
   .result-guidance {
-    width: min(270px, calc(100vw - 64px));
+    width: min(282px, calc(100vw - 52px));
     margin-top: 6px;
   }
   .result-guidance h2 { font-size: 18px; line-height: 21px; }

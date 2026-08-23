@@ -25,6 +25,7 @@ import type { CatalogIconKey, IntentDefinition } from "@/lib/intent-catalog";
 import { intentZodiacProfiles } from "@/lib/intent-profiles";
 import { classifyQuerySafety, isConfidentCatalogMatch } from "@/lib/query-safety";
 import { configureAnalyticsFromUrl, trackEvent } from "@/lib/analytics";
+import { keepRussianPrepositionsWithNextWord } from "@/lib/typography";
 import {
   birthDateInputFromIso,
   formatBirthDateInput,
@@ -406,7 +407,7 @@ function StartControls() {
 }
 
 function splitIntentLabel(label: string) {
-  const words = label.trim().split(/\s+/);
+  const words = label.trim().split(" ");
   if (label.length <= 15 || words.length < 2) return [label];
 
   let splitAt = 1;
@@ -433,7 +434,8 @@ function IntentLine({
   animated?: boolean;
 }) {
   const IntentIcon = intent.Icon;
-  const [firstLine, secondLine] = splitIntentLabel(intent.label);
+  const protectedLabel = keepRussianPrepositionsWithNextWord(intent.label);
+  const [firstLine, secondLine] = splitIntentLabel(protectedLabel);
   return (
     <button
       className={`intent-line ${animated ? "is-ticker" : ""}`}
@@ -509,7 +511,7 @@ function IntentPicker({
       >
         <span className="picker-option-content">
           <intent.Icon weight="regular" aria-hidden="true" />
-          <span>{intent.label}</span>
+          <span>{keepRussianPrepositionsWithNextWord(intent.label)}</span>
         </span>
         {showSelection && intent.id === current.id && <Check weight="bold" aria-hidden="true" />}
       </button>
@@ -554,7 +556,7 @@ function IntentPicker({
           {feedback && (
             <section className={`picker-feedback feedback-${querySafety}`} role="status" aria-live="polite">
               <MagicWand weight="regular" aria-hidden="true" />
-              <div><h3>{feedback.title}</h3><p>{feedback.text}</p></div>
+              <div><h3>{keepRussianPrepositionsWithNextWord(feedback.title)}</h3><p>{keepRussianPrepositionsWithNextWord(feedback.text)}</p></div>
             </section>
           )}
         </div>
@@ -580,20 +582,20 @@ function ScoreInfoSheet({ day, onClose }: { day: Day; onClose: () => void }) {
         <header>
           <div>
             <p>прозрачная формула</p>
-            <h2 id="score-sheet-title">как получили {day.score} из 100</h2>
+            <h2 id="score-sheet-title">как получили {day.score} из&nbsp;100</h2>
           </div>
           <button type="button" className="round-button" onClick={onClose} aria-label="Закрыть объяснение">
             <X weight="regular" />
           </button>
         </header>
-        <p className="score-explainer">это индекс совпадения по нашей методике, а не вероятность события и не обещание результата</p>
+        <p className="score-explainer">{keepRussianPrepositionsWithNextWord("это индекс совпадения по нашей методике, а не вероятность события и не обещание результата")}</p>
         <div className="score-factors">
           <div className="score-factor">
             <div><span>фаза луны · {Math.round(PHASE_WEIGHT * 100)}%</span><strong>{day.phaseScore} / 100</strong></div>
             <span className="score-track"><span style={{ width: `${day.phaseScore}%` }} /></span>
           </div>
           <div className="score-factor">
-            <div><span>луна в {day.zodiacSignName.toLowerCase()} · {Math.round(ZODIAC_WEIGHT * 100)}%</span><strong>{day.zodiacScore} / 100</strong></div>
+            <div><span>луна в&nbsp;{day.zodiacSignName.toLowerCase()} · {Math.round(ZODIAC_WEIGHT * 100)}%</span><strong>{day.zodiacScore} / 100</strong></div>
             <span className="score-track"><span style={{ width: `${day.zodiacScore}%` }} /></span>
           </div>
         </div>
@@ -602,7 +604,7 @@ function ScoreInfoSheet({ day, onClose }: { day: Day; onClose: () => void }) {
           <div><Crosshair weight="regular" aria-hidden="true" /><span>точка выбранного дела</span><strong>{day.targetPhaseAngle}°</strong></div>
           <div><ArrowsLeftRight weight="regular" aria-hidden="true" /><span>расстояние между точками</span><strong>{Math.round(day.phaseDistance)}°</strong></div>
           <div><Compass weight="regular" aria-hidden="true" /><span>долгота луны</span><strong>{Math.round(day.lunarLongitude)}°</strong></div>
-          <div><GlobeHemisphereEast weight="regular" aria-hidden="true" /><span>луна в знаке</span><strong>{day.zodiacSignName.toLowerCase()}</strong></div>
+          <div><GlobeHemisphereEast weight="regular" aria-hidden="true" /><span>луна в&nbsp;знаке</span><strong>{day.zodiacSignName.toLowerCase()}</strong></div>
         </div>
       </section>
     </div>
@@ -680,7 +682,7 @@ function PersonalizationSheet({
           </button>
         </header>
 
-        <p className="profile-sheet-lead">укажите дату — знак зодиака определится автоматически. данные сохраняются только на этом устройстве.</p>
+        <p className="profile-sheet-lead">{keepRussianPrepositionsWithNextWord("укажите дату — знак зодиака определится автоматически. данные сохраняются только на этом устройстве.")}</p>
         <label className="profile-field">
           <span>дата рождения</span>
           <span className="profile-input-shell">
@@ -769,10 +771,10 @@ function PersonalizationSheet({
             autoComplete="address-level2"
             aria-invalid={formError === "place"}
           />
-          <small>пока сохраняется для будущего персонального расчёта</small>
+          <small>{keepRussianPrepositionsWithNextWord("пока сохраняется для будущего персонального расчёта")}</small>
         </label>
-        {formError === "date" && <p className="profile-inline-error" role="status">введите корректную дату в формате дд.мм.гггг</p>}
-        {formError === "time" && <p className="profile-inline-error" role="status">введите время от 00:00 до 23:59</p>}
+        {formError === "date" && <p className="profile-inline-error" role="status">введите корректную дату в&nbsp;формате дд.мм.гггг</p>}
+        {formError === "time" && <p className="profile-inline-error" role="status">введите время от&nbsp;00:00 до&nbsp;23:59</p>}
         {formError === "place" && <p className="profile-inline-error" role="status">проверьте название населённого пункта</p>}
         <button type="button" className="profile-primary" onClick={finish}>применить</button>
       </section>
@@ -982,12 +984,18 @@ export default function Home() {
   const isPreferredInResultWindow = days.some((day) => day.id === active.id && day.isPreferred);
   const preferredId = pickPreferredDay(days).id;
   const activeDisplayRating: Rating = isPreferredInResultWindow ? "excellent" : active.rating;
-  const resultHeading = buildResultHeading(resultCopy.verdict, isPreferredInResultWindow);
-  const resultAdvice = `${resultCopy.advice.charAt(0).toLowerCase()}${resultCopy.advice.slice(1)}`.replace(/[.!?]+$/, "");
+  const resultHeading = keepRussianPrepositionsWithNextWord(buildResultHeading(resultCopy.verdict, isPreferredInResultWindow));
+  const resultAdvice = keepRussianPrepositionsWithNextWord(
+    `${resultCopy.advice.charAt(0).toLowerCase()}${resultCopy.advice.slice(1)}`.replace(/[.!?]+$/, ""),
+  );
   const pendingResultCopy = pendingReveal ? buildResultCopy(pendingReveal.intent, pendingReveal.day) : null;
-  const pendingResultHeading = pendingResultCopy ? buildResultHeading(pendingResultCopy.verdict, pendingReveal?.day.isPreferred ?? false) : "";
+  const pendingResultHeading = pendingResultCopy
+    ? keepRussianPrepositionsWithNextWord(buildResultHeading(pendingResultCopy.verdict, pendingReveal?.day.isPreferred ?? false))
+    : "";
   const pendingResultAdvice = pendingResultCopy
-    ? `${pendingResultCopy.advice.charAt(0).toLowerCase()}${pendingResultCopy.advice.slice(1)}`.replace(/[.!?]+$/, "")
+    ? keepRussianPrepositionsWithNextWord(
+        `${pendingResultCopy.advice.charAt(0).toLowerCase()}${pendingResultCopy.advice.slice(1)}`.replace(/[.!?]+$/, ""),
+      )
     : "";
   const personalizationSummary = personalization ? formatPersonalizationSummary(personalization) : "";
 
@@ -1373,7 +1381,7 @@ export default function Home() {
                 <span className="personalization-dot personalization-dot-two" aria-hidden="true" />
                 <span className="personalization-bubble-body">
                   <img src="/figma/personalization-calendar.png" alt="" />
-                  <span>сохраните данные для будущей персонализации</span>
+                  <span>сохраните данные для&nbsp;будущей персонализации</span>
                 </span>
               </button>
             )}
@@ -1395,7 +1403,7 @@ export default function Home() {
               >
                 <span><strong>данные рождения</strong><em>изменить</em></span>
                 <small title={personalizationSummary}>{personalizationSummary}</small>
-                <small>пока не влияют на индекс</small>
+                <small>пока не&nbsp;влияют на&nbsp;индекс</small>
               </button>
             )}
             <button type="button" className={`result-calendar-action ${saved ? "saved" : ""}`} onClick={addToCalendar} disabled={saved} aria-live="polite">
