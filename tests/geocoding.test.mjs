@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { requestBirthPlaces } from "../lib/geocoding.ts";
+import { autocompleteBirthPlaces, requestBirthPlaces } from "../lib/geocoding.ts";
 
 test("geocoding returns canonical places with offline IANA time zones", async () => {
   let requestedUrl = "";
@@ -52,4 +52,40 @@ test("geocoding rejects malformed input and upstream errors", async () => {
     () => requestBirthPlaces("Москва", async () => new Response("fail", { status: 503 })),
     /временно недоступен/,
   );
+});
+
+test("Geoapify autocomplete returns city suggestions with local time zones", async () => {
+  let requestedUrl = "";
+  const places = await autocompleteBirthPlaces("Мос", "secret-key", async (input) => {
+    requestedUrl = String(input);
+    return new Response(JSON.stringify({
+      results: [{
+        place_id: "geo-1",
+        city: "Москва",
+        country: "Россия",
+        formatted: "Москва, Россия",
+        lat: 55.625578,
+        lon: 37.6063916,
+        result_type: "city",
+      }],
+    }), { status: 200 });
+  });
+
+  const url = new URL(requestedUrl);
+  assert.equal(url.pathname, "/v1/geocode/autocomplete");
+  assert.equal(url.searchParams.get("text"), "Мос");
+  assert.equal(url.searchParams.get("type"), "city");
+  assert.equal(url.searchParams.get("apiKey"), "secret-key");
+  assert.deepEqual(places, [{
+    id: "geo-1",
+    label: "Москва, Россия",
+    latitude: 55.625578,
+    longitude: 37.6063916,
+    timeZone: "Europe/Moscow",
+  }]);
+});
+
+test("Geoapify autocomplete requires three characters and a server key", async () => {
+  await assert.rejects(() => autocompleteBirthPlaces("Мо", "key"), /минимум три/);
+  await assert.rejects(() => autocompleteBirthPlaces("Москва", ""), /not configured/);
 });

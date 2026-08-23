@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { requestBirthPlaces } from "@/lib/geocoding";
+import { autocompleteBirthPlaces, requestBirthPlaces } from "@/lib/geocoding";
 
 const cachedSearches = new Map<string, { expiresAt: number; places: Awaited<ReturnType<typeof requestBirthPlaces>> }>();
 let requestQueue = Promise.resolve();
@@ -35,17 +35,24 @@ function serializedNominatimSearch(query: string) {
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null) as null | Record<string, unknown>;
   const query = typeof body?.query === "string" ? body.query.trim().replace(/\s+/g, " ") : "";
+  const mode = body?.mode === "autocomplete" ? "autocomplete" : "search";
   if (query.length < 2 || query.length > 80) {
     return NextResponse.json({ error: "Введите название населённого пункта" }, { status: 400 });
   }
 
   try {
-    const places = await serializedNominatimSearch(query.toLocaleLowerCase("ru-RU"));
+    const places = mode === "autocomplete"
+      ? await autocompleteBirthPlaces(query, process.env.GEOAPIFY_API_KEY ?? "")
+      : await serializedNominatimSearch(query.toLocaleLowerCase("ru-RU"));
     return NextResponse.json(
-      { places, attribution: "© OpenStreetMap contributors" },
+      { places, attribution: mode === "autocomplete" ? "powered by Geoapify" : "© OpenStreetMap contributors" },
       { headers: { "Cache-Control": "private, no-store" } },
     );
-  } catch {
-    return NextResponse.json({ error: "Не удалось проверить место. Попробуйте ещё раз" }, { status: 502 });
+  } catch (error) {
+    const isMissingKey = error instanceof Error && error.message.includes("not configured");
+    return NextResponse.json(
+      { error: isMissingKey ? "Автодополнение не настроено" : "Не удалось проверить место. Попробуйте ещё раз" },
+      { status: isMissingKey ? 503 : 502 },
+    );
   }
 }

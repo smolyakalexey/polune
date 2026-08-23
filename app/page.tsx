@@ -573,10 +573,51 @@ function PersonalizationSheet({
   ));
   const [placeResults, setPlaceResults] = useState<GeocodedBirthPlace[]>([]);
   const [placeSearchPending, setPlaceSearchPending] = useState(false);
+  const [placeSearchFailed, setPlaceSearchFailed] = useState(false);
+  const [placeSearchAttribution, setPlaceSearchAttribution] = useState("powered by Geoapify");
   const [formError, setFormError] = useState<"date" | "time" | "place" | null>(null);
   const datePickerRef = useRef<HTMLInputElement>(null);
   const birthDate = parseBirthDateInput(birthDateInput);
   const zodiac = birthDate ? zodiacForBirthDate(birthDate) : null;
+
+  useEffect(() => {
+    const normalized = normalizeBirthPlace(birthPlace);
+    if (selectedPlace?.label === normalized || normalized.length < 3) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setPlaceSearchPending(true);
+      setPlaceSearchFailed(false);
+      try {
+        const response = await fetch("/api/geocode", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: normalized, mode: "autocomplete" }),
+          signal: controller.signal,
+        });
+        const payload = await response.json() as {
+          places?: GeocodedBirthPlace[];
+          attribution?: string;
+        };
+        if (!response.ok) throw new Error("Autocomplete failed");
+        setPlaceResults(payload.places ?? []);
+        setPlaceSearchAttribution(payload.attribution ?? "powered by Geoapify");
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setPlaceResults([]);
+        setPlaceSearchFailed(true);
+      } finally {
+        if (!controller.signal.aborted) setPlaceSearchPending(false);
+      }
+    }, 400);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [birthPlace, selectedPlace?.label]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -620,34 +661,6 @@ function PersonalizationSheet({
     });
   }
 
-  async function searchBirthPlace() {
-    const normalized = normalizeBirthPlace(birthPlace);
-    if (!isValidBirthPlace(normalized)) {
-      setFormError("place");
-      return;
-    }
-    setPlaceSearchPending(true);
-    setFormError(null);
-    setPlaceResults([]);
-    try {
-      const response = await fetch("/api/geocode", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: normalized }),
-      });
-      const payload = await response.json() as { places?: GeocodedBirthPlace[] };
-      if (!response.ok || !payload.places?.length) {
-        setFormError("place");
-        return;
-      }
-      setPlaceResults(payload.places);
-    } catch {
-      setFormError("place");
-    } finally {
-      setPlaceSearchPending(false);
-    }
-  }
-
   function openDatePicker() {
     const picker = datePickerRef.current;
     if (!picker) return;
@@ -673,7 +686,7 @@ function PersonalizationSheet({
         <p className="profile-sheet-lead">{keepRussianPrepositionsWithNextWord("укажите дату — знак зодиака определится автоматически. данные сохраняются только на этом устройстве.")}</p>
         <label className="profile-field">
           <span>дата рождения</span>
-          <span className="profile-input-shell">
+          <span className="profile-input-shell profile-place-shell">
             <input
               type="text"
               inputMode="numeric"
@@ -782,39 +795,46 @@ function PersonalizationSheet({
                 setBirthPlace(nextPlace);
                 if (nextPlace !== selectedPlace?.label) setSelectedPlace(null);
                 setPlaceResults([]);
+                setPlaceSearchPending(false);
+                setPlaceSearchFailed(false);
                 setFormError(null);
               }}
               placeholder="город"
               maxLength={80}
               autoComplete="address-level2"
               aria-invalid={formError === "place"}
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded={placeResults.length > 0}
+              aria-controls="profile-place-results"
             />
-            <button
-              type="button"
-              className="profile-input-action"
-              onClick={searchBirthPlace}
-              disabled={placeSearchPending}
-              aria-label="Найти место рождения"
-            >
-              <MagnifyingGlass weight="regular" aria-hidden="true" />
-            </button>
           </span>
-          <small>{selectedPlace ? "место и часовой пояс проверены" : "нажмите поиск и выберите населённый пункт"}</small>
+          <small>{selectedPlace
+            ? "место и часовой пояс проверены"
+            : placeSearchPending
+              ? "ищем город…"
+              : placeSearchFailed
+                ? "не удалось загрузить подсказки"
+                : normalizeBirthPlace(birthPlace).length < 3
+                  ? "введите минимум три буквы"
+                  : "выберите город из списка"}</small>
         </label>
         {placeResults.length > 0 && (
-          <div className="profile-place-results" aria-label="Найденные места">
+          <div id="profile-place-results" className="profile-place-results" role="listbox" aria-label="Найденные места">
             {placeResults.map((place) => (
-              <button type="button" key={place.id} onClick={() => {
+              <button type="button" role="option" aria-selected="false" key={place.id} onClick={() => {
                 setSelectedPlace(place);
                 setBirthPlace(place.label);
                 setPlaceResults([]);
+                setPlaceSearchPending(false);
+                setPlaceSearchFailed(false);
                 setFormError(null);
               }}>
                 <span>{place.label}</span>
                 <small>{place.timeZone}</small>
               </button>
             ))}
-            <small>© OpenStreetMap contributors</small>
+            <small>{placeSearchAttribution}</small>
           </div>
         )}
         {formError === "date" && <p className="profile-inline-error" role="status">введите корректную дату в&nbsp;формате дд.мм.гггг</p>}

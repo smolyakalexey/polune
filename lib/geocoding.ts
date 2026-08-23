@@ -21,6 +21,17 @@ type NominatimResult = {
   address?: Record<string, string | undefined>;
 };
 
+type GeoapifyResult = {
+  place_id?: string;
+  formatted?: string;
+  lat?: number;
+  lon?: number;
+  city?: string;
+  state?: string;
+  country?: string;
+  result_type?: string;
+};
+
 const allowedPlaceTypes = new Set([
   "city",
   "town",
@@ -85,6 +96,50 @@ export async function requestBirthPlaces(
       timeZone: timezoneAtCoordinates(latitude, longitude),
     });
     if (places.length === 5) break;
+  }
+  return places;
+}
+
+export async function autocompleteBirthPlaces(
+  query: string,
+  apiKey: string,
+  fetcher: typeof fetch = fetch,
+  baseUrl = "https://api.geoapify.com",
+) {
+  const normalized = normalizeBirthPlace(query);
+  if (normalized.length < 3 || normalized.length > 80) {
+    throw new Error("Введите минимум три символа");
+  }
+  if (!apiKey) throw new Error("Geoapify API key is not configured");
+
+  const url = new URL("/v1/geocode/autocomplete", baseUrl);
+  url.searchParams.set("text", normalized);
+  url.searchParams.set("type", "city");
+  url.searchParams.set("format", "json");
+  url.searchParams.set("lang", "ru");
+  url.searchParams.set("limit", "5");
+  url.searchParams.set("apiKey", apiKey);
+
+  const response = await fetcher(url, { headers: { Accept: "application/json" } });
+  if (!response.ok) throw new Error("Сервис подсказок временно недоступен");
+  const payload = await response.json() as { results?: GeoapifyResult[] };
+
+  const places: GeocodedBirthPlace[] = [];
+  for (const result of payload.results ?? []) {
+    const latitude = Number(result.lat);
+    const longitude = Number(result.lon);
+    const parts = [result.city, result.state, result.country].filter(Boolean);
+    const label = [...new Set(parts)].join(", ") || result.formatted || "";
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || !label) continue;
+    const id = result.place_id ?? `geoapify-${latitude}-${longitude}`;
+    if (places.some((place) => place.id === id || place.label === label)) continue;
+    places.push({
+      id,
+      label,
+      latitude,
+      longitude,
+      timeZone: timezoneAtCoordinates(latitude, longitude),
+    });
   }
   return places;
 }
