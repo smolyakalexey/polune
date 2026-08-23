@@ -1205,6 +1205,41 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .profile-check-control svg { width: 15px; height: 15px; }
 .profile-check input:checked + .profile-check-control { border-color: #fff; color: #090a0b; background: #fff; transform: scale(1.03); }
 .profile-check input:focus-visible + .profile-check-control { outline: 3px solid rgba(155,140,255,.3); outline-offset: 2px; }
+.profile-period-field { min-width: 0; margin: 0; padding: 0; border: 0; }
+.profile-period-field legend { margin: 0 0 7px; padding: 0; color: var(--result-secondary); font-size: 12px; line-height: 17px; }
+.profile-period-field > div { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.profile-period-field button {
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 4px;
+  border: 1px solid var(--result-border);
+  border-radius: 13px;
+  color: var(--result-secondary);
+  background: var(--result-soft);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.profile-period-field button.selected { border-color: #9b8cff; color: #fff; background: rgba(98,99,245,.22); }
+.profile-place-results { margin-top: 8px; display: grid; gap: 5px; }
+.profile-place-results > button {
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 11px;
+  border: 1px solid var(--result-border);
+  border-radius: 14px;
+  color: var(--ink);
+  background: var(--result-soft);
+  display: grid;
+  gap: 2px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.profile-place-results > button span { font-size: 13px; line-height: 17px; }
+.profile-place-results > button small,
+.profile-place-results > small { color: var(--muted); font-size: 10px; line-height: 14px; }
+.profile-place-results > small { margin: 1px 4px 0; }
 .score-sheet {
   width: min(100%, 402px);
   padding: 24px 20px max(24px, env(safe-area-inset-bottom));

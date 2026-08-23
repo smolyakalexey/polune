@@ -29,6 +29,8 @@ import { keepRussianPrepositionsWithNextWord } from "@/lib/typography";
 import { buildGoogleCalendarUrl, buildIcsCalendarEvent } from "@/lib/calendar-actions";
 import { detectCalendarProvider } from "@/lib/calendar-preference";
 import type { CalendarProvider } from "@/lib/calendar-preference";
+import type { GeocodedBirthPlace } from "@/lib/geocoding";
+import type { BirthTimePeriod } from "@/lib/natal";
 import {
   birthDateInputFromIso,
   formatBirthDateInput,
@@ -93,6 +95,11 @@ type PersonalizationData = {
   birthTime: string;
   birthPlace: string;
   timeUnknown: boolean;
+  birthTimePeriod: BirthTimePeriod | "";
+  birthPlaceId: string;
+  latitude?: number;
+  longitude?: number;
+  timeZone: string;
 };
 
 const PERSONALIZATION_STORAGE_KEY = "polune-personalization-v1";
@@ -549,6 +556,23 @@ function PersonalizationSheet({
   const [birthTime, setBirthTime] = useState(current?.birthTime ?? "");
   const [birthPlace, setBirthPlace] = useState(current?.birthPlace ?? "");
   const [timeUnknown, setTimeUnknown] = useState(current?.timeUnknown ?? false);
+  const [birthTimePeriod, setBirthTimePeriod] = useState<BirthTimePeriod | "">(current?.birthTimePeriod ?? "");
+  const [selectedPlace, setSelectedPlace] = useState<GeocodedBirthPlace | null>(() => (
+    current?.birthPlaceId
+      && current.latitude !== undefined
+      && current.longitude !== undefined
+      && current.timeZone
+      ? {
+          id: current.birthPlaceId,
+          label: current.birthPlace,
+          latitude: current.latitude,
+          longitude: current.longitude,
+          timeZone: current.timeZone,
+        }
+      : null
+  ));
+  const [placeResults, setPlaceResults] = useState<GeocodedBirthPlace[]>([]);
+  const [placeSearchPending, setPlaceSearchPending] = useState(false);
   const [formError, setFormError] = useState<"date" | "time" | "place" | null>(null);
   const datePickerRef = useRef<HTMLInputElement>(null);
   const birthDate = parseBirthDateInput(birthDateInput);
@@ -561,6 +585,8 @@ function PersonalizationSheet({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
+
+  const needsVerifiedPlace = Boolean((!timeUnknown && birthTime) || (timeUnknown && birthTimePeriod));
 
   function finish() {
     if (!birthDate || !zodiac) {
@@ -575,6 +601,10 @@ function PersonalizationSheet({
       setFormError("place");
       return;
     }
+    if ((birthPlace || needsVerifiedPlace) && (!selectedPlace || selectedPlace.label !== normalizeBirthPlace(birthPlace))) {
+      setFormError("place");
+      return;
+    }
     setFormError(null);
     onComplete({
       zodiac: zodiac.name,
@@ -582,7 +612,40 @@ function PersonalizationSheet({
       birthTime: timeUnknown ? "" : birthTime,
       birthPlace: normalizeBirthPlace(birthPlace),
       timeUnknown,
+      birthTimePeriod: timeUnknown ? birthTimePeriod : "",
+      birthPlaceId: selectedPlace?.id ?? "",
+      latitude: selectedPlace?.latitude,
+      longitude: selectedPlace?.longitude,
+      timeZone: selectedPlace?.timeZone ?? "",
     });
+  }
+
+  async function searchBirthPlace() {
+    const normalized = normalizeBirthPlace(birthPlace);
+    if (!isValidBirthPlace(normalized)) {
+      setFormError("place");
+      return;
+    }
+    setPlaceSearchPending(true);
+    setFormError(null);
+    setPlaceResults([]);
+    try {
+      const response = await fetch("/api/geocode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: normalized }),
+      });
+      const payload = await response.json() as { places?: GeocodedBirthPlace[] };
+      if (!response.ok || !payload.places?.length) {
+        setFormError("place");
+        return;
+      }
+      setPlaceResults(payload.places);
+    } catch {
+      setFormError("place");
+    } finally {
+      setPlaceSearchPending(false);
+    }
   }
 
   function openDatePicker() {
@@ -683,25 +746,81 @@ function PersonalizationSheet({
           <span className="profile-check-control" aria-hidden="true"><Check weight="bold" /></span>
           <span>не знаю точное время рождения</span>
         </label>
+        {timeUnknown && (
+          <fieldset className="profile-period-field">
+            <legend>если помните примерно</legend>
+            <div>
+              {([
+                ["night", "ночь"],
+                ["morning", "утро"],
+                ["day", "день"],
+                ["evening", "вечер"],
+              ] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={birthTimePeriod === value ? "selected" : ""}
+                  onClick={() => {
+                    setBirthTimePeriod(birthTimePeriod === value ? "" : value);
+                    setFormError(null);
+                  }}
+                  aria-pressed={birthTimePeriod === value}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        )}
         <label className="profile-field">
           <span>место рождения</span>
-          <input
-            value={birthPlace}
-            onChange={(event) => {
-              setBirthPlace(event.target.value.slice(0, 80));
-              setFormError(null);
-            }}
-            placeholder="город"
-            maxLength={80}
-            autoComplete="address-level2"
-            aria-invalid={formError === "place"}
-          />
-          <small>{keepRussianPrepositionsWithNextWord("пока сохраняется для будущего персонального расчёта")}</small>
+          <span className="profile-input-shell">
+            <input
+              value={birthPlace}
+              onChange={(event) => {
+                const nextPlace = event.target.value.slice(0, 80);
+                setBirthPlace(nextPlace);
+                if (nextPlace !== selectedPlace?.label) setSelectedPlace(null);
+                setPlaceResults([]);
+                setFormError(null);
+              }}
+              placeholder="город"
+              maxLength={80}
+              autoComplete="address-level2"
+              aria-invalid={formError === "place"}
+            />
+            <button
+              type="button"
+              className="profile-input-action"
+              onClick={searchBirthPlace}
+              disabled={placeSearchPending}
+              aria-label="Найти место рождения"
+            >
+              <MagnifyingGlass weight="regular" aria-hidden="true" />
+            </button>
+          </span>
+          <small>{selectedPlace ? "место и часовой пояс проверены" : "нажмите поиск и выберите населённый пункт"}</small>
         </label>
+        {placeResults.length > 0 && (
+          <div className="profile-place-results" aria-label="Найденные места">
+            {placeResults.map((place) => (
+              <button type="button" key={place.id} onClick={() => {
+                setSelectedPlace(place);
+                setBirthPlace(place.label);
+                setPlaceResults([]);
+                setFormError(null);
+              }}>
+                <span>{place.label}</span>
+                <small>{place.timeZone}</small>
+              </button>
+            ))}
+            <small>© OpenStreetMap contributors</small>
+          </div>
+        )}
         {formError === "date" && <p className="profile-inline-error" role="status">введите корректную дату в&nbsp;формате дд.мм.гггг</p>}
         {formError === "time" && <p className="profile-inline-error" role="status">введите время от&nbsp;00:00 до&nbsp;23:59</p>}
-        {formError === "place" && <p className="profile-inline-error" role="status">проверьте название населённого пункта</p>}
-        <button type="button" className="profile-primary" onClick={finish}>применить</button>
+        {formError === "place" && <p className="profile-inline-error" role="status">найдите и выберите населённый пункт</p>}
+        <button type="button" className="profile-primary" onClick={finish} disabled={placeSearchPending}>{placeSearchPending ? "ищем место…" : "применить"}</button>
       </section>
     </div>
   );
@@ -1026,6 +1145,16 @@ export default function Home() {
           birthTime: typeof parsed.birthTime === "string" ? parsed.birthTime : "",
           birthPlace: typeof parsed.birthPlace === "string" ? parsed.birthPlace : "",
           timeUnknown: Boolean(parsed.timeUnknown),
+          birthTimePeriod: parsed.birthTimePeriod === "night"
+            || parsed.birthTimePeriod === "morning"
+            || parsed.birthTimePeriod === "day"
+            || parsed.birthTimePeriod === "evening"
+            ? parsed.birthTimePeriod
+            : "",
+          birthPlaceId: typeof parsed.birthPlaceId === "string" ? parsed.birthPlaceId : "",
+          latitude: typeof parsed.latitude === "number" ? parsed.latitude : undefined,
+          longitude: typeof parsed.longitude === "number" ? parsed.longitude : undefined,
+          timeZone: typeof parsed.timeZone === "string" ? parsed.timeZone : "",
         });
       }, 0);
     } catch {

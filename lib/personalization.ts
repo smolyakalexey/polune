@@ -87,10 +87,18 @@ export function formatPersonalizationSummary(data: {
   birthTime: string;
   birthPlace: string;
   timeUnknown: boolean;
+  birthTimePeriod?: "night" | "morning" | "day" | "evening" | "";
 }) {
   const date = birthDateInputFromIso(data.birthDate);
   const details = [date, data.zodiac];
-  if (data.timeUnknown) details.push("время неизвестно");
+  const periodLabels = {
+    night: "ночь",
+    morning: "утро",
+    day: "день",
+    evening: "вечер",
+  } as const;
+  if (data.timeUnknown && data.birthTimePeriod) details.push(periodLabels[data.birthTimePeriod]);
+  else if (data.timeUnknown) details.push("время неизвестно");
   else if (data.birthTime) details.push(data.birthTime);
   if (data.birthPlace) details.push(data.birthPlace);
   return details.filter(Boolean).join(" · ");
