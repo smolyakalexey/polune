@@ -1585,6 +1585,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   gap: 4px;
 }
 .result-personalization-action,
+.result-personalization-summary,
 .result-calendar-action {
   min-height: 64px;
   border: 0;
@@ -1598,6 +1599,34 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   color: #fff;
   background: linear-gradient(180deg, #7b68f7 0%, #6263f5 54%, #4d4be7 100%);
 }
+.result-personalization-summary {
+  min-width: 0;
+  padding: 10px 16px;
+  border: 1px solid rgba(255,255,255,.12);
+  color: #fff;
+  background: rgba(255,255,255,.07);
+  text-align: left;
+}
+.result-personalization-summary > span {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 15px;
+  line-height: 20px;
+}
+.result-personalization-summary strong { font-weight: 500; }
+.result-personalization-summary em { color: #b3a8ff; font-size: 13px; font-style: normal; }
+.result-personalization-summary small {
+  display: block;
+  overflow: hidden;
+  color: rgba(255,255,255,.62);
+  font-size: 11px;
+  line-height: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.result-personalization-summary small:last-child { color: rgba(255,255,255,.42); }
 .result-calendar-action {
   color: #080909;
   background: #fff;
@@ -1824,6 +1853,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .result-score-row { margin-top: 14px; }
   .result-actions { top: auto; bottom: 160px; }
   .result-personalization-action,
+  .result-personalization-summary,
   .result-calendar-action { min-height: 56px; }
 }
 
@@ -1936,6 +1966,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   }
 
   .result-personalization-action,
+  .result-personalization-summary,
   .result-calendar-action {
     min-height: 56px;
   }
@@ -1971,6 +2002,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .result-score-row img { width: 22px; height: 22px; }
   .result-actions { bottom: auto; }
   .result-personalization-action,
+  .result-personalization-summary,
   .result-calendar-action {
     min-height: 54px;
     font-size: 17px;
@@ -1995,6 +2027,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   }
   .result-score-row img { width: 20px; height: 20px; }
   .result-personalization-action,
+  .result-personalization-summary,
   .result-calendar-action { min-height: 50px; }
 }
 
@@ -2012,6 +2045,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .result-score-row { min-height: 36px; margin-top: 2px; }
   .result-actions { bottom: auto; }
   .result-personalization-action,
+  .result-personalization-summary,
   .result-calendar-action { min-height: 48px; }
   .result-calendar { height: 134px; }
 }

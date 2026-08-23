@@ -28,6 +28,7 @@ import { configureAnalyticsFromUrl, trackEvent } from "@/lib/analytics";
 import {
   birthDateInputFromIso,
   formatBirthDateInput,
+  formatPersonalizationSummary,
   formatBirthTimeInput,
   isValidBirthPlace,
   isValidBirthTime,
@@ -988,6 +989,7 @@ export default function Home() {
   const pendingResultAdvice = pendingResultCopy
     ? `${pendingResultCopy.advice.charAt(0).toLowerCase()}${pendingResultCopy.advice.slice(1)}`.replace(/[.!?]+$/, "")
     : "";
+  const personalizationSummary = personalization ? formatPersonalizationSummary(personalization) : "";
 
   useEffect(() => {
     if (personalization) return;
@@ -1371,7 +1373,7 @@ export default function Home() {
                 <span className="personalization-dot personalization-dot-two" aria-hidden="true" />
                 <span className="personalization-bubble-body">
                   <img src="/figma/personalization-calendar.png" alt="" />
-                  <span>поможет получать более точные рекомендации</span>
+                  <span>сохраните данные для будущей персонализации</span>
                 </span>
               </button>
             )}
@@ -1382,6 +1384,18 @@ export default function Home() {
                 onClick={openPersonalization}
               >
                 указать свои данные о рождении
+              </button>
+            )}
+            {personalization && (
+              <button
+                type="button"
+                className="result-personalization-summary"
+                onClick={openPersonalization}
+                aria-label={`Изменить данные рождения: ${personalizationSummary}. Пока не влияют на индекс`}
+              >
+                <span><strong>данные рождения</strong><em>изменить</em></span>
+                <small title={personalizationSummary}>{personalizationSummary}</small>
+                <small>пока не влияют на индекс</small>
               </button>
             )}
             <button type="button" className={`result-calendar-action ${saved ? "saved" : ""}`} onClick={addToCalendar} disabled={saved} aria-live="polite">

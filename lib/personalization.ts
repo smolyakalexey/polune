@@ -80,3 +80,18 @@ export function isValidBirthPlace(value: string) {
     && normalized.length <= 80
     && /^[\p{L}\s.'’()-]+$/u.test(normalized);
 }
+
+export function formatPersonalizationSummary(data: {
+  zodiac: string;
+  birthDate: string;
+  birthTime: string;
+  birthPlace: string;
+  timeUnknown: boolean;
+}) {
+  const date = birthDateInputFromIso(data.birthDate);
+  const details = [date, data.zodiac];
+  if (data.timeUnknown) details.push("время неизвестно");
+  else if (data.birthTime) details.push(data.birthTime);
+  if (data.birthPlace) details.push(data.birthPlace);
+  return details.filter(Boolean).join(" · ");
+}

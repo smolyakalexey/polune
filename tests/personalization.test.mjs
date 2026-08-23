@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   birthDateInputFromIso,
   formatBirthDateInput,
+  formatPersonalizationSummary,
   formatBirthTimeInput,
   isValidBirthPlace,
   isValidBirthTime,
@@ -48,4 +49,22 @@ test("place validation accepts names but rejects symbols and empty values", () =
   assert.equal(isValidBirthPlace("São Paulo"), true);
   assert.equal(isValidBirthPlace("123"), false);
   assert.equal(isValidBirthPlace(""), false);
+});
+
+test("saved personalization is summarized without implying a changed score", () => {
+  assert.equal(formatPersonalizationSummary({
+    zodiac: "дева",
+    birthDate: "1990-09-03",
+    birthTime: "08:45",
+    birthPlace: "Нижний Новгород",
+    timeUnknown: false,
+  }), "03.09.1990 · дева · 08:45 · Нижний Новгород");
+
+  assert.equal(formatPersonalizationSummary({
+    zodiac: "рыбы",
+    birthDate: "1988-03-12",
+    birthTime: "",
+    birthPlace: "",
+    timeUnknown: true,
+  }), "12.03.1988 · рыбы · время неизвестно");
 });
