@@ -1134,7 +1134,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   font-family: inherit;
   font-size: 16px;
   line-height: 20px;
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: proportional-nums;
   text-align: left;
 }
 .profile-field input:focus { border-color: var(--brand-mid); box-shadow: 0 0 0 3px rgba(98, 99, 245, .12); }
@@ -1253,6 +1253,9 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .profile-place-results > button small,
 .profile-place-results > small { color: var(--muted); font-size: 10px; line-height: 14px; }
 .profile-place-results > small { margin: 1px 4px 0; }
+.profile-sheet.is-place-active { grid-template-rows: auto minmax(0, 1fr); }
+.profile-sheet.is-place-active .profile-sheet-scroll { padding-bottom: 60dvh; }
+.profile-sheet.is-place-active .profile-sheet-footer { display: none; }
 .score-sheet {
   width: min(100%, 402px);
   padding: 24px 20px max(24px, env(safe-area-inset-bottom));

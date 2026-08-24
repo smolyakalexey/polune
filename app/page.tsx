@@ -614,8 +614,12 @@ function PersonalizationSheet({
   const [placeSearchPending, setPlaceSearchPending] = useState(false);
   const [placeSearchFailed, setPlaceSearchFailed] = useState(false);
   const [placeSearchAttribution, setPlaceSearchAttribution] = useState("powered by Geoapify");
+  const [placeInputFocused, setPlaceInputFocused] = useState(false);
   const [formError, setFormError] = useState<"date" | "time" | "place" | null>(null);
   const datePickerRef = useRef<HTMLInputElement>(null);
+  const profileScrollRef = useRef<HTMLDivElement>(null);
+  const placeFieldRef = useRef<HTMLLabelElement>(null);
+  const placeResultsRef = useRef<HTMLDivElement>(null);
   const birthDate = parseBirthDateInput(birthDateInput);
   const zodiac = birthDate ? zodiacForBirthDate(birthDate) : null;
 
@@ -666,6 +670,30 @@ function PersonalizationSheet({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
+  useEffect(() => {
+    if (!placeInputFocused) return;
+
+    const alignPlaceField = () => {
+      const scroller = profileScrollRef.current;
+      const field = placeFieldRef.current;
+      if (!scroller || !field) return;
+      const targetTop = field.getBoundingClientRect().top
+        - scroller.getBoundingClientRect().top
+        + scroller.scrollTop
+        - 4;
+      scroller.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
+    };
+    const animationFrame = window.requestAnimationFrame(alignPlaceField);
+    const keyboardTimer = window.setTimeout(alignPlaceField, 320);
+    window.visualViewport?.addEventListener("resize", alignPlaceField);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      window.clearTimeout(keyboardTimer);
+      window.visualViewport?.removeEventListener("resize", alignPlaceField);
+    };
+  }, [placeInputFocused, placeResults.length]);
+
   const needsVerifiedPlace = Boolean((!timeUnknown && birthTime) || (timeUnknown && birthTimePeriod));
 
   function finish() {
@@ -711,7 +739,7 @@ function PersonalizationSheet({
     <div className="profile-sheet-backdrop" role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose();
     }}>
-      <section className="profile-sheet" role="dialog" aria-modal="true" aria-labelledby="profile-sheet-title">
+      <section className={`profile-sheet ${placeInputFocused ? "is-place-active" : ""}`} role="dialog" aria-modal="true" aria-labelledby="profile-sheet-title">
         <header>
           <div>
             <p>персонализация</p>
@@ -722,7 +750,7 @@ function PersonalizationSheet({
           </button>
         </header>
 
-        <div className="profile-sheet-scroll">
+        <div className="profile-sheet-scroll" ref={profileScrollRef}>
         <p className="profile-sheet-lead">{keepRussianPrepositionsWithNextWord("укажите дату — знак зодиака определится автоматически. данные сохраняются только на этом устройстве.")}</p>
         <label className="profile-field">
           <span>дата рождения</span>
@@ -825,7 +853,7 @@ function PersonalizationSheet({
             </div>
           </fieldset>
         )}
-        <label className="profile-field">
+        <label className="profile-field" ref={placeFieldRef}>
           <span>место рождения</span>
           <span className="profile-input-shell profile-place-shell">
             <input
@@ -847,6 +875,12 @@ function PersonalizationSheet({
               aria-autocomplete="list"
               aria-expanded={placeResults.length > 0}
               aria-controls="profile-place-results"
+              onFocus={() => setPlaceInputFocused(true)}
+              onBlur={(event) => {
+                const nextFocused = event.relatedTarget;
+                if (nextFocused instanceof Node && placeResultsRef.current?.contains(nextFocused)) return;
+                setPlaceInputFocused(false);
+              }}
             />
           </span>
           <small>{selectedPlace
@@ -860,7 +894,7 @@ function PersonalizationSheet({
                   : "выберите город из списка"}</small>
         </label>
         {placeResults.length > 0 && (
-          <div id="profile-place-results" className="profile-place-results" role="listbox" aria-label="Найденные места">
+          <div ref={placeResultsRef} id="profile-place-results" className="profile-place-results" role="listbox" aria-label="Найденные места">
             {placeResults.map((place) => (
               <button type="button" role="option" aria-selected="false" key={place.id} onClick={() => {
                 setSelectedPlace(place);
@@ -868,6 +902,7 @@ function PersonalizationSheet({
                 setPlaceResults([]);
                 setPlaceSearchPending(false);
                 setPlaceSearchFailed(false);
+                setPlaceInputFocused(false);
                 setFormError(null);
               }}>
                 <span>{place.label}</span>
