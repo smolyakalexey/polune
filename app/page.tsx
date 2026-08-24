@@ -1085,16 +1085,17 @@ function Starfield() {
   );
 }
 
-function MoonPhaseIllustration({ angle, label }: { angle: number; label: string }) {
+function MoonPhaseIllustration({ angle, label, compact = false }: { angle: number; label: string; compact?: boolean }) {
   const normalized = ((angle % 360) + 360) % 360;
   const waxing = normalized <= 180;
   const illumination = (1 - Math.cos((normalized * Math.PI) / 180)) / 2;
   const shadowShift = illumination * 100;
   return (
     <div
-      className={`phase-moon ${waxing ? "is-waxing" : "is-waning"}`}
-      role="img"
-      aria-label={`${label}, освещено ${Math.round(illumination * 100)}%`}
+      className={`phase-moon ${compact ? "calendar-moon" : ""} ${waxing ? "is-waxing" : "is-waning"}`}
+      role={compact ? undefined : "img"}
+      aria-hidden={compact ? "true" : undefined}
+      aria-label={compact ? undefined : `${label}, освещено ${Math.round(illumination * 100)}%`}
       style={{
         "--moon-waxing-shadow-shift": `-${shadowShift}%`,
         "--moon-waning-shadow-shift": `${shadowShift}%`,
@@ -1163,16 +1164,20 @@ function ResultCalendar({
       {!expanded ? (
         <div className="calendar-peek">
           {peekDays.map((day) => {
-            const displayRating: Rating = day.id === preferredId ? "excellent" : day.rating;
+            const isPreferred = day.id === preferredId;
+            const isSuitable = isPreferred || day.rating === "good";
             return <button
               type="button"
               key={day.id}
-              className={`calendar-peek-day status-${displayRating} ${day.id === activeId ? "selected" : ""}`}
+              className={`calendar-peek-day ${isSuitable ? "is-suitable" : ""} ${isPreferred ? "is-preferred" : ""} ${day.id === activeId ? "selected" : ""}`}
               onClick={() => onSelect(day)}
-              aria-label={`${day.longDate}: ${day.score}%`}
+              aria-label={`${day.longDate}: ${day.score}%${isPreferred ? ", лучший день" : isSuitable ? ", подходит" : ""}`}
             >
-              <span>{day.day}</span>
-              <small><img src={statusIcons[displayRating]} alt="" />{day.weekday}</small>
+              <span className="calendar-day-moon">
+                <MoonPhaseIllustration angle={day.moonPhaseAngle} label={day.moonPhaseLabel} compact />
+              </span>
+              {isPreferred ? <Sparkle className="calendar-best-mark" weight="fill" aria-hidden="true" /> : null}
+              <small><strong>{day.day}</strong><span>{day.weekday}</span></small>
             </button>
           })}
         </div>
@@ -1186,18 +1191,23 @@ function ResultCalendar({
               </div>
               <div className="calendar-month-grid">
                 {group.days.map((day, index) => {
-                  const displayRating: Rating = day.id === preferredId ? "excellent" : day.rating;
+                  const isPreferred = day.id === preferredId;
+                  const isSuitable = isPreferred || day.rating === "good";
                   return <button
                     type="button"
                     key={day.id}
-                    className={`status-${displayRating} ${day.id === activeId ? "selected" : ""}`}
+                    className={`${isSuitable ? "is-suitable" : ""} ${isPreferred ? "is-preferred" : ""} ${day.id === activeId ? "selected" : ""}`}
                     onClick={() => onSelect(day)}
+                    aria-label={`${day.longDate}: ${day.score}%${isPreferred ? ", лучший день" : isSuitable ? ", подходит" : ""}`}
                     style={index === 0
                       ? { gridColumnStart: ((new Date(`${day.dateIso}T12:00:00Z`).getUTCDay() + 6) % 7) + 1 }
                       : undefined}
                   >
-                    <span>{day.day}</span>
-                    <img src={statusIcons[displayRating]} alt="" />
+                    <span className="calendar-day-moon">
+                      <MoonPhaseIllustration angle={day.moonPhaseAngle} label={day.moonPhaseLabel} compact />
+                    </span>
+                    {isPreferred ? <Sparkle className="calendar-best-mark" weight="fill" aria-hidden="true" /> : null}
+                    <small>{day.day}</small>
                   </button>
                 })}
               </div>

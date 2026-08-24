@@ -1,43 +1,52 @@
-# Design QA — ближайший лучший день и адаптив по высоте
+# Design QA — эксперимент календаря с фазами Луны
 
-- source visual truth: `/var/folders/94/bf2s3jnx1yxg49qk4nmh71s80000gq/T/TemporaryItems/NSIRD_screencaptureui_BpdKCd/Screenshot 2026-08-21 at 01.01.13.png`
-- implementation screenshot: `/Users/alexey/Documents/ChatGPT/благоприятные дни/blagopriyatny-den/design-audit/2026-08-21-preferred-height-clean.png`
-- combined comparison: `/Users/alexey/Documents/ChatGPT/благоприятные дни/blagopriyatny-den/design-audit/2026-08-21-height-comparison.png`
-- viewport: 419 × 847 CSS px
-- source: 838 × 1694 px at 2×, normalized to 419 × 847 px
-- implementation: 419 × 847 px at 1×
-- state: result screen, no saved personalization, two CTA, collapsed calendar, preferred date selected
+## Артефакты
 
-## Full-view comparison
+- Source visual truth: https://mobbin.com/explore/screens/5fa577fd-b611-409a-a766-a7302094bdc0
+- Source capture: `/private/tmp/polune-mobbin-reference.png`
+- Rendered implementation: `http://localhost:4173/?intent=haircut&date=2026-08-24&method=0.7p`
+- Implementation capture: `/private/tmp/polune-calendar-implementation-final.png`
+- Full-view comparison: `/private/tmp/polune-calendar-comparison.png`
+- Focused calendar comparison: `/private/tmp/polune-calendar-focused-comparison-final.png`
 
-The source showed the score row partially hidden behind the personalization CTA. In the revised implementation the result content, score row, both CTA and calendar occupy separate vertical regions. At 419 × 847 the score ends at 379 px, actions occupy 561–673 px, and the calendar starts at 703 px.
+## Нормализация
 
-The preferred date uses the same `status-excellent` state for both the score row and selected calendar day. Other calendar dates retain their absolute score colors.
+- Browser viewport: 1280 × 720 CSS px; Polune mobile shell: 402 px wide.
+- Source capture: 1280 × 720 px; implementation capture: 1280 × 720 px.
+- Browser devicePixelRatio: 2; browser screenshots were normalized by the browser tool to CSS-pixel dimensions, so no additional density conversion was applied.
+- State: dark theme, haircut result, compact 14-day calendar, active recommended day 24 August, saved date-only personalization candidate `0.7p`.
+- The Mobbin source is a full-month calendar while the requested implementation is intentionally a compact two-week sheet. The comparison therefore judges hierarchy, lunar imagery, date placement, sparse best-day markers, and visual density rather than identical frame geometry.
 
-## Required fidelity surfaces
+## Проверенные поверхности
 
-- fonts and typography: existing Onest family and weights preserved; compact-height sizes reduce without clipping or single-word overflow;
-- spacing and layout rhythm: fixed action overlay replaced with a flex-reserved action region; no overlap remains at 419 × 847 or 419 × 680;
-- colors and tokens: preferred date consistently uses the existing purple brand token; red/yellow/gray/green thresholds remain unchanged for non-preferred dates;
-- image quality: existing moon and status assets are preserved without raster or crop changes;
-- copy and content: existing result and CTA copy are unchanged.
+- Typography: retained Polune's Onest hierarchy; date numbers are secondary labels below each Moon and remain legible at compact size.
+- Spacing and layout: two complete rows of seven dates fit inside the 190 px sheet; the result score and CTA stack no longer overlap the raised sheet on a short viewport.
+- Colors and tokens: neutral dates use a readable monochrome treatment; suitable dates use the existing violet token; only the preferred day receives the sparkle marker.
+- Image quality: reused the product's real `moon-base.png` asset and the existing phase mask instead of drawing substitute Moon icons.
+- Copy/content: no new explanatory copy was added; existing result text and date-selection behavior are preserved.
 
-## Focused verification
+## Interaction checks
 
-- 419 × 847: score bottom 378.6 px, two-button actions top 561 px, calendar top 703 px;
-- 419 × 680: score bottom 302 px, two-button actions top 406 px, calendar top 545.9 px;
-- browser console: no warnings or errors;
-- preferred result: `result-score-row status-excellent`;
-- preferred calendar selection: `calendar-peek-day status-excellent selected`.
+- Selected a non-recommended day: the result content and URL changed to 25 August while the preferred-day marker stayed on 24 August.
+- Expanded and collapsed the calendar: both month groups rendered, stayed internally scrollable, and retained the same binary visual language.
+- Re-selected the preferred day and verified the compact 14-day state.
+- Console errors checked after the final render: none.
 
 ## Comparison history
 
-1. P1: absolute-positioned CTA could cover the score row on a short visual viewport.
-2. Fix: mobile result card now owns the available height and actions use `margin-top: auto` in normal flex flow; stale `bottom` offsets were removed from compact breakpoints.
-3. Post-fix: both two-button mobile checks have at least 104 px between score and actions and at least 16 px between actions and calendar.
+1. Initial comparison — blocked.
+   - [P1] The newly raised 190 px calendar caused the result score row to sit underneath the CTA stack in a short desktop/mobile-shell viewport.
+   - Fix: compressed Moon, date, guidance, and score spacing at short heights without reducing calendar cells or CTA touch targets.
+   - Post-fix evidence: `/private/tmp/polune-calendar-implementation.png`; measured score/actions overlap became `false`.
+2. Focused calendar comparison — blocked.
+   - [P2] Neutral Moon phases were too dim to read as the primary content of each date cell.
+   - Fix: increased neutral Moon opacity from `.46` to `.64` and brightness from `.70` to `.82`, keeping them monochrome and visually secondary.
+   - Post-fix evidence: `/private/tmp/polune-calendar-focused-comparison-final.png`.
+3. Final comparison — passed.
+   - No actionable P0/P1/P2 differences remain. The full-month versus two-week geometry and Polune-specific type/color system are intentional product constraints.
 
-## Findings
+## Remaining test gap
 
-No actionable P0/P1/P2 findings remain for the requested preferred-day state or height adaptation. The intentionally more compact typography on short screens is the mechanism that keeps all required controls visible.
+- Physical iPhone Safari still needs a touch check for the exact visible-browser-chrome height; the responsive implementation and short-height shell were verified locally.
 
 final result: passed
