@@ -1166,10 +1166,11 @@ function ResultCalendar({
           {peekDays.map((day) => {
             const isPreferred = day.id === preferredId;
             const isSuitable = isPreferred || day.rating === "good";
+            const isWeak = day.rating === "low";
             return <button
               type="button"
               key={day.id}
-              className={`calendar-peek-day ${isSuitable ? "is-suitable" : ""} ${isPreferred ? "is-preferred" : ""} ${day.id === activeId ? "selected" : ""}`}
+              className={`calendar-peek-day ${isSuitable ? "is-suitable" : ""} ${isPreferred ? "is-preferred" : ""} ${isWeak ? "is-weak" : ""} ${day.id === activeId ? "selected" : ""}`}
               onClick={() => onSelect(day)}
               aria-label={`${day.longDate}: ${day.score}%${isPreferred ? ", лучший день" : isSuitable ? ", подходит" : ""}`}
             >
@@ -1193,10 +1194,11 @@ function ResultCalendar({
                 {group.days.map((day, index) => {
                   const isPreferred = day.id === preferredId;
                   const isSuitable = isPreferred || day.rating === "good";
+                  const isWeak = day.rating === "low";
                   return <button
                     type="button"
                     key={day.id}
-                    className={`${isSuitable ? "is-suitable" : ""} ${isPreferred ? "is-preferred" : ""} ${day.id === activeId ? "selected" : ""}`}
+                    className={`${isSuitable ? "is-suitable" : ""} ${isPreferred ? "is-preferred" : ""} ${isWeak ? "is-weak" : ""} ${day.id === activeId ? "selected" : ""}`}
                     onClick={() => onSelect(day)}
                     aria-label={`${day.longDate}: ${day.score}%${isPreferred ? ", лучший день" : isSuitable ? ", подходит" : ""}`}
                     style={index === 0

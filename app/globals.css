@@ -1846,8 +1846,8 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .phase-moon.calendar-moon {
   width: 38px;
   height: 37px;
-  filter: grayscale(1) brightness(.82) drop-shadow(0 0 7px rgba(181,194,255,.07));
-  opacity: .64;
+  filter: saturate(.76) brightness(.9) drop-shadow(0 0 7px rgba(181,194,255,.09));
+  opacity: .84;
   animation: none;
   transition: opacity .2s ease, filter .2s ease, transform .2s ease;
 }
@@ -1856,18 +1856,23 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   display: inline-flex;
   align-items: baseline;
   gap: 3px;
-  color: rgba(255,255,255,.42);
+  color: rgba(255,255,255,.68);
   font-size: 10px;
   line-height: 15px;
 }
-.calendar-peek-day small strong { color: inherit; font-size: 13px; font-weight: 500; }
+.calendar-peek-day small strong { color: #fff; font-size: 13px; font-weight: 500; }
 .calendar-peek-day small span { text-transform: lowercase; }
 .calendar-peek-day.is-suitable .calendar-moon {
-  filter: saturate(.82) brightness(.98) drop-shadow(0 0 9px rgba(145,132,255,.2));
+  filter: saturate(.95) brightness(1.03) drop-shadow(0 0 10px rgba(145,132,255,.25));
   opacity: 1;
 }
-.calendar-peek-day.is-suitable small { color: #aaa0ff; }
+.calendar-peek-day.is-suitable small,
+.calendar-peek-day.is-suitable small strong { color: #b2a8ff; }
 .calendar-peek-day.is-preferred small { color: #c0b8ff; }
+.calendar-peek-day.is-weak .calendar-moon {
+  filter: saturate(.45) brightness(.66) drop-shadow(0 0 5px rgba(181,194,255,.04));
+  opacity: .66;
+}
 .calendar-best-mark {
   position: absolute;
   top: 5px;
@@ -1913,12 +1918,16 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .calendar-month-grid button.selected { color: inherit; background: rgba(255,255,255,.08); box-shadow: inset 0 0 0 1px rgba(255,255,255,.035); }
 .calendar-month-grid button .calendar-day-moon { width: 36px; height: 35px; }
 .calendar-month-grid button .calendar-moon { width: 36px; height: 35px; }
-.calendar-month-grid button small { color: rgba(255,255,255,.42); font-size: 12px; line-height: 16px; }
+.calendar-month-grid button small { color: #fff; font-size: 12px; line-height: 16px; }
 .calendar-month-grid button.is-suitable .calendar-moon {
-  filter: saturate(.82) brightness(.98) drop-shadow(0 0 9px rgba(145,132,255,.2));
+  filter: saturate(.95) brightness(1.03) drop-shadow(0 0 10px rgba(145,132,255,.25));
   opacity: 1;
 }
-.calendar-month-grid button.is-suitable small { color: #aaa0ff; }
+.calendar-month-grid button.is-suitable small { color: #b2a8ff; }
+.calendar-month-grid button.is-weak .calendar-moon {
+  filter: saturate(.45) brightness(.66) drop-shadow(0 0 5px rgba(181,194,255,.04));
+  opacity: .66;
+}
 .calendar-month-grid button .calendar-best-mark { top: 4px; right: 4px; }
 
 .result-screen .score-sheet-backdrop {

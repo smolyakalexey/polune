@@ -5,14 +5,14 @@
 - Source visual truth: https://mobbin.com/explore/screens/5fa577fd-b611-409a-a766-a7302094bdc0
 - Source capture: `/private/tmp/polune-mobbin-reference.png`
 - Rendered implementation: `http://localhost:4173/?intent=haircut&date=2026-08-24&method=0.7p`
-- Implementation capture: `/private/tmp/polune-calendar-implementation-final.png`
-- Full-view comparison: `/private/tmp/polune-calendar-comparison.png`
-- Focused calendar comparison: `/private/tmp/polune-calendar-focused-comparison-final.png`
+- Implementation capture: `/private/tmp/polune-calendar-states-final.png`
+- Full-view evidence: `/private/tmp/polune-calendar-states-final.png`
+- Focused calendar comparison: `/private/tmp/polune-calendar-states-comparison.png`
 
 ## Нормализация
 
-- Browser viewport: 1280 × 720 CSS px; Polune mobile shell: 402 px wide.
-- Source capture: 1280 × 720 px; implementation capture: 1280 × 720 px.
+- Browser viewport: 884 × 861 CSS px; Polune mobile shell: 402 px wide.
+- Source capture: 1280 × 720 px; implementation capture: 884 × 861 px.
 - Browser devicePixelRatio: 2; browser screenshots were normalized by the browser tool to CSS-pixel dimensions, so no additional density conversion was applied.
 - State: dark theme, haircut result, compact 14-day calendar, active recommended day 24 August, saved date-only personalization candidate `0.7p`.
 - The Mobbin source is a full-month calendar while the requested implementation is intentionally a compact two-week sheet. The comparison therefore judges hierarchy, lunar imagery, date placement, sparse best-day markers, and visual density rather than identical frame geometry.
@@ -21,13 +21,13 @@
 
 - Typography: retained Polune's Onest hierarchy; date numbers are secondary labels below each Moon and remain legible at compact size.
 - Spacing and layout: two complete rows of seven dates fit inside the 190 px sheet; the result score and CTA stack no longer overlap the raised sheet on a short viewport.
-- Colors and tokens: neutral dates use a readable monochrome treatment; suitable dates use the existing violet token; only the preferred day receives the sparkle marker.
+- Colors and tokens: ordinary dates retain the natural Moon color and white date labels; every date at 75% or above uses the existing violet token; only the preferred day receives the sparkle marker. The 0–24% range is distinguished only by a softer Moon treatment, without warning color or disabled opacity on the button.
 - Image quality: reused the product's real `moon-base.png` asset and the existing phase mask instead of drawing substitute Moon icons.
 - Copy/content: no new explanatory copy was added; existing result text and date-selection behavior are preserved.
 
 ## Interaction checks
 
-- Selected a non-recommended day: the result content and URL changed to 25 August while the preferred-day marker stayed on 24 August.
+- Selected a non-recommended 38% day: the result content and URL changed to 30 August while the preferred-day marker stayed on 24 August.
 - Expanded and collapsed the calendar: both month groups rendered, stayed internally scrollable, and retained the same binary visual language.
 - Re-selected the preferred day and verified the compact 14-day state.
 - Console errors checked after the final render: none.
@@ -44,6 +44,10 @@
    - Post-fix evidence: `/private/tmp/polune-calendar-focused-comparison-final.png`.
 3. Final comparison — passed.
    - No actionable P0/P1/P2 differences remain. The full-month versus two-week geometry and Polune-specific type/color system are intentional product constraints.
+4. State-language refinement — passed.
+   - User feedback: ordinary dates looked disabled and suitable dates should share one violet state instead of a violet/green split.
+   - Fix: restored natural Moon color and white labels for ordinary dates; unified all 75%+ dates under violet; reserved a subtle Moon-only dimming for the 0–24% range.
+   - Post-fix evidence: `/private/tmp/polune-calendar-states-comparison.png`; a 38% ordinary date was selected successfully and updated the result.
 
 ## Remaining test gap
 
