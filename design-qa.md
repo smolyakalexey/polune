@@ -25,7 +25,7 @@
 - Fonts and typography: Onest is preserved. Figma's high-screen values remain 68/64 for the date and 28/32 for verdict, advice and score. The 402 × 884 adaptive state now uses 60 px for the date, 24/27 and 23/26 for verdict/advice, and 21/27 for the score instead of the previous over-compressed 56/22/21/17 scale.
 - Spacing and layout: the enlarged result hierarchy remains above the CTA stack and 190 px calendar; no overlap or clipped persistent control was found. The Figma-only composition has no CTAs or Moon calendar, so its more generous vertical whitespace is an intentional product difference.
 - Colors and tokens: date, verdict and score are pure white; advice remains 58% white. All score colors now collapse to white on the result screen. Bottom-sheet gradients were darkened from gray to near-black while preserving their edge against the starfield.
-- Image quality and asset fidelity: all four 32 px status SVGs are byte-identical downloads from Figma node `385:1247`. Suitable, neutral, caution and low ranges map to SealCheck, MinusCircle, WarningCircle and XCircle respectively; the result row keeps the previously approved white treatment. The existing Moon raster is preserved; the shadow mask is 99.5% opaque with a 3 px blur. The final background renders 374 stars, stronger twinkle and three shooting-star tracks.
+- Image quality and asset fidelity: all four 32 px status SVGs are byte-identical downloads from Figma node `385:1247`. Suitable, neutral, caution and low ranges map to SealCheck, MinusCircle, WarningCircle and XCircle respectively; the suitable row keeps the Figma violet while all other rows stay white. The existing Moon raster is preserved; the shadow mask is 99.5% opaque with a 3 px blur. The final background renders 374 stars, stronger twinkle and three shooting-star tracks.
 - Copy and content: no result copy or recommendation logic changed. Non-breaking Russian prepositions continue to render correctly.
 - Icons and accessibility: score control remains a semantic button; its icon is decorative, the visible percentage remains in the accessible name, and the info icon retains visible contrast.
 
@@ -52,6 +52,8 @@
 4. Moon and starfield refinement — passed.
    - Moon shadow blur is 3 px and its fill is 99.5% opaque; the center no longer visibly leaks the illuminated surface. Star count increased from 326 to 374 and the twinkle amplitude increased without obscuring result copy.
    - Post-fix evidence: `/private/tmp/polune-moon-stars-icons-stable.png`.
+5. Suitable-result color restoration — passed.
+   - Per final iPhone feedback, the suitable SealCheck and percentage text use `#6263f5`; neutral, caution and low rows remain white. The Info glyph remains secondary white for consistent affordance.
 
 ## Remaining test gap
 

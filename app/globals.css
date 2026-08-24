@@ -1710,8 +1710,8 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   cursor: pointer;
 }
 .result-score-row img { width: 32px; height: 32px; }
-.result-score-row.status-excellent img,
-.result-score-row.status-good img { filter: brightness(2.6) grayscale(1); }
+.result-score-row.status-excellent,
+.result-score-row.status-good { color: #6263f5; }
 .result-score-row svg { width: 24px; height: 24px; color: rgba(255,255,255,.72); }
 .result-actions {
   position: absolute;
