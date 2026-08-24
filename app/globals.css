@@ -1566,12 +1566,16 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: #020002;
-  filter: blur(8px);
+  opacity: 0;
+  background: rgba(0, 5, 8, .97);
+  filter: blur(5px);
   box-shadow: none;
-  transform: translateX(var(--moon-shadow-shift));
-  transition: transform .55s cubic-bezier(.2,.8,.2,1);
+  transition: transform .55s cubic-bezier(.2,.8,.2,1), opacity .2s ease;
 }
+.phase-moon-shadow-waxing { transform: translateX(var(--moon-waxing-shadow-shift)); }
+.phase-moon-shadow-waning { transform: translateX(var(--moon-waning-shadow-shift)); }
+.phase-moon.is-waxing .phase-moon-shadow-waxing,
+.phase-moon.is-waning .phase-moon-shadow-waning { opacity: 1; }
 @keyframes moon-arrive {
   from { opacity: 0; transform: translateY(-12px) scale(.88); }
   to { opacity: 1; transform: translateY(0) scale(1); }
@@ -1582,7 +1586,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   bottom: calc(100% + 8px);
   z-index: 3;
   width: 205px;
-  height: 75px;
+  height: 67px;
   padding: 0;
   border: 0;
   display: block;
@@ -1612,7 +1616,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .personalization-dot-two {
   z-index: 2;
   left: 172px;
-  top: 57px;
+  top: 49px;
   width: 12px;
   height: 12px;
   animation: personalization-dot-in .24s .16s cubic-bezier(.16,1.2,.34,1) both;
@@ -1621,7 +1625,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   position: absolute;
   inset: 0 0 auto;
   z-index: 1;
-  height: 64px;
+  height: 56px;
   padding: 8px 12px 8px 8px;
   border-radius: 24px;
   display: flex;
@@ -1630,7 +1634,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   background: #fff;
   box-shadow: 0 9px 24px rgba(0,0,0,.28);
   transform: scale(.04, .28);
-  transform-origin: 178px 63px;
+  transform-origin: 178px 55px;
   animation: personalization-body-grow .48s .32s cubic-bezier(.16,1,.3,1) both;
 }
 .personalization-bubble-body > img { width: 32px; height: 32px; object-fit: contain; flex: 0 0 auto; opacity: 0; animation: personalization-content-in .24s .62s ease-out forwards; }
