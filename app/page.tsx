@@ -698,7 +698,7 @@ function PersonalizationSheet({
       - scroller.getBoundingClientRect().top
       + scroller.scrollTop
       - 14;
-    scroller.scrollTo({ top: Math.max(0, targetTop), behavior: "auto" });
+    scroller.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
     setPlaceInputFocused(true);
   }
 
@@ -725,16 +725,18 @@ function PersonalizationSheet({
         - scroller.getBoundingClientRect().top
         + scroller.scrollTop
         - 14;
-      scroller.scrollTo({ top: Math.max(0, targetTop), behavior: "auto" });
+      scroller.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
     };
     const animationFrame = window.requestAnimationFrame(alignPlaceSearch);
     const focusTimer = window.setTimeout(alignPlaceSearch, 60);
     const keyboardTimer = window.setTimeout(alignPlaceSearch, 360);
+    const settleTimer = window.setTimeout(alignPlaceSearch, 760);
 
     return () => {
       window.cancelAnimationFrame(animationFrame);
       window.clearTimeout(focusTimer);
       window.clearTimeout(keyboardTimer);
+      window.clearTimeout(settleTimer);
     };
   }, [placeInputFocused]);
 
@@ -924,7 +926,10 @@ function PersonalizationSheet({
                 aria-autocomplete="list"
                 aria-expanded={placeResults.length > 0}
                 aria-controls="profile-place-results"
-                onPointerDown={openPlaceSearch}
+                onPointerDown={(event) => {
+                  openPlaceSearch();
+                  event.currentTarget.focus({ preventScroll: true });
+                }}
                 onFocus={openPlaceSearch}
                 onBlur={(event) => {
                   if (placeSelectionPendingRef.current) return;
