@@ -1254,6 +1254,16 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .profile-place-results > small { color: var(--muted); font-size: 10px; line-height: 14px; }
 .profile-place-results > small { margin: 1px 4px 0; }
 .profile-sheet.is-place-active { grid-template-rows: auto minmax(0, 1fr); }
+.profile-sheet-backdrop.is-place-active {
+  inset: 0 0 auto;
+  height: var(--profile-visual-height, 100dvh);
+  align-items: flex-start;
+  transform: translate3d(0, var(--profile-visual-top, 0px), 0);
+}
+.profile-sheet-backdrop.is-place-active .profile-sheet {
+  height: 100%;
+  max-height: 100%;
+}
 .profile-sheet.is-place-active .profile-sheet-scroll > :not(.profile-place-field):not(.profile-place-results) { display: none; }
 .profile-sheet.is-place-active .profile-place-field { margin-top: 16px; }
 .profile-sheet.is-place-active .profile-sheet-footer { display: none; }

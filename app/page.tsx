@@ -628,6 +628,7 @@ function PersonalizationSheet({
   const [placeInputFocused, setPlaceInputFocused] = useState(false);
   const [formError, setFormError] = useState<"date" | "time" | "place" | null>(null);
   const datePickerRef = useRef<HTMLInputElement>(null);
+  const profileBackdropRef = useRef<HTMLDivElement>(null);
   const profileScrollRef = useRef<HTMLDivElement>(null);
   const placeResultsRef = useRef<HTMLDivElement>(null);
   const birthDate = parseBirthDateInput(birthDateInput);
@@ -692,6 +693,41 @@ function PersonalizationSheet({
     };
   }, [placeInputFocused]);
 
+  useEffect(() => {
+    const backdrop = profileBackdropRef.current;
+    const viewport = window.visualViewport;
+    if (!backdrop || !placeInputFocused || !viewport) return;
+
+    const syncWithVisualViewport = () => {
+      const bodyTop = document.body.getBoundingClientRect().top;
+      const visualTop = Math.max(
+        0,
+        viewport.offsetTop,
+        viewport.pageTop - window.scrollY,
+        bodyTop < 0 ? -bodyTop : 0,
+      );
+      backdrop.style.setProperty("--profile-visual-top", `${visualTop}px`);
+      backdrop.style.setProperty("--profile-visual-height", `${viewport.height}px`);
+    };
+
+    const animationFrame = window.requestAnimationFrame(syncWithVisualViewport);
+    const settleTimer = window.setTimeout(syncWithVisualViewport, 60);
+    const keyboardTimer = window.setTimeout(syncWithVisualViewport, 360);
+    syncWithVisualViewport();
+    viewport.addEventListener("resize", syncWithVisualViewport);
+    viewport.addEventListener("scroll", syncWithVisualViewport);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      window.clearTimeout(settleTimer);
+      window.clearTimeout(keyboardTimer);
+      viewport.removeEventListener("resize", syncWithVisualViewport);
+      viewport.removeEventListener("scroll", syncWithVisualViewport);
+      backdrop.style.removeProperty("--profile-visual-top");
+      backdrop.style.removeProperty("--profile-visual-height");
+    };
+  }, [placeInputFocused]);
+
   const needsVerifiedPlace = Boolean((!timeUnknown && birthTime) || (timeUnknown && birthTimePeriod));
 
   function finish() {
@@ -737,7 +773,7 @@ function PersonalizationSheet({
   }
 
   return (
-    <div className="profile-sheet-backdrop" role="presentation" onMouseDown={(event) => {
+    <div ref={profileBackdropRef} className={`profile-sheet-backdrop ${placeInputFocused ? "is-place-active" : ""}`} role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose();
     }}>
       <section className={`profile-sheet ${placeInputFocused ? "is-place-active" : ""}`} role="dialog" aria-modal="true" aria-labelledby="profile-sheet-title">
@@ -876,6 +912,7 @@ function PersonalizationSheet({
               aria-autocomplete="list"
               aria-expanded={placeResults.length > 0}
               aria-controls="profile-place-results"
+              onPointerDown={() => setPlaceInputFocused(true)}
               onFocus={() => setPlaceInputFocused(true)}
               onBlur={(event) => {
                 const nextFocused = event.relatedTarget;
