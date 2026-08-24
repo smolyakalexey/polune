@@ -183,11 +183,11 @@ const ratingLabels: Record<Rating, string> = {
 };
 
 const statusIcons: Record<Rating, string> = {
-  low: "/figma/status-neutral.svg",
-  excellent: "/figma/status-excellent.svg",
-  neutral: "/figma/status-neutral.svg",
-  good: "/figma/status-excellent.svg",
-  caution: "/figma/status-neutral.svg",
+  low: "/figma/status-low-v2.svg",
+  excellent: "/figma/status-suitable-v2.svg",
+  neutral: "/figma/status-neutral-v2.svg",
+  good: "/figma/status-suitable-v2.svg",
+  caution: "/figma/status-caution-v2.svg",
 };
 
 type ResultCopy = { verdict: string; advice: string };
@@ -1048,17 +1048,17 @@ function createStarSeeds(count: number) {
       left: random() * 100,
       top: random() * 100,
       size: intensity > .96 ? 4.4 : intensity > .84 ? 2.6 : intensity > .55 ? 1.55 : .85,
-      opacity: .32 + intensity * .68,
+      opacity: .35 + intensity * .65,
       delay: -(random() * 7),
       duration: 3.4 + random() * 6.8,
-      bright: intensity > .92,
-      flare: intensity > .982,
+      bright: intensity > .89,
+      flare: intensity > .975,
       index,
     };
   });
 }
 
-const starSeeds = createStarSeeds(326);
+const starSeeds = createStarSeeds(374);
 
 function Starfield() {
   return (
@@ -1749,7 +1749,7 @@ export default function Home() {
                 score: active.score,
               });
             }}>
-              <img src={statusIcons.excellent} alt="" />
+              <img src={statusIcons[active.rating]} alt="" />
               <span>{active.score}% совпадение</span>
               <Info weight="regular" aria-hidden="true" />
             </button>
