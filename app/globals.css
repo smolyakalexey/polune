@@ -1254,7 +1254,8 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .profile-place-results > small { color: var(--muted); font-size: 10px; line-height: 14px; }
 .profile-place-results > small { margin: 1px 4px 0; }
 .profile-sheet.is-place-active { grid-template-rows: auto minmax(0, 1fr); }
-.profile-sheet.is-place-active .profile-sheet-scroll { padding-bottom: 60dvh; }
+.profile-sheet.is-place-active .profile-sheet-scroll > :not(.profile-place-field):not(.profile-place-results) { display: none; }
+.profile-sheet.is-place-active .profile-place-field { margin-top: 16px; }
 .profile-sheet.is-place-active .profile-sheet-footer { display: none; }
 .score-sheet {
   width: min(100%, 402px);
@@ -1567,7 +1568,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   bottom: calc(100% + 8px);
   z-index: 3;
   width: 205px;
-  height: 59px;
+  height: 75px;
   padding: 0;
   border: 0;
   display: block;
@@ -1597,7 +1598,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .personalization-dot-two {
   z-index: 2;
   left: 172px;
-  top: 41px;
+  top: 57px;
   width: 12px;
   height: 12px;
   animation: personalization-dot-in .24s .16s cubic-bezier(.16,1.2,.34,1) both;
@@ -1606,7 +1607,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   position: absolute;
   inset: 0 0 auto;
   z-index: 1;
-  height: 48px;
+  height: 64px;
   padding: 8px 12px 8px 8px;
   border-radius: 24px;
   display: flex;
@@ -1615,7 +1616,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   background: #fff;
   box-shadow: 0 9px 24px rgba(0,0,0,.28);
   transform: scale(.04, .28);
-  transform-origin: 178px 47px;
+  transform-origin: 178px 63px;
   animation: personalization-body-grow .48s .32s cubic-bezier(.16,1,.3,1) both;
 }
 .personalization-bubble-body > img { width: 32px; height: 32px; object-fit: contain; flex: 0 0 auto; opacity: 0; animation: personalization-content-in .24s .62s ease-out forwards; }
@@ -2044,7 +2045,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .result-content {
     height: 100dvh;
     min-height: 0;
-    padding: 66px 18px 174px;
+    padding: 66px 18px 164px;
   }
 
   .result-cosmic-card {
@@ -2169,7 +2170,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 }
 
 @media (max-width: 559px) and (max-height: 680px) {
-  .result-content { padding-top: 50px; }
+  .result-content { padding: 50px 18px 154px; }
   .moon-stage { height: 78px; }
   .phase-moon { width: 80px; height: 78px; }
   .result-date-line strong { font-size: 44px; }

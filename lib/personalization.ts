@@ -74,11 +74,16 @@ export function normalizeBirthPlace(value: string) {
   return value.trim().replace(/\s+/g, " ");
 }
 
+export function birthPlaceMatchesSelection(value: string, selectedLabel?: string) {
+  return Boolean(selectedLabel)
+    && normalizeBirthPlace(value) === normalizeBirthPlace(selectedLabel ?? "");
+}
+
 export function isValidBirthPlace(value: string) {
   const normalized = normalizeBirthPlace(value);
   return normalized.length >= 2
     && normalized.length <= 80
-    && /^[\p{L}\s.'’()-]+$/u.test(normalized);
+    && /^[\p{L}\s.,'’()\-–—]+$/u.test(normalized);
 }
 
 export function formatPersonalizationSummary(data: {

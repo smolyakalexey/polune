@@ -39,6 +39,7 @@ import type { PersonalizedCalendarDay } from "@/lib/personal-calendar";
 import { PERSONAL_METHOD_VERSION } from "@/lib/personal-methodology";
 import {
   birthDateInputFromIso,
+  birthPlaceMatchesSelection,
   formatBirthDateInput,
   formatPersonalizationSummary,
   formatBirthTimeInput,
@@ -323,6 +324,16 @@ function buildResultHeading(verdict: string, isBestDay: boolean) {
   if (verdict.startsWith("подходящий ")) return verdict.replace(/^подходящий /, "лучший ");
   if (verdict.startsWith("день ") || verdict.startsWith("ритм ")) return `лучший ${verdict}`;
   return verdict;
+}
+
+function buildResultPresentation(intent: Intent, day: Day, isBestDay: boolean) {
+  const copy = buildResultCopy(intent, day);
+  return {
+    heading: keepRussianPrepositionsWithNextWord(buildResultHeading(copy.verdict, isBestDay)),
+    advice: keepRussianPrepositionsWithNextWord(
+      `${copy.advice.charAt(0).toLowerCase()}${copy.advice.slice(1)}`.replace(/[.!?]+$/, ""),
+    ),
+  };
 }
 
 function StartLogo() {
@@ -618,14 +629,13 @@ function PersonalizationSheet({
   const [formError, setFormError] = useState<"date" | "time" | "place" | null>(null);
   const datePickerRef = useRef<HTMLInputElement>(null);
   const profileScrollRef = useRef<HTMLDivElement>(null);
-  const placeFieldRef = useRef<HTMLLabelElement>(null);
   const placeResultsRef = useRef<HTMLDivElement>(null);
   const birthDate = parseBirthDateInput(birthDateInput);
   const zodiac = birthDate ? zodiacForBirthDate(birthDate) : null;
 
   useEffect(() => {
     const normalized = normalizeBirthPlace(birthPlace);
-    if (selectedPlace?.label === normalized || normalized.length < 3) {
+    if (birthPlaceMatchesSelection(normalized, selectedPlace?.label) || normalized.length < 3) {
       return;
     }
 
@@ -672,27 +682,15 @@ function PersonalizationSheet({
 
   useEffect(() => {
     if (!placeInputFocused) return;
-
-    const alignPlaceField = () => {
-      const scroller = profileScrollRef.current;
-      const field = placeFieldRef.current;
-      if (!scroller || !field) return;
-      const targetTop = field.getBoundingClientRect().top
-        - scroller.getBoundingClientRect().top
-        + scroller.scrollTop
-        - 4;
-      scroller.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
-    };
-    const animationFrame = window.requestAnimationFrame(alignPlaceField);
-    const keyboardTimer = window.setTimeout(alignPlaceField, 320);
-    window.visualViewport?.addEventListener("resize", alignPlaceField);
+    const resetScroll = () => profileScrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
+    const animationFrame = window.requestAnimationFrame(resetScroll);
+    const keyboardTimer = window.setTimeout(resetScroll, 320);
 
     return () => {
       window.cancelAnimationFrame(animationFrame);
       window.clearTimeout(keyboardTimer);
-      window.visualViewport?.removeEventListener("resize", alignPlaceField);
     };
-  }, [placeInputFocused, placeResults.length]);
+  }, [placeInputFocused]);
 
   const needsVerifiedPlace = Boolean((!timeUnknown && birthTime) || (timeUnknown && birthTimePeriod));
 
@@ -709,7 +707,10 @@ function PersonalizationSheet({
       setFormError("place");
       return;
     }
-    if ((birthPlace || needsVerifiedPlace) && (!selectedPlace || selectedPlace.label !== normalizeBirthPlace(birthPlace))) {
+    if (
+      (birthPlace || needsVerifiedPlace)
+      && (!selectedPlace || !birthPlaceMatchesSelection(birthPlace, selectedPlace.label))
+    ) {
       setFormError("place");
       return;
     }
@@ -853,7 +854,7 @@ function PersonalizationSheet({
             </div>
           </fieldset>
         )}
-        <label className="profile-field" ref={placeFieldRef}>
+        <label className="profile-field profile-place-field">
           <span>место рождения</span>
           <span className="profile-input-shell profile-place-shell">
             <input
@@ -861,7 +862,7 @@ function PersonalizationSheet({
               onChange={(event) => {
                 const nextPlace = event.target.value.slice(0, 80);
                 setBirthPlace(nextPlace);
-                if (nextPlace !== selectedPlace?.label) setSelectedPlace(null);
+                if (!birthPlaceMatchesSelection(nextPlace, selectedPlace?.label)) setSelectedPlace(null);
                 setPlaceResults([]);
                 setPlaceSearchPending(false);
                 setPlaceSearchFailed(false);
@@ -1189,25 +1190,15 @@ export default function Home() {
   const methodVersion = personalizedCalendar ? PERSONAL_METHOD_VERSION : METHOD_VERSION;
 
   const active = days.find((day) => day.id === activeId) ?? calendarDays.find((day) => day.id === activeId) ?? days[1];
-  const resultCopy = buildResultCopy(intent, active);
   const isPreferredInResultWindow = days.some((day) => day.id === active.id && day.isPreferred);
   const preferredId = pickPreferredDay(days).id;
   const generalPreferredId = pickPreferredDay(generalDays).id;
   const personalRecommendationChanged = Boolean(personalizedCalendar && preferredId !== generalPreferredId);
   const activeDisplayRating: Rating = isPreferredInResultWindow ? "excellent" : active.rating;
-  const resultHeading = keepRussianPrepositionsWithNextWord(buildResultHeading(resultCopy.verdict, isPreferredInResultWindow));
-  const resultAdvice = keepRussianPrepositionsWithNextWord(
-    `${resultCopy.advice.charAt(0).toLowerCase()}${resultCopy.advice.slice(1)}`.replace(/[.!?]+$/, ""),
-  );
-  const pendingResultCopy = pendingReveal ? buildResultCopy(pendingReveal.intent, pendingReveal.day) : null;
-  const pendingResultHeading = pendingResultCopy
-    ? keepRussianPrepositionsWithNextWord(buildResultHeading(pendingResultCopy.verdict, pendingReveal?.day.isPreferred ?? false))
-    : "";
-  const pendingResultAdvice = pendingResultCopy
-    ? keepRussianPrepositionsWithNextWord(
-        `${pendingResultCopy.advice.charAt(0).toLowerCase()}${pendingResultCopy.advice.slice(1)}`.replace(/[.!?]+$/, ""),
-      )
-    : "";
+  const resultPresentation = buildResultPresentation(intent, active, isPreferredInResultWindow);
+  const pendingResultPresentation = pendingReveal
+    ? buildResultPresentation(pendingReveal.intent, pendingReveal.day, pendingReveal.day.isPreferred)
+    : null;
   const personalizationSummary = personalization ? formatPersonalizationSummary(personalization) : "";
   const personalizationResultLabel = !resolvedPersonalization
     ? "личный расчёт не удалось применить"
@@ -1621,8 +1612,8 @@ export default function Home() {
             theme={startTheme}
             intentLabel={pendingReveal.intent.label}
             selectedDay={pendingReveal.day}
-            resultHeading={pendingResultHeading}
-            resultAdvice={pendingResultAdvice}
+            resultHeading={pendingResultPresentation?.heading ?? ""}
+            resultAdvice={pendingResultPresentation?.advice ?? ""}
             onComplete={finishReveal}
           />
         )}
@@ -1668,8 +1659,8 @@ export default function Home() {
             </div>
 
             <div className="result-guidance">
-              <h2>{resultHeading}</h2>
-              <p>{resultAdvice}</p>
+              <h2>{resultPresentation.heading}</h2>
+              <p>{resultPresentation.advice}</p>
             </div>
 
             <button type="button" className={`result-score-row status-${activeDisplayRating}`} onClick={() => {
@@ -1698,7 +1689,7 @@ export default function Home() {
                 <span className="personalization-dot personalization-dot-two" aria-hidden="true" />
                 <span className="personalization-bubble-body">
                   <img src="/figma/personalization-calendar.png" alt="" />
-                  <span>сохраните данные для&nbsp;будущей персонализации</span>
+                  <span>поможет получать более точные рекомендации</span>
                 </span>
               </button>
             )}
@@ -1787,8 +1778,8 @@ export default function Home() {
           theme={startTheme}
           intentLabel={pendingReveal.intent.label}
           selectedDay={pendingReveal.day}
-          resultHeading={pendingResultHeading}
-          resultAdvice={pendingResultAdvice}
+          resultHeading={pendingResultPresentation?.heading ?? ""}
+          resultAdvice={pendingResultPresentation?.advice ?? ""}
           onComplete={finishReveal}
         />
       )}

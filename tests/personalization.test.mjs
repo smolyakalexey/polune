@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   birthDateInputFromIso,
+  birthPlaceMatchesSelection,
   formatBirthDateInput,
   formatPersonalizationSummary,
   formatBirthTimeInput,
@@ -47,8 +48,16 @@ test("place validation accepts names but rejects symbols and empty values", () =
   assert.equal(normalizeBirthPlace("  Нижний   Новгород "), "Нижний Новгород");
   assert.equal(isValidBirthPlace("Ростов-на-Дону"), true);
   assert.equal(isValidBirthPlace("São Paulo"), true);
+  assert.equal(isValidBirthPlace("Москва, Россия"), true);
+  assert.equal(isValidBirthPlace("Минден, Северный Рейн — Вестфалия, Германия"), true);
   assert.equal(isValidBirthPlace("123"), false);
   assert.equal(isValidBirthPlace(""), false);
+});
+
+test("verified place matching ignores invisible whitespace differences", () => {
+  assert.equal(birthPlaceMatchesSelection("Москва, Россия", "Москва,\u00a0Россия"), true);
+  assert.equal(birthPlaceMatchesSelection("Москва, Россия", "Москва, Кировская область, Россия"), false);
+  assert.equal(birthPlaceMatchesSelection("Москва, Россия"), false);
 });
 
 test("saved personalization is summarized without implying a changed score", () => {
