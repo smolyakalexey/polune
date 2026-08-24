@@ -29,6 +29,16 @@ import { keepRussianPrepositionsWithNextWord } from "@/lib/typography";
 import { buildGoogleCalendarUrl, buildIcsCalendarEvent } from "@/lib/calendar-actions";
 import { detectCalendarProvider } from "@/lib/calendar-preference";
 import type { CalendarProvider } from "@/lib/calendar-preference";
+import {
+  INTENTIONS_STORAGE_KEY,
+  activeIntention,
+  createSavedIntention,
+  parseSavedIntentions,
+  replaceActiveIntention,
+  withCalendarReminder,
+} from "@/lib/intentions";
+import type { SavedIntention } from "@/lib/intentions";
+import { createAnonymousSessionId } from "@/lib/session-id";
 import type { GeocodedBirthPlace } from "@/lib/geocoding";
 import type { BirthTimePeriod } from "@/lib/natal";
 import {
@@ -1018,7 +1028,7 @@ function CalendarActionSheet({
       <section className="calendar-action-sheet" role="dialog" aria-modal="true" aria-labelledby="calendar-action-title">
         <header>
           <div>
-            <p>сохранить дату</p>
+            <p>добавить напоминание</p>
             <h2 id="calendar-action-title">выберите календарь</h2>
           </div>
           <button type="button" className="round-button" onClick={onClose} aria-label="Закрыть выбор календаря">
@@ -1026,7 +1036,7 @@ function CalendarActionSheet({
           </button>
         </header>
         <p className="calendar-action-lead">
-          {keepRussianPrepositionsWithNextWord("мы не добавляем событие напрямую: для Apple подготовим файл, для Google откроем форму события")}
+          {keepRussianPrepositionsWithNextWord("план уже сохранён в Polune. для Apple подготовим файл, для Google откроем форму напоминания")}
         </p>
         <div className="calendar-action-options">
           <button type="button" onClick={onApple}>
@@ -1118,20 +1128,128 @@ function MoonPhaseIllustration({ angle, label, compact = false }: { angle: numbe
   );
 }
 
+function formatPlanDate(dateIso: string) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  }).format(new Date(`${dateIso}T12:00:00Z`));
+}
+
+function PlanSuccessScreen({
+  plan,
+  intentLabel,
+  day,
+  onClose,
+  onOpenPlans,
+  onAddReminder,
+}: {
+  plan: SavedIntention;
+  intentLabel: string;
+  day: Day;
+  onClose: () => void;
+  onOpenPlans: () => void;
+  onAddReminder: () => void;
+}) {
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <section className="plan-success-screen" role="dialog" aria-modal="true" aria-labelledby="plan-success-title">
+      <Starfield />
+      <button type="button" className="plan-success-close" onClick={onClose} aria-label="Закрыть">
+        <X weight="regular" />
+      </button>
+      <div className="plan-success-content">
+        <div className="plan-success-copy">
+          <span><Sparkle weight="fill" aria-hidden="true" /> готово</span>
+          <h2 id="plan-success-title">намерение<br />запланировано</h2>
+          <p>{keepRussianPrepositionsWithNextWord(`${formatPlanDate(plan.selectedDate)} · ${intentLabel}`)}</p>
+        </div>
+
+        <div className="plan-success-calendar" aria-label="Намерение добавлено в календарь Polune">
+          <header><span>мой календарь</span><CalendarCheck weight="regular" aria-hidden="true" /></header>
+          <div className="plan-success-date">
+            <span className="plan-success-moon">
+              <MoonPhaseIllustration angle={day.moonPhaseAngle} label={day.moonPhaseLabel} compact />
+            </span>
+            <strong>{day.day}</strong>
+            <small>{day.weekday}</small>
+            <Sparkle className="plan-success-sparkle" weight="fill" aria-hidden="true" />
+          </div>
+          <div className="plan-success-item">
+            <span><CalendarCheck weight="fill" aria-hidden="true" /></span>
+            <div><small>ваш план</small><strong>{intentLabel}</strong></div>
+          </div>
+        </div>
+
+        <div className="plan-success-actions">
+          <button type="button" onClick={onOpenPlans}>открыть мои планы</button>
+          <button type="button" onClick={onAddReminder}>добавить напоминание</button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ReplacePlanSheet({
+  currentLabel,
+  nextLabel,
+  onClose,
+  onReplace,
+}: {
+  currentLabel: string;
+  nextLabel: string;
+  onClose: () => void;
+  onReplace: () => void;
+}) {
+  return (
+    <div className="plan-replace-backdrop" role="presentation" onMouseDown={(event) => {
+      if (event.target === event.currentTarget) onClose();
+    }}>
+      <section className="plan-replace-sheet" role="dialog" aria-modal="true" aria-labelledby="plan-replace-title">
+        <header>
+          <div><p>один активный план</p><h2 id="plan-replace-title">заменить намерение?</h2></div>
+          <button type="button" className="round-button" onClick={onClose} aria-label="Закрыть"><X weight="regular" /></button>
+        </header>
+        <p className="plan-replace-lead">Сейчас запланировано «{currentLabel}». Новый план «{nextLabel}» займёт его место.</p>
+        <button type="button" className="plan-replace-primary" onClick={onReplace}>заменить план</button>
+        <button type="button" className="plan-replace-secondary" onClick={onClose}>оставить текущий</button>
+        <small>Несколько одновременных планов появятся в следующей версии.</small>
+      </section>
+    </div>
+  );
+}
+
 function ResultCalendar({
   days,
   activeId,
   preferredId,
   expanded,
+  savedPlan,
+  currentIntentId,
+  savedPlanLabel,
   onExpandedChange,
   onSelect,
+  onOpenSavedPlan,
+  onAddReminder,
 }: {
   days: Day[];
   activeId: string;
   preferredId: string;
   expanded: boolean;
+  savedPlan: SavedIntention | null;
+  currentIntentId: string;
+  savedPlanLabel: string;
   onExpandedChange: (expanded: boolean) => void;
   onSelect: (day: Day) => void;
+  onOpenSavedPlan: () => void;
+  onAddReminder: () => void;
 }) {
   const dragStart = useRef<number | null>(null);
   const todayIso = moscowDateIso();
@@ -1174,23 +1292,36 @@ function ResultCalendar({
           {peekDays.map((day) => {
             const isPreferred = day.id === preferredId;
             const isSuitable = isPreferred || day.rating === "good";
+            const isPlanned = savedPlan?.intentId === currentIntentId && savedPlan.selectedDate === day.dateIso;
             return <button
               type="button"
               key={day.id}
-              className={`calendar-peek-day ${isSuitable ? "is-suitable" : ""} ${isPreferred ? "is-preferred" : ""} ${day.id === activeId ? "selected" : ""}`}
+              className={`calendar-peek-day ${isSuitable ? "is-suitable" : ""} ${isPreferred ? "is-preferred" : ""} ${isPlanned ? "is-planned" : ""} ${day.id === activeId ? "selected" : ""}`}
               onClick={() => onSelect(day)}
-              aria-label={`${day.longDate}: ${day.score}%${isPreferred ? ", лучший день" : isSuitable ? ", подходит" : ""}`}
+              aria-label={`${day.longDate}: ${day.score}%${isPreferred ? ", лучший день" : isSuitable ? ", подходит" : ""}${isPlanned ? ", запланировано" : ""}`}
             >
               <span className="calendar-day-moon">
                 <MoonPhaseIllustration angle={day.moonPhaseAngle} label={day.moonPhaseLabel} compact />
               </span>
               {isSuitable ? <Sparkle className="calendar-best-mark" weight="fill" aria-hidden="true" /> : null}
+              {isPlanned ? <CalendarCheck className="calendar-plan-mark" weight="fill" aria-hidden="true" /> : null}
               <small><strong>{day.day}</strong><span>{day.weekday}</span></small>
             </button>
           })}
         </div>
       ) : (
         <div className="calendar-months">
+          {savedPlan && (
+            <article className="calendar-saved-plan">
+              <button type="button" className="calendar-saved-plan-main" onClick={onOpenSavedPlan}>
+                <span><CalendarCheck weight="fill" aria-hidden="true" /></span>
+                <span><small>ваш ближайший план</small><strong>{formatPlanDate(savedPlan.selectedDate)} · {savedPlanLabel}</strong></span>
+              </button>
+              <button type="button" className="calendar-saved-plan-reminder" onClick={onAddReminder}>
+                {savedPlan.reminder.kind === "external_calendar" ? "повторить напоминание" : "добавить напоминание"}
+              </button>
+            </article>
+          )}
           {monthGroups.map((group) => (
             <section key={group.key}>
               <h2>{group.title}</h2>
@@ -1201,12 +1332,13 @@ function ResultCalendar({
                 {group.days.map((day, index) => {
                   const isPreferred = day.id === preferredId;
                   const isSuitable = isPreferred || day.rating === "good";
+                  const isPlanned = savedPlan?.intentId === currentIntentId && savedPlan.selectedDate === day.dateIso;
                   return <button
                     type="button"
                     key={day.id}
-                    className={`${isSuitable ? "is-suitable" : ""} ${isPreferred ? "is-preferred" : ""} ${day.id === activeId ? "selected" : ""}`}
+                    className={`${isSuitable ? "is-suitable" : ""} ${isPreferred ? "is-preferred" : ""} ${isPlanned ? "is-planned" : ""} ${day.id === activeId ? "selected" : ""}`}
                     onClick={() => onSelect(day)}
-                    aria-label={`${day.longDate}: ${day.score}%${isPreferred ? ", лучший день" : isSuitable ? ", подходит" : ""}`}
+                    aria-label={`${day.longDate}: ${day.score}%${isPreferred ? ", лучший день" : isSuitable ? ", подходит" : ""}${isPlanned ? ", запланировано" : ""}`}
                     style={index === 0
                       ? { gridColumnStart: ((new Date(`${day.dateIso}T12:00:00Z`).getUTCDay() + 6) % 7) + 1 }
                       : undefined}
@@ -1215,6 +1347,7 @@ function ResultCalendar({
                       <MoonPhaseIllustration angle={day.moonPhaseAngle} label={day.moonPhaseLabel} compact />
                     </span>
                     {isSuitable ? <Sparkle className="calendar-best-mark" weight="fill" aria-hidden="true" /> : null}
+                    {isPlanned ? <CalendarCheck className="calendar-plan-mark" weight="fill" aria-hidden="true" /> : null}
                     <small>{day.day}</small>
                   </button>
                 })}
@@ -1251,6 +1384,9 @@ export default function Home() {
   const [personalizationBubblePhase, setPersonalizationBubblePhase] = useState<"hidden" | "visible" | "leaving">("hidden");
   const [dayMotionPhase, setDayMotionPhase] = useState<"idle" | "out" | "in">("idle");
   const [calendarExpanded, setCalendarExpanded] = useState(false);
+  const [savedIntentions, setSavedIntentions] = useState<SavedIntention[]>([]);
+  const [planSuccess, setPlanSuccess] = useState<SavedIntention | null>(null);
+  const [pendingPlanReplacement, setPendingPlanReplacement] = useState<SavedIntention | null>(null);
   const calendarStatusTimer = useRef<number | null>(null);
   const feedbackStatusTimer = useRef<number | null>(null);
   const dayMotionTimer = useRef<number | null>(null);
@@ -1293,6 +1429,14 @@ export default function Home() {
         : active.id === preferredId
           ? "персональный расчёт подтвердил эту дату"
           : "персональный расчёт применён ко всем датам";
+  const savedPlan = activeIntention(savedIntentions);
+  const savedPlanIntent = savedPlan ? intents.find((candidate) => candidate.id === savedPlan.intentId) ?? null : null;
+  const savedPlanLabel = savedPlanIntent?.label ?? "сохранённое дело";
+  const isCurrentResultPlanned = savedPlan?.intentId === intent.id && savedPlan.selectedDate === active.dateIso;
+  const planSuccessIntent = planSuccess ? intents.find((candidate) => candidate.id === planSuccess.intentId) ?? intent : intent;
+  const planSuccessDay = planSuccess
+    ? calendarDays.find((day) => day.dateIso === planSuccess.selectedDate) ?? active
+    : active;
 
   useEffect(() => {
     if (screen !== "result" || !personalizedCalendar) return;
@@ -1394,6 +1538,17 @@ export default function Home() {
     return () => window.clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    let restored: SavedIntention[] = [];
+    try {
+      restored = parseSavedIntentions(window.localStorage.getItem(INTENTIONS_STORAGE_KEY));
+    } catch {
+      // Plans remain optional when browser storage is unavailable.
+    }
+    const timer = window.setTimeout(() => setSavedIntentions(restored), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   useEffect(() => () => {
     if (calendarStatusTimer.current) window.clearTimeout(calendarStatusTimer.current);
     if (feedbackStatusTimer.current) window.clearTimeout(feedbackStatusTimer.current);
@@ -1401,14 +1556,14 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const overlaySheetOpen = pickerOpen || calendarActionOpen || scoreInfoOpen || personalizationOpen;
+    const overlaySheetOpen = pickerOpen || calendarActionOpen || scoreInfoOpen || personalizationOpen || Boolean(planSuccess) || Boolean(pendingPlanReplacement);
     const themeColor = overlaySheetOpen || calendarExpanded
       ? "#0c0d0e"
       : screen === "result"
         ? "#090b0c"
         : "#010506";
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", themeColor);
-  }, [calendarActionOpen, calendarExpanded, personalizationOpen, pickerOpen, scoreInfoOpen, screen]);
+  }, [calendarActionOpen, calendarExpanded, pendingPlanReplacement, personalizationOpen, pickerOpen, planSuccess, scoreInfoOpen, screen]);
 
   useEffect(() => {
     const restoreFromUrl = () => {
@@ -1545,6 +1700,104 @@ export default function Home() {
     }, 150);
   }
 
+  function persistIntentions(next: SavedIntention[]) {
+    setSavedIntentions(next);
+    try {
+      window.localStorage.setItem(INTENTIONS_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // The current session still works when localStorage is blocked.
+    }
+  }
+
+  function createPlanId() {
+    return createAnonymousSessionId({
+      randomUUID: typeof window.crypto?.randomUUID === "function"
+        ? () => window.crypto.randomUUID()
+        : undefined,
+      getRandomValues: typeof window.crypto?.getRandomValues === "function"
+        ? (values) => window.crypto.getRandomValues(values)
+        : undefined,
+    });
+  }
+
+  function commitPlan(nextPlan: SavedIntention, replaced = false) {
+    const nextIntentions = replaceActiveIntention(savedIntentions, nextPlan);
+    persistIntentions(nextIntentions);
+    setPendingPlanReplacement(null);
+    setPlanSuccess(nextPlan);
+    trackEvent(replaced ? "intention_replaced" : "intention_saved", {
+      intentId: nextPlan.intentId,
+      archetype: intent.archetype,
+      selectedDate: nextPlan.selectedDate,
+      score: nextPlan.snapshot.score,
+      methodVersion: nextPlan.snapshot.methodVersion,
+    });
+  }
+
+  function planCurrentResult() {
+    const nextPlan = createSavedIntention({
+      id: createPlanId(),
+      intentId: intent.id,
+      selectedDate: active.dateIso,
+      todayIso: moscowDateIso(),
+      snapshot: {
+        methodVersion,
+        score: active.score,
+        rating: activeDisplayRating,
+        personalizationLevel: resolvedPersonalization?.profile.level ?? "none",
+        verdict: resultPresentation.heading.replaceAll("\u00a0", " "),
+      },
+    });
+    if (savedPlan && (savedPlan.intentId !== nextPlan.intentId || savedPlan.selectedDate !== nextPlan.selectedDate)) {
+      setPendingPlanReplacement(nextPlan);
+      trackEvent("second_intention_attempted", {
+        intentId: nextPlan.intentId,
+        archetype: intent.archetype,
+        selectedDate: nextPlan.selectedDate,
+        score: nextPlan.snapshot.score,
+      });
+      return;
+    }
+    commitPlan(nextPlan);
+  }
+
+  function openSavedPlan() {
+    if (!savedPlan || !savedPlanIntent) return;
+    const restoredCalendarDays = buildTwoMonthCalendarDays(savedPlanIntent);
+    const restoredDays = buildCalendarDays(savedPlanIntent);
+    const restoredDay = resolveRequestedCalendarDay(
+      savedPlan.selectedDate,
+      restoredCalendarDays,
+      restoredDays,
+      moscowDateIso(),
+    );
+    setIntent(savedPlanIntent);
+    setActiveId(restoredDay.id);
+    setHasChosenIntent(true);
+    setPendingReveal(null);
+    setScreen("result");
+    window.history.pushState({}, "", resultUrl(savedPlanIntent.id, restoredDay.dateIso, savedPlan.snapshot.methodVersion));
+    trackEvent("intention_viewed", {
+      intentId: savedPlan.intentId,
+      archetype: savedPlanIntent.archetype,
+      selectedDate: savedPlan.selectedDate,
+      score: savedPlan.snapshot.score,
+      methodVersion: savedPlan.snapshot.methodVersion,
+    });
+  }
+
+  function markPlanReminder(provider: "apple" | "google" | "unknown") {
+    if (!savedPlan) return;
+    const updated = withCalendarReminder(savedPlan, provider);
+    persistIntentions(savedIntentions.map((candidate) => candidate.id === updated.id ? updated : candidate));
+    trackEvent("intention_reminder_opened", {
+      intentId: updated.intentId,
+      selectedDate: updated.selectedDate,
+      score: updated.snapshot.score,
+      methodVersion: updated.snapshot.methodVersion,
+    });
+  }
+
   function calendarEventInput() {
     return {
       dateIso: active.dateIso,
@@ -1571,6 +1824,7 @@ export default function Home() {
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     setCalendarActionOpen(false);
     showCalendarStatus("ics_prepared");
+    markPlanReminder("apple");
     if (!feedbackAnswer) setFeedbackVisible(true);
     trackEvent("calendar_ics_prepared", {
       intentId: intent.id,
@@ -1586,6 +1840,7 @@ export default function Home() {
       googleWindow.opener = null;
       setCalendarActionOpen(false);
       showCalendarStatus("google_opened");
+      markPlanReminder("google");
       if (!feedbackAnswer) setFeedbackVisible(true);
       trackEvent("calendar_google_opened", {
         intentId: intent.id,
@@ -1692,6 +1947,12 @@ export default function Home() {
               onClick={() => setPickerOpen(true)}
             />
           </div>
+          {savedPlan && savedPlanIntent && (
+            <button type="button" className="start-saved-plan" onClick={openSavedPlan}>
+              <span><CalendarCheck weight="fill" aria-hidden="true" /></span>
+              <span><small>ваш ближайший план</small><strong>{formatPlanDate(savedPlan.selectedDate)} · {savedPlanIntent.label}</strong></span>
+            </button>
+          )}
           <button className="start-primary" type="button" onClick={() => setPickerOpen(true)}>
             выбрать дело
           </button>
@@ -1803,14 +2064,8 @@ export default function Home() {
                 <small>{keepRussianPrepositionsWithNextWord(personalizationResultLabel)}</small>
               </button>
             )}
-            <button type="button" className={`result-calendar-action ${calendarActionStatus ? "has-status" : ""} ${calendarActionStatus === "google_blocked" ? "has-error" : ""}`} onClick={() => performCalendarAction(preferredCalendarProvider)} aria-live="polite">
-              {calendarActionStatus === "ics_prepared"
-                ? "файл .ics подготовлен"
-                : calendarActionStatus === "google_opened"
-                  ? "календарь открыт"
-                  : calendarActionStatus === "google_blocked"
-                    ? "календарь не открылся"
-                    : "добавить в календарь"}
+            <button type="button" className={`result-calendar-action ${isCurrentResultPlanned ? "is-planned" : ""}`} onClick={planCurrentResult}>
+              {isCurrentResultPlanned ? <><Check weight="bold" aria-hidden="true" /> запланировано</> : "запланировать"}
             </button>
           </div>
         </article>
@@ -1837,12 +2092,25 @@ export default function Home() {
 
       </div>
 
+      {calendarActionStatus && (
+        <p className={`calendar-action-toast ${calendarActionStatus === "google_blocked" ? "has-error" : ""}`} aria-live="polite">
+          {calendarActionStatus === "ics_prepared"
+            ? "напоминание подготовлено"
+            : calendarActionStatus === "google_opened"
+              ? "календарь открыт"
+              : "календарь не открылся"}
+        </p>
+      )}
+
       {!pendingReveal && (
         <ResultCalendar
           days={calendarDays}
           activeId={active.id}
           preferredId={preferredId}
           expanded={calendarExpanded}
+          savedPlan={savedPlan}
+          currentIntentId={intent.id}
+          savedPlanLabel={savedPlanLabel}
           onExpandedChange={(expanded) => {
             setCalendarExpanded(expanded);
             if (expanded) {
@@ -1858,6 +2126,8 @@ export default function Home() {
             chooseDay(day);
             if (calendarExpanded) setCalendarExpanded(false);
           }}
+          onOpenSavedPlan={openSavedPlan}
+          onAddReminder={() => performCalendarAction(preferredCalendarProvider)}
         />
       )}
 
@@ -1878,6 +2148,30 @@ export default function Home() {
           onClose={() => setCalendarActionOpen(false)}
           onApple={() => chooseCalendarProvider("apple")}
           onGoogle={() => chooseCalendarProvider("google")}
+        />
+      )}
+      {planSuccess && (
+        <PlanSuccessScreen
+          plan={planSuccess}
+          intentLabel={planSuccessIntent.label}
+          day={planSuccessDay}
+          onClose={() => setPlanSuccess(null)}
+          onOpenPlans={() => {
+            setPlanSuccess(null);
+            setCalendarExpanded(true);
+          }}
+          onAddReminder={() => {
+            setPlanSuccess(null);
+            performCalendarAction(preferredCalendarProvider);
+          }}
+        />
+      )}
+      {pendingPlanReplacement && savedPlan && (
+        <ReplacePlanSheet
+          currentLabel={savedPlanLabel}
+          nextLabel={intent.label}
+          onClose={() => setPendingPlanReplacement(null)}
+          onReplace={() => commitPlan(pendingPlanReplacement, true)}
         />
       )}
       {personalizationOpen && (
