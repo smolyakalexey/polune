@@ -1401,9 +1401,14 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const themeColor = "#010506";
+    const overlaySheetOpen = pickerOpen || calendarActionOpen || scoreInfoOpen || personalizationOpen;
+    const themeColor = overlaySheetOpen || calendarExpanded
+      ? "#0c0d0e"
+      : screen === "result"
+        ? "#090b0c"
+        : "#010506";
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", themeColor);
-  }, [screen]);
+  }, [calendarActionOpen, calendarExpanded, personalizationOpen, pickerOpen, scoreInfoOpen, screen]);
 
   useEffect(() => {
     const restoreFromUrl = () => {
