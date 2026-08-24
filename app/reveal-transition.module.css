@@ -20,6 +20,37 @@
 
 .transition[data-phase="leave"] { opacity: 0; }
 
+.transition::before,
+.transition::after {
+  content: "";
+  position: absolute;
+  right: -8%;
+  left: -8%;
+  z-index: 2;
+  pointer-events: none;
+  transform: translateZ(0);
+}
+
+.transition::before {
+  top: 0;
+  height: max(104px, calc(env(safe-area-inset-top) + 72px));
+  background: linear-gradient(180deg, rgba(1,5,6,.78), rgba(1,5,6,.26) 58%, transparent);
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0,0,0,.72) 58%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, rgba(0,0,0,.72) 58%, transparent 100%);
+}
+
+.transition::after {
+  bottom: 0;
+  height: max(148px, calc(env(safe-area-inset-bottom) + 112px));
+  background: linear-gradient(0deg, rgba(1,5,6,.88), rgba(1,5,6,.34) 56%, transparent);
+  -webkit-backdrop-filter: blur(9px);
+  backdrop-filter: blur(9px);
+  -webkit-mask-image: linear-gradient(0deg, #000 0%, rgba(0,0,0,.76) 58%, transparent 100%);
+  mask-image: linear-gradient(0deg, #000 0%, rgba(0,0,0,.76) 58%, transparent 100%);
+}
+
 .spaceGlow {
   position: absolute;
   inset: -22%;

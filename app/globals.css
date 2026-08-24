@@ -60,8 +60,24 @@
 }
 
 * { box-sizing: border-box; }
-html { min-width: 320px; background: #010506; }
-body { margin: 0; min-width: 320px; min-height: 100dvh; color: var(--ink); background: #010506; font-family: var(--font-ui); }
+html {
+  min-width: 320px;
+  background-color: #010506;
+  background-image:
+    radial-gradient(circle at 14% 22%, rgba(226,255,255,.42) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 72% 64%, rgba(180,239,249,.3) 0 1px, transparent 1.5px),
+    linear-gradient(180deg, #01080b 0%, #000508 54%, #020509 100%);
+  background-size: 173px 211px, 239px 187px, cover;
+  background-attachment: fixed;
+}
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100dvh;
+  color: var(--ink);
+  background: transparent;
+  font-family: var(--font-ui);
+}
 button, input { font: inherit; }
 button { color: inherit; }
 button:focus-visible, input:focus-visible, a:focus-visible {
@@ -1366,6 +1382,34 @@ button:focus-visible, input:focus-visible, a:focus-visible {
     radial-gradient(ellipse at 14% 38%, rgba(14, 75, 91, .09), transparent 36%),
     linear-gradient(180deg, #01080b 0%, #000508 54%, #020509 100%);
   pointer-events: none;
+}
+.starfield::before,
+.starfield::after {
+  content: "";
+  position: absolute;
+  right: -8%;
+  left: -8%;
+  z-index: 3;
+  pointer-events: none;
+  transform: translateZ(0);
+}
+.starfield::before {
+  top: 0;
+  height: max(104px, calc(env(safe-area-inset-top) + 72px));
+  background: linear-gradient(180deg, rgba(1,5,6,.78), rgba(1,5,6,.26) 58%, transparent);
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0,0,0,.72) 58%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, rgba(0,0,0,.72) 58%, transparent 100%);
+}
+.starfield::after {
+  bottom: 0;
+  height: max(148px, calc(env(safe-area-inset-bottom) + 112px));
+  background: linear-gradient(0deg, rgba(1,5,6,.88), rgba(1,5,6,.34) 56%, transparent);
+  -webkit-backdrop-filter: blur(9px);
+  backdrop-filter: blur(9px);
+  -webkit-mask-image: linear-gradient(0deg, #000 0%, rgba(0,0,0,.76) 58%, transparent 100%);
+  mask-image: linear-gradient(0deg, #000 0%, rgba(0,0,0,.76) 58%, transparent 100%);
 }
 .star-nebula {
   position: absolute;
