@@ -5,9 +5,10 @@
 - Source visual truth: https://mobbin.com/explore/screens/5fa577fd-b611-409a-a766-a7302094bdc0
 - Source capture: `/private/tmp/polune-mobbin-reference.png`
 - Rendered implementation: `http://localhost:4173/?intent=haircut&date=2026-08-24&method=0.7p`
-- Implementation capture: `/private/tmp/polune-calendar-states-final.png`
-- Full-view evidence: `/private/tmp/polune-calendar-states-final.png`
-- Focused calendar comparison: `/private/tmp/polune-calendar-states-comparison.png`
+- Implementation capture: `/private/tmp/polune-binary-status-purple.png`
+- Alternate gray-result capture: `/private/tmp/polune-binary-status-gray.png`
+- Full-view evidence: `/private/tmp/polune-binary-status-purple.png`
+- Focused calendar comparison: `/private/tmp/polune-binary-status-comparison.png`
 
 ## Нормализация
 
@@ -21,7 +22,7 @@
 
 - Typography: retained Polune's Onest hierarchy; date numbers are secondary labels below each Moon and remain legible at compact size.
 - Spacing and layout: two complete rows of seven dates fit inside the 190 px sheet; the result score and CTA stack no longer overlap the raised sheet on a short viewport.
-- Colors and tokens: ordinary dates retain the natural Moon color and white date labels; every date at 75% or above uses the existing violet token; only the preferred day receives the sparkle marker. The 0–24% range is distinguished only by a softer Moon treatment, without warning color or disabled opacity on the button.
+- Colors and tokens: ordinary dates retain the natural Moon color and white date labels; every date at 75% or above uses the same violet token and sparkle marker. Result percentages are binary: preferred and 75%+ dates use violet; every 0–74% date uses the existing neutral gray with the same neutral icon.
 - Image quality: reused the product's real `moon-base.png` asset and the existing phase mask instead of drawing substitute Moon icons.
 - Copy/content: no new explanatory copy was added; existing result text and date-selection behavior are preserved.
 
@@ -48,6 +49,10 @@
    - User feedback: ordinary dates looked disabled and suitable dates should share one violet state instead of a violet/green split.
    - Fix: restored natural Moon color and white labels for ordinary dates; unified all 75%+ dates under violet; reserved a subtle Moon-only dimming for the 0–24% range.
    - Post-fix evidence: `/private/tmp/polune-calendar-states-comparison.png`; a 38% ordinary date was selected successfully and updated the result.
+5. Binary status consolidation — passed.
+   - User feedback: all suitable dates should look like the recommended date, while green, orange, and worst-day result statuses should collapse into violet or gray.
+   - Fix: added the sparkle to every 75%+ calendar date; mapped preferred and 75%+ result rows to violet; mapped neutral, caution, and low result rows to the same gray color and neutral icon.
+   - Post-fix evidence: `/private/tmp/polune-binary-status-comparison.png`; a non-preferred 81% day rendered violet, and a 26% day rendered gray. Both remained selectable and updated the result.
 
 ## Remaining test gap
 

@@ -463,11 +463,11 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .day-number { margin-bottom: -2px; font-size: 18px; line-height: 24px; }
 .day-meta { display: inline-flex; align-items: center; justify-content: center; gap: 2px; font-size: 14px; line-height: 18px; }
 .day-meta img { width: 14px; height: 14px; }
-.status-low { color: var(--red); }
-.status-excellent { color: var(--brand-mid); }
-.status-neutral { color: var(--muted); }
-.status-good { color: var(--green); }
-.status-caution { color: var(--orange); }
+.status-low,
+.status-neutral,
+.status-caution { color: var(--muted); }
+.status-excellent,
+.status-good { color: var(--brand-mid); }
 
 .featured-card {
   position: relative;
@@ -1868,11 +1868,6 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 }
 .calendar-peek-day.is-suitable small,
 .calendar-peek-day.is-suitable small strong { color: #b2a8ff; }
-.calendar-peek-day.is-preferred small { color: #c0b8ff; }
-.calendar-peek-day.is-weak .calendar-moon {
-  filter: saturate(.45) brightness(.66) drop-shadow(0 0 5px rgba(181,194,255,.04));
-  opacity: .66;
-}
 .calendar-best-mark {
   position: absolute;
   top: 5px;
@@ -1924,10 +1919,6 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   opacity: 1;
 }
 .calendar-month-grid button.is-suitable small { color: #b2a8ff; }
-.calendar-month-grid button.is-weak .calendar-moon {
-  filter: saturate(.45) brightness(.66) drop-shadow(0 0 5px rgba(181,194,255,.04));
-  opacity: .66;
-}
 .calendar-month-grid button .calendar-best-mark { top: 4px; right: 4px; }
 
 .result-screen .score-sheet-backdrop {

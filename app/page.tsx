@@ -183,11 +183,11 @@ const ratingLabels: Record<Rating, string> = {
 };
 
 const statusIcons: Record<Rating, string> = {
-  low: "/figma/status-low.svg",
+  low: "/figma/status-neutral.svg",
   excellent: "/figma/status-excellent.svg",
   neutral: "/figma/status-neutral.svg",
-  good: "/figma/status-good.svg",
-  caution: "/figma/status-caution.svg",
+  good: "/figma/status-excellent.svg",
+  caution: "/figma/status-neutral.svg",
 };
 
 type ResultCopy = { verdict: string; advice: string };
@@ -1166,18 +1166,17 @@ function ResultCalendar({
           {peekDays.map((day) => {
             const isPreferred = day.id === preferredId;
             const isSuitable = isPreferred || day.rating === "good";
-            const isWeak = day.rating === "low";
             return <button
               type="button"
               key={day.id}
-              className={`calendar-peek-day ${isSuitable ? "is-suitable" : ""} ${isPreferred ? "is-preferred" : ""} ${isWeak ? "is-weak" : ""} ${day.id === activeId ? "selected" : ""}`}
+              className={`calendar-peek-day ${isSuitable ? "is-suitable" : ""} ${isPreferred ? "is-preferred" : ""} ${day.id === activeId ? "selected" : ""}`}
               onClick={() => onSelect(day)}
               aria-label={`${day.longDate}: ${day.score}%${isPreferred ? ", лучший день" : isSuitable ? ", подходит" : ""}`}
             >
               <span className="calendar-day-moon">
                 <MoonPhaseIllustration angle={day.moonPhaseAngle} label={day.moonPhaseLabel} compact />
               </span>
-              {isPreferred ? <Sparkle className="calendar-best-mark" weight="fill" aria-hidden="true" /> : null}
+              {isSuitable ? <Sparkle className="calendar-best-mark" weight="fill" aria-hidden="true" /> : null}
               <small><strong>{day.day}</strong><span>{day.weekday}</span></small>
             </button>
           })}
@@ -1194,11 +1193,10 @@ function ResultCalendar({
                 {group.days.map((day, index) => {
                   const isPreferred = day.id === preferredId;
                   const isSuitable = isPreferred || day.rating === "good";
-                  const isWeak = day.rating === "low";
                   return <button
                     type="button"
                     key={day.id}
-                    className={`${isSuitable ? "is-suitable" : ""} ${isPreferred ? "is-preferred" : ""} ${isWeak ? "is-weak" : ""} ${day.id === activeId ? "selected" : ""}`}
+                    className={`${isSuitable ? "is-suitable" : ""} ${isPreferred ? "is-preferred" : ""} ${day.id === activeId ? "selected" : ""}`}
                     onClick={() => onSelect(day)}
                     aria-label={`${day.longDate}: ${day.score}%${isPreferred ? ", лучший день" : isSuitable ? ", подходит" : ""}`}
                     style={index === 0
@@ -1208,7 +1206,7 @@ function ResultCalendar({
                     <span className="calendar-day-moon">
                       <MoonPhaseIllustration angle={day.moonPhaseAngle} label={day.moonPhaseLabel} compact />
                     </span>
-                    {isPreferred ? <Sparkle className="calendar-best-mark" weight="fill" aria-hidden="true" /> : null}
+                    {isSuitable ? <Sparkle className="calendar-best-mark" weight="fill" aria-hidden="true" /> : null}
                     <small>{day.day}</small>
                   </button>
                 })}
@@ -1272,7 +1270,7 @@ export default function Home() {
   const preferredId = pickPreferredDay(days).id;
   const generalPreferredId = pickPreferredDay(generalDays).id;
   const personalRecommendationChanged = Boolean(personalizedCalendar && preferredId !== generalPreferredId);
-  const activeDisplayRating: Rating = isPreferredInResultWindow ? "excellent" : active.rating;
+  const activeDisplayRating: Rating = isPreferredInResultWindow || active.rating === "good" ? "excellent" : "neutral";
   const resultPresentation = buildResultPresentation(intent, active, isPreferredInResultWindow);
   const pendingResultPresentation = pendingReveal
     ? buildResultPresentation(pendingReveal.intent, pendingReveal.day, pendingReveal.day.isPreferred)
