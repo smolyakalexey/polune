@@ -53,7 +53,6 @@ import RevealTransition from "./reveal-transition";
 import type { Icon } from "@phosphor-icons/react";
 import {
   AirplaneTilt,
-  ArrowsLeftRight,
   Bed,
   BookOpenText,
   Briefcase,
@@ -64,9 +63,7 @@ import {
   Check,
   ChatCircle,
   Clock,
-  Compass,
   CookingPot,
-  Crosshair,
   FlowerLotus,
   Gift,
   GlobeHemisphereEast,
@@ -181,6 +178,20 @@ const ratingLabels: Record<Rating, string> = {
   good: "хороший день",
   caution: "умеренное совпадение",
 };
+
+function factorMatchText(score: number) {
+  if (score >= 75) return "хорошо совпадает";
+  if (score >= 50) return "скорее совпадает";
+  if (score >= 25) return "совпадает слабо";
+  return "почти не совпадает";
+}
+
+function scoreConclusion(score: number) {
+  if (score >= 75) return "день хорошо совпадает с правилами выбранного дела";
+  if (score >= 50) return "день совпадает с правилами дела частично";
+  if (score >= 25) return "совпадение слабое — лучше действовать без лишнего риска";
+  return "день заметно расходится с правилами этого дела";
+}
 
 const statusIcons: Record<Rating, string> = {
   low: "/figma/status-low-v2.svg",
@@ -548,12 +559,12 @@ function ScoreInfoSheet({ day, onClose }: { day: Day; onClose: () => void }) {
           {isPersonalized ? (
             <>
               <div className="score-factor">
-                <div><span>общая основа · {Math.round(generalWeight * 100)}%</span><strong>{day.generalScore} / 100</strong></div>
+                <div><span>дело и дата · {Math.round(generalWeight * 100)}%</span><strong>{day.generalScore} / 100</strong></div>
                 <span className="score-track"><span style={{ width: `${day.generalScore}%` }} /></span>
-                <small>фаза Луны {day.phaseScore} · знак Луны {day.zodiacScore}</small>
+                <small>{keepRussianPrepositionsWithNextWord(`ритм дня ${factorMatchText(day.phaseScore)} с правилами дела; положение Луны ${factorMatchText(day.zodiacScore)}`)}</small>
               </div>
               <div className="score-factor">
-                <div><span>личные факторы · {Math.round(day.personalWeight! * 100)}%</span><strong>{day.personalScore} / 100</strong></div>
+                <div><span>ваш профиль · {Math.round(day.personalWeight! * 100)}%</span><strong>{day.personalScore} / 100</strong></div>
                 <span className="score-track"><span style={{ width: `${day.personalScore}%` }} /></span>
                 <small>{keepRussianPrepositionsWithNextWord(day.personalLevel === "date"
                   ? "по дате рождения"
@@ -562,32 +573,28 @@ function ScoreInfoSheet({ day, onClose }: { day: Day; onClose: () => void }) {
                     : "по дате, времени и месту рождения")}</small>
               </div>
               <div className="score-personal-details" aria-label="использованные личные факторы">
-                <div><span>натальное Солнце{day.personalLevel === "approximate" ? " · 55% личной части" : day.personalLevel === "exact" ? " · 40% личной части" : ""}</span><strong>{day.sunScore} / 100</strong></div>
-                {day.moonScore !== undefined && <div><span>натальная Луна · {day.personalLevel === "exact" ? "35" : "45"}% личной части</span><strong>{day.moonScore} / 100</strong></div>}
-                {day.ascendantScore !== undefined && <div><span>Асцендент · 25% личной части</span><strong>{day.ascendantScore} / 100</strong></div>}
+                <div><span>положение Солнца при рождении{day.personalLevel === "approximate" ? " · 55% личной части" : day.personalLevel === "exact" ? " · 40% личной части" : ""}</span><strong>{day.sunScore} / 100</strong></div>
+                {day.moonScore !== undefined && <div><span>положение Луны при рождении · {day.personalLevel === "exact" ? "35" : "45"}% личной части</span><strong>{day.moonScore} / 100</strong></div>}
+                {day.ascendantScore !== undefined && <div><span>рассчитанный Асцендент · 25% личной части</span><strong>{day.ascendantScore} / 100</strong></div>}
               </div>
-              <p className="score-personal-note">{keepRussianPrepositionsWithNextWord("личная часть сравнивает Луну выбранного дня с рассчитанными точками карты рождения по символической шкале аспектов")}</p>
+              <p className="score-personal-note">{keepRussianPrepositionsWithNextWord("мы сравниваем Луну выбранного дня с положениями на момент рождения. это символическое правило методики, а не прогноз")}</p>
             </>
           ) : (
             <>
               <div className="score-factor">
-                <div><span>фаза луны · {Math.round(PHASE_WEIGHT * 100)}%</span><strong>{day.phaseScore} / 100</strong></div>
+                <div><span>ритм дня · {Math.round(PHASE_WEIGHT * 100)}%</span><strong>{day.phaseScore} / 100</strong></div>
                 <span className="score-track"><span style={{ width: `${day.phaseScore}%` }} /></span>
+                <small>{keepRussianPrepositionsWithNextWord(`${day.moonPhaseLabel}: ${factorMatchText(day.phaseScore)} с правилами дела`)}</small>
               </div>
               <div className="score-factor">
-                <div><span>луна в&nbsp;{day.zodiacSignName.toLowerCase()} · {Math.round(ZODIAC_WEIGHT * 100)}%</span><strong>{day.zodiacScore} / 100</strong></div>
+                <div><span>характер дня · {Math.round(ZODIAC_WEIGHT * 100)}%</span><strong>{day.zodiacScore} / 100</strong></div>
                 <span className="score-track"><span style={{ width: `${day.zodiacScore}%` }} /></span>
+                <small>{keepRussianPrepositionsWithNextWord(`Луна в ${day.zodiacSignName.toLowerCase()}: ${factorMatchText(day.zodiacScore)} с правилами дела`)}</small>
               </div>
             </>
           )}
         </div>
-        <div className="score-technical" aria-label="технические параметры расчёта">
-          <div><MoonStars weight="regular" aria-hidden="true" /><span>фазовый угол дня</span><strong>{Math.round(day.moonPhaseAngle)}°</strong></div>
-          <div><Crosshair weight="regular" aria-hidden="true" /><span>точка выбранного дела</span><strong>{day.targetPhaseAngle}°</strong></div>
-          <div><ArrowsLeftRight weight="regular" aria-hidden="true" /><span>расстояние между точками</span><strong>{Math.round(day.phaseDistance)}°</strong></div>
-          <div><Compass weight="regular" aria-hidden="true" /><span>долгота луны</span><strong>{Math.round(day.lunarLongitude)}°</strong></div>
-          <div><GlobeHemisphereEast weight="regular" aria-hidden="true" /><span>луна в&nbsp;знаке</span><strong>{day.zodiacSignName.toLowerCase()}</strong></div>
-        </div>
+        <p className="score-human-summary"><strong>что это значит</strong><span>{keepRussianPrepositionsWithNextWord(scoreConclusion(day.score))}</span></p>
       </section>
     </div>
   );
@@ -1394,7 +1401,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const themeColor = "#020002";
+    const themeColor = "#010506";
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", themeColor);
   }, [screen]);
 
