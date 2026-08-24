@@ -1984,13 +1984,6 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   background: rgba(98,99,245,.1);
   box-shadow: inset 0 0 0 1.5px rgba(155,140,255,.72), 0 0 18px rgba(98,99,245,.12);
 }
-.calendar-plan-inline {
-  width: 12px;
-  height: 12px;
-  flex: 0 0 auto;
-  color: #b3a8ff;
-  filter: drop-shadow(0 0 5px rgba(155,140,255,.42));
-}
 .calendar-plan-center {
   position: absolute;
   top: 50%;

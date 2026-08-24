@@ -1392,9 +1392,10 @@ function ResultCalendar({
                   >
                     <span className="calendar-day-moon">
                       <MoonPhaseIllustration angle={day.moonPhaseAngle} label={day.moonPhaseLabel} compact />
+                      {isPlanned ? <CalendarCheck className="calendar-plan-center" weight="bold" aria-hidden="true" /> : null}
                     </span>
                     {isSuitable ? <Sparkle className="calendar-best-mark" weight="fill" aria-hidden="true" /> : null}
-                    <small><span>{day.day}</span>{isPlanned ? <CalendarCheck className="calendar-plan-inline" weight="bold" aria-hidden="true" /> : null}</small>
+                    <small><span>{day.day}</span></small>
                   </button>
                 })}
               </div>
