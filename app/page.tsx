@@ -628,9 +628,13 @@ function PersonalizationSheet({
   const [placeInputFocused, setPlaceInputFocused] = useState(false);
   const [formError, setFormError] = useState<"date" | "time" | "place" | null>(null);
   const datePickerRef = useRef<HTMLInputElement>(null);
-  const profileBackdropRef = useRef<HTMLDivElement>(null);
   const profileScrollRef = useRef<HTMLDivElement>(null);
+  const placeFieldRef = useRef<HTMLDivElement>(null);
+  const placeInputRef = useRef<HTMLInputElement>(null);
   const placeResultsRef = useRef<HTMLDivElement>(null);
+  const placeScrollOriginRef = useRef(0);
+  const placeSearchActiveRef = useRef(false);
+  const placeSelectionPendingRef = useRef(false);
   const birthDate = parseBirthDateInput(birthDateInput);
   const zodiac = birthDate ? zodiacForBirthDate(birthDate) : null;
 
@@ -681,50 +685,56 @@ function PersonalizationSheet({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
+  function openPlaceSearch() {
+    const scroller = profileScrollRef.current;
+    const field = placeFieldRef.current;
+    if (!scroller || !field) return;
+    if (!placeSearchActiveRef.current) {
+      placeScrollOriginRef.current = scroller.scrollTop;
+      placeSearchActiveRef.current = true;
+    }
+    scroller.classList.add("is-place-active");
+    const targetTop = field.getBoundingClientRect().top
+      - scroller.getBoundingClientRect().top
+      + scroller.scrollTop
+      - 14;
+    scroller.scrollTo({ top: Math.max(0, targetTop), behavior: "auto" });
+    setPlaceInputFocused(true);
+  }
+
+  function closePlaceSearch({ restoreScroll = true } = {}) {
+    placeSearchActiveRef.current = false;
+    profileScrollRef.current?.classList.remove("is-place-active");
+    setPlaceInputFocused(false);
+    if (!restoreScroll) return;
+    window.requestAnimationFrame(() => {
+      profileScrollRef.current?.scrollTo({
+        top: placeScrollOriginRef.current,
+        behavior: "smooth",
+      });
+    });
+  }
+
   useEffect(() => {
     if (!placeInputFocused) return;
-    const resetScroll = () => profileScrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
-    const animationFrame = window.requestAnimationFrame(resetScroll);
-    const keyboardTimer = window.setTimeout(resetScroll, 320);
+    const alignPlaceSearch = () => {
+      const scroller = profileScrollRef.current;
+      const field = placeFieldRef.current;
+      if (!scroller || !field) return;
+      const targetTop = field.getBoundingClientRect().top
+        - scroller.getBoundingClientRect().top
+        + scroller.scrollTop
+        - 14;
+      scroller.scrollTo({ top: Math.max(0, targetTop), behavior: "auto" });
+    };
+    const animationFrame = window.requestAnimationFrame(alignPlaceSearch);
+    const focusTimer = window.setTimeout(alignPlaceSearch, 60);
+    const keyboardTimer = window.setTimeout(alignPlaceSearch, 360);
 
     return () => {
       window.cancelAnimationFrame(animationFrame);
+      window.clearTimeout(focusTimer);
       window.clearTimeout(keyboardTimer);
-    };
-  }, [placeInputFocused]);
-
-  useEffect(() => {
-    const backdrop = profileBackdropRef.current;
-    const viewport = window.visualViewport;
-    if (!backdrop || !placeInputFocused || !viewport) return;
-
-    const syncWithVisualViewport = () => {
-      const bodyTop = document.body.getBoundingClientRect().top;
-      const visualTop = Math.max(
-        0,
-        viewport.offsetTop,
-        viewport.pageTop - window.scrollY,
-        bodyTop < 0 ? -bodyTop : 0,
-      );
-      backdrop.style.setProperty("--profile-visual-top", `${visualTop}px`);
-      backdrop.style.setProperty("--profile-visual-height", `${viewport.height}px`);
-    };
-
-    const animationFrame = window.requestAnimationFrame(syncWithVisualViewport);
-    const settleTimer = window.setTimeout(syncWithVisualViewport, 60);
-    const keyboardTimer = window.setTimeout(syncWithVisualViewport, 360);
-    syncWithVisualViewport();
-    viewport.addEventListener("resize", syncWithVisualViewport);
-    viewport.addEventListener("scroll", syncWithVisualViewport);
-
-    return () => {
-      window.cancelAnimationFrame(animationFrame);
-      window.clearTimeout(settleTimer);
-      window.clearTimeout(keyboardTimer);
-      viewport.removeEventListener("resize", syncWithVisualViewport);
-      viewport.removeEventListener("scroll", syncWithVisualViewport);
-      backdrop.style.removeProperty("--profile-visual-top");
-      backdrop.style.removeProperty("--profile-visual-height");
     };
   }, [placeInputFocused]);
 
@@ -773,10 +783,10 @@ function PersonalizationSheet({
   }
 
   return (
-    <div ref={profileBackdropRef} className={`profile-sheet-backdrop ${placeInputFocused ? "is-place-active" : ""}`} role="presentation" onMouseDown={(event) => {
+    <div className="profile-sheet-backdrop" role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose();
     }}>
-      <section className={`profile-sheet ${placeInputFocused ? "is-place-active" : ""}`} role="dialog" aria-modal="true" aria-labelledby="profile-sheet-title">
+      <section className="profile-sheet" role="dialog" aria-modal="true" aria-labelledby="profile-sheet-title">
         <header>
           <div>
             <p>персонализация</p>
@@ -787,7 +797,7 @@ function PersonalizationSheet({
           </button>
         </header>
 
-        <div className="profile-sheet-scroll" ref={profileScrollRef}>
+        <div className={`profile-sheet-scroll ${placeInputFocused ? "is-place-active" : ""}`} ref={profileScrollRef}>
         <p className="profile-sheet-lead">{keepRussianPrepositionsWithNextWord("укажите дату — знак зодиака определится автоматически. данные сохраняются только на этом устройстве.")}</p>
         <label className="profile-field">
           <span>дата рождения</span>
@@ -890,66 +900,76 @@ function PersonalizationSheet({
             </div>
           </fieldset>
         )}
-        <label className="profile-field profile-place-field">
-          <span>место рождения</span>
-          <span className="profile-input-shell profile-place-shell">
-            <input
-              value={birthPlace}
-              onChange={(event) => {
-                const nextPlace = event.target.value.slice(0, 80);
-                setBirthPlace(nextPlace);
-                if (!birthPlaceMatchesSelection(nextPlace, selectedPlace?.label)) setSelectedPlace(null);
-                setPlaceResults([]);
-                setPlaceSearchPending(false);
-                setPlaceSearchFailed(false);
-                setFormError(null);
-              }}
-              placeholder="город"
-              maxLength={80}
-              autoComplete="address-level2"
-              aria-invalid={formError === "place"}
-              role="combobox"
-              aria-autocomplete="list"
-              aria-expanded={placeResults.length > 0}
-              aria-controls="profile-place-results"
-              onPointerDown={() => setPlaceInputFocused(true)}
-              onFocus={() => setPlaceInputFocused(true)}
-              onBlur={(event) => {
-                const nextFocused = event.relatedTarget;
-                if (nextFocused instanceof Node && placeResultsRef.current?.contains(nextFocused)) return;
-                setPlaceInputFocused(false);
-              }}
-            />
-          </span>
-          <small>{selectedPlace
-            ? "место и часовой пояс проверены"
-            : placeSearchPending
-              ? "ищем город…"
-              : placeSearchFailed
-                ? "не удалось загрузить подсказки"
-                : normalizeBirthPlace(birthPlace).length < 3
-                  ? "введите минимум три буквы"
-                  : "выберите город из списка"}</small>
-        </label>
-        {placeResults.length > 0 && (
-          <div ref={placeResultsRef} id="profile-place-results" className="profile-place-results" role="listbox" aria-label="Найденные места">
-            {placeResults.map((place) => (
-              <button type="button" role="option" aria-selected="false" key={place.id} onClick={() => {
-                setSelectedPlace(place);
-                setBirthPlace(place.label);
-                setPlaceResults([]);
-                setPlaceSearchPending(false);
-                setPlaceSearchFailed(false);
-                setPlaceInputFocused(false);
-                setFormError(null);
-              }}>
-                <span>{place.label}</span>
-                <small>{place.timeZone}</small>
-              </button>
-            ))}
-            <small>{placeSearchAttribution}</small>
-          </div>
-        )}
+        <div ref={placeFieldRef} className={`profile-place-block ${placeInputFocused ? "is-active" : ""}`}>
+          <label className="profile-field profile-place-field">
+            <span>место рождения</span>
+            <span className="profile-input-shell profile-place-shell">
+              <input
+                ref={placeInputRef}
+                value={birthPlace}
+                onChange={(event) => {
+                  const nextPlace = event.target.value.slice(0, 80);
+                  setBirthPlace(nextPlace);
+                  if (!birthPlaceMatchesSelection(nextPlace, selectedPlace?.label)) setSelectedPlace(null);
+                  setPlaceResults([]);
+                  setPlaceSearchPending(false);
+                  setPlaceSearchFailed(false);
+                  setFormError(null);
+                }}
+                placeholder="город"
+                maxLength={80}
+                autoComplete="address-level2"
+                aria-invalid={formError === "place"}
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded={placeResults.length > 0}
+                aria-controls="profile-place-results"
+                onPointerDown={openPlaceSearch}
+                onFocus={openPlaceSearch}
+                onBlur={(event) => {
+                  if (placeSelectionPendingRef.current) return;
+                  const nextFocused = event.relatedTarget;
+                  if (nextFocused instanceof Node && placeResultsRef.current?.contains(nextFocused)) return;
+                  closePlaceSearch();
+                }}
+              />
+            </span>
+            <small>{selectedPlace
+              ? "место и часовой пояс проверены"
+              : placeSearchPending
+                ? "ищем город…"
+                : placeSearchFailed
+                  ? "не удалось загрузить подсказки"
+                  : normalizeBirthPlace(birthPlace).length < 3
+                    ? "введите минимум три буквы"
+                    : "выберите город из списка"}</small>
+          </label>
+          {placeResults.length > 0 && (
+            <div ref={placeResultsRef} id="profile-place-results" className="profile-place-results" role="listbox" aria-label="Найденные места">
+              {placeResults.map((place) => (
+                <button type="button" role="option" aria-selected="false" key={place.id} onPointerDown={() => {
+                  placeSelectionPendingRef.current = true;
+                }} onPointerCancel={() => {
+                  placeSelectionPendingRef.current = false;
+                }} onClick={() => {
+                  setSelectedPlace(place);
+                  setBirthPlace(place.label);
+                  setPlaceResults([]);
+                  setPlaceSearchPending(false);
+                  setPlaceSearchFailed(false);
+                  placeSelectionPendingRef.current = false;
+                  placeInputRef.current?.blur();
+                  closePlaceSearch();
+                  setFormError(null);
+                }}>
+                  <span>{place.label}</span>
+                  <small>{place.timeZone}</small>
+                </button>
+              ))}
+              <small>{placeSearchAttribution}</small>
+            </div>
+          )}
+        </div>
         {formError === "date" && <p className="profile-inline-error" role="status">введите корректную дату в&nbsp;формате дд.мм.гггг</p>}
         {formError === "time" && <p className="profile-inline-error" role="status">введите время от&nbsp;00:00 до&nbsp;23:59</p>}
         {formError === "place" && <p className="profile-inline-error" role="status">найдите и выберите населённый пункт</p>}

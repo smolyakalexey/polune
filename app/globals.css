@@ -1074,6 +1074,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
 }
+.profile-sheet-scroll.is-place-active { padding-bottom: 580px; }
 .profile-sheet-footer { padding-top: 12px; background: var(--result-surface-solid); }
 .profile-sheet-footer .profile-primary { margin-top: 0; }
 .profile-sheet-lead { margin: 18px 0 20px; color: var(--result-secondary); font-size: 15px; line-height: 22px; }
@@ -1234,7 +1235,26 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   cursor: pointer;
 }
 .profile-period-field button.selected { border-color: #9b8cff; color: #fff; background: rgba(98,99,245,.22); }
-.profile-place-results { margin-top: 8px; display: grid; gap: 5px; }
+.profile-place-block { position: relative; min-width: 0; z-index: 1; }
+.profile-place-block.is-active { z-index: 12; }
+.profile-place-results {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  left: 0;
+  z-index: 2;
+  height: 272px;
+  padding: 6px;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 18px;
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #171819;
+  box-shadow: 0 18px 48px rgba(0,0,0,.46);
+}
 .profile-place-results > button {
   width: 100%;
   min-height: 48px;
@@ -1253,20 +1273,6 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .profile-place-results > button small,
 .profile-place-results > small { color: var(--muted); font-size: 10px; line-height: 14px; }
 .profile-place-results > small { margin: 1px 4px 0; }
-.profile-sheet.is-place-active { grid-template-rows: auto minmax(0, 1fr); }
-.profile-sheet-backdrop.is-place-active {
-  inset: 0 0 auto;
-  height: var(--profile-visual-height, 100dvh);
-  align-items: flex-start;
-  transform: translate3d(0, var(--profile-visual-top, 0px), 0);
-}
-.profile-sheet-backdrop.is-place-active .profile-sheet {
-  height: 100%;
-  max-height: 100%;
-}
-.profile-sheet.is-place-active .profile-sheet-scroll > :not(.profile-place-field):not(.profile-place-results) { display: none; }
-.profile-sheet.is-place-active .profile-place-field { margin-top: 16px; }
-.profile-sheet.is-place-active .profile-sheet-footer { display: none; }
 .score-sheet {
   width: min(100%, 402px);
   padding: 24px 20px max(24px, env(safe-area-inset-bottom));
