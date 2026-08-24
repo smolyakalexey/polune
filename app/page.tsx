@@ -1047,8 +1047,8 @@ function createStarSeeds(count: number) {
     return {
       left: random() * 100,
       top: random() * 100,
-      size: intensity > .965 ? 4.2 : intensity > .86 ? 2.5 : intensity > .58 ? 1.45 : .8,
-      opacity: .26 + intensity * .72,
+      size: intensity > .96 ? 4.4 : intensity > .84 ? 2.6 : intensity > .55 ? 1.55 : .85,
+      opacity: .32 + intensity * .68,
       delay: -(random() * 7),
       duration: 3.4 + random() * 6.8,
       bright: intensity > .92,
@@ -1058,7 +1058,7 @@ function createStarSeeds(count: number) {
   });
 }
 
-const starSeeds = createStarSeeds(268);
+const starSeeds = createStarSeeds(326);
 
 function Starfield() {
   return (
@@ -1081,6 +1081,7 @@ function Starfield() {
       ))}
       <i className="shooting-star shooting-star-one" />
       <i className="shooting-star shooting-star-two" />
+      <i className="shooting-star shooting-star-three" />
     </div>
   );
 }
@@ -1748,7 +1749,7 @@ export default function Home() {
                 score: active.score,
               });
             }}>
-              <img src={statusIcons[activeDisplayRating]} alt="" />
+              <img src={statusIcons.excellent} alt="" />
               <span>{active.score}% совпадение</span>
               <Info weight="regular" aria-hidden="true" />
             </button>
