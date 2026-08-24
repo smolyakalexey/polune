@@ -3,9 +3,11 @@ import test from "node:test";
 
 import {
   activeIntention,
+  cancelIntention,
   createSavedIntention,
   parseSavedIntentions,
   replaceActiveIntention,
+  rescheduleIntention,
   withCalendarReminder,
 } from "../lib/intentions.ts";
 
@@ -85,4 +87,29 @@ test("calendar export updates reminder metadata without changing the plan", () =
     provider: "apple",
     lastAttemptedAt: "2026-08-24T14:00:00.000Z",
   });
+});
+
+test("rescheduling records the explicit date change and resets the old reminder", () => {
+  const intention = withCalendarReminder(build(), "apple", new Date("2026-08-24T13:00:00.000Z"));
+  const updated = rescheduleIntention(intention, {
+    selectedDate: "2026-08-28",
+    snapshot: { ...snapshot, score: 61, rating: "neutral" },
+    todayIso: "2026-08-24",
+    now: new Date("2026-08-24T15:00:00.000Z"),
+  });
+  assert.equal(updated.selectedDate, "2026-08-28");
+  assert.deepEqual(updated.reminder, { kind: "none" });
+  assert.deepEqual(updated.dateHistory, [{
+    fromDate: "2026-08-25",
+    toDate: "2026-08-28",
+    changedAt: "2026-08-24T15:00:00.000Z",
+    reason: "user_selected",
+  }]);
+});
+
+test("cancelling preserves the plan as history and removes it from active state", () => {
+  const cancelled = cancelIntention(build(), new Date("2026-08-24T16:00:00.000Z"));
+  assert.equal(cancelled.status, "cancelled");
+  assert.equal(cancelled.cancelledAt, "2026-08-24T16:00:00.000Z");
+  assert.equal(activeIntention([cancelled]), null);
 });

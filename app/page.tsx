@@ -32,9 +32,11 @@ import type { CalendarProvider } from "@/lib/calendar-preference";
 import {
   INTENTIONS_STORAGE_KEY,
   activeIntention,
+  cancelIntention,
   createSavedIntention,
   parseSavedIntentions,
   replaceActiveIntention,
+  rescheduleIntention,
   withCalendarReminder,
 } from "@/lib/intentions";
 import type { SavedIntention } from "@/lib/intentions";
@@ -1226,6 +1228,41 @@ function ReplacePlanSheet({
   );
 }
 
+function PlanActionsSheet({
+  plan,
+  intentLabel,
+  onClose,
+  onReschedule,
+  onReminder,
+  onCancel,
+}: {
+  plan: SavedIntention;
+  intentLabel: string;
+  onClose: () => void;
+  onReschedule: () => void;
+  onReminder: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="plan-actions-backdrop" role="presentation" onMouseDown={(event) => {
+      if (event.target === event.currentTarget) onClose();
+    }}>
+      <section className="plan-actions-sheet" role="dialog" aria-modal="true" aria-labelledby="plan-actions-title">
+        <header>
+          <div><p>ваш план</p><h2 id="plan-actions-title">{intentLabel}</h2></div>
+          <button type="button" className="round-button" onClick={onClose} aria-label="Закрыть"><X weight="regular" /></button>
+        </header>
+        <p className="plan-actions-date"><CalendarCheck weight="fill" aria-hidden="true" /> {formatPlanDate(plan.selectedDate)}</p>
+        <div className="plan-actions-list">
+          <button type="button" onClick={onReschedule}><CalendarPlus weight="regular" aria-hidden="true" /><span><strong>перенести</strong><small>выбрать другую дату в календаре</small></span></button>
+          <button type="button" onClick={onReminder}><CalendarBlank weight="regular" aria-hidden="true" /><span><strong>добавить напоминание</strong><small>открыть системный календарь</small></span></button>
+          <button type="button" className="is-cancel" onClick={onCancel}><X weight="regular" aria-hidden="true" /><span><strong>отменить план</strong><small>убрать его из ближайших</small></span></button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function ResultCalendar({
   days,
   activeId,
@@ -1234,10 +1271,12 @@ function ResultCalendar({
   savedPlan,
   currentIntentId,
   savedPlanLabel,
+  rescheduleMode,
   onExpandedChange,
   onSelect,
   onOpenSavedPlan,
   onAddReminder,
+  onCancelReschedule,
 }: {
   days: Day[];
   activeId: string;
@@ -1246,10 +1285,12 @@ function ResultCalendar({
   savedPlan: SavedIntention | null;
   currentIntentId: string;
   savedPlanLabel: string;
+  rescheduleMode: boolean;
   onExpandedChange: (expanded: boolean) => void;
   onSelect: (day: Day) => void;
   onOpenSavedPlan: () => void;
   onAddReminder: () => void;
+  onCancelReschedule: () => void;
 }) {
   const dragStart = useRef<number | null>(null);
   const todayIso = moscowDateIso();
@@ -1302,14 +1343,21 @@ function ResultCalendar({
             >
               <span className="calendar-day-moon">
                 <MoonPhaseIllustration angle={day.moonPhaseAngle} label={day.moonPhaseLabel} compact />
+                {isPlanned ? <CalendarCheck className="calendar-plan-center" weight="bold" aria-hidden="true" /> : null}
               </span>
               {isSuitable ? <Sparkle className="calendar-best-mark" weight="fill" aria-hidden="true" /> : null}
-              <small><strong>{day.day}</strong>{isPlanned ? <CalendarCheck className="calendar-plan-inline" weight="bold" aria-hidden="true" /> : null}<span>{day.weekday}</span></small>
+              <small><strong>{day.day}</strong><span>{day.weekday}</span></small>
             </button>
           })}
         </div>
       ) : (
         <div className="calendar-months">
+          {rescheduleMode && (
+            <div className="calendar-reschedule-banner" role="status">
+              <span><strong>выберите новую дату</strong><small>план изменится только после нажатия на день</small></span>
+              <button type="button" onClick={onCancelReschedule}>отмена</button>
+            </div>
+          )}
           {savedPlan && (
             <article className="calendar-saved-plan">
               <button type="button" className="calendar-saved-plan-main" onClick={onOpenSavedPlan}>
@@ -1386,9 +1434,13 @@ export default function Home() {
   const [activeSavedPlan, setActiveSavedPlan] = useState<SavedIntention | null>(null);
   const [planSuccess, setPlanSuccess] = useState<SavedIntention | null>(null);
   const [pendingPlanReplacement, setPendingPlanReplacement] = useState<SavedIntention | null>(null);
+  const [planActionsOpen, setPlanActionsOpen] = useState(false);
+  const [rescheduleMode, setRescheduleMode] = useState(false);
+  const [planStatus, setPlanStatus] = useState<"rescheduled" | "cancelled" | null>(null);
   const calendarStatusTimer = useRef<number | null>(null);
   const feedbackStatusTimer = useRef<number | null>(null);
   const dayMotionTimer = useRef<number | null>(null);
+  const planStatusTimer = useRef<number | null>(null);
   const personalizationBubbleHasAppeared = useRef(false);
 
   const resolvedPersonalization = useMemo(() => {
@@ -1555,17 +1607,18 @@ export default function Home() {
     if (calendarStatusTimer.current) window.clearTimeout(calendarStatusTimer.current);
     if (feedbackStatusTimer.current) window.clearTimeout(feedbackStatusTimer.current);
     if (dayMotionTimer.current) window.clearTimeout(dayMotionTimer.current);
+    if (planStatusTimer.current) window.clearTimeout(planStatusTimer.current);
   }, []);
 
   useEffect(() => {
-    const overlaySheetOpen = pickerOpen || calendarActionOpen || scoreInfoOpen || personalizationOpen || Boolean(planSuccess) || Boolean(pendingPlanReplacement);
+    const overlaySheetOpen = pickerOpen || calendarActionOpen || scoreInfoOpen || personalizationOpen || planActionsOpen || Boolean(planSuccess) || Boolean(pendingPlanReplacement);
     const themeColor = overlaySheetOpen || calendarExpanded
       ? "#0c0d0e"
       : screen === "result"
         ? "#090b0c"
         : "#010506";
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", themeColor);
-  }, [calendarActionOpen, calendarExpanded, pendingPlanReplacement, personalizationOpen, pickerOpen, planSuccess, scoreInfoOpen, screen]);
+  }, [calendarActionOpen, calendarExpanded, pendingPlanReplacement, personalizationOpen, pickerOpen, planActionsOpen, planSuccess, scoreInfoOpen, screen]);
 
   useEffect(() => {
     const restoreFromUrl = () => {
@@ -1798,6 +1851,73 @@ export default function Home() {
       selectedDate: updated.selectedDate,
       score: updated.snapshot.score,
       methodVersion: updated.snapshot.methodVersion,
+    });
+  }
+
+  function showPlanStatus(status: "rescheduled" | "cancelled") {
+    setPlanStatus(status);
+    if (planStatusTimer.current) window.clearTimeout(planStatusTimer.current);
+    planStatusTimer.current = window.setTimeout(() => setPlanStatus(null), 3200);
+  }
+
+  function beginPlanReschedule() {
+    setPlanActionsOpen(false);
+    setRescheduleMode(true);
+    setCalendarExpanded(true);
+    trackEvent("intention_reschedule_opened", {
+      intentId: savedPlan?.intentId,
+      selectedDate: savedPlan?.selectedDate,
+      score: savedPlan?.snapshot.score,
+    });
+  }
+
+  function rescheduleSavedPlan(day: Day) {
+    if (!savedPlan || savedPlan.intentId !== intent.id) return;
+    const isPreferredDay = days.some((candidate) => candidate.id === day.id && candidate.isPreferred);
+    const presentation = buildResultPresentation(intent, day, isPreferredDay);
+    const updated = rescheduleIntention(savedPlan, {
+      selectedDate: day.dateIso,
+      todayIso: moscowDateIso(),
+      snapshot: {
+        methodVersion,
+        score: day.score,
+        rating: isPreferredDay || day.rating === "good" ? "excellent" : "neutral",
+        personalizationLevel: resolvedPersonalization?.profile.level ?? "none",
+        verdict: presentation.heading.replaceAll("\u00a0", " "),
+      },
+    });
+    if (updated === savedPlan) {
+      setRescheduleMode(false);
+      setCalendarExpanded(false);
+      return;
+    }
+    persistIntentions(savedIntentions.map((candidate) => candidate.id === updated.id ? updated : candidate));
+    setActiveId(day.id);
+    setRescheduleMode(false);
+    setCalendarExpanded(false);
+    window.history.pushState({}, "", resultUrl(intent.id, day.dateIso, methodVersion));
+    showPlanStatus("rescheduled");
+    trackEvent("intention_rescheduled", {
+      intentId: updated.intentId,
+      archetype: intent.archetype,
+      selectedDate: updated.selectedDate,
+      score: updated.snapshot.score,
+      methodVersion: updated.snapshot.methodVersion,
+    });
+  }
+
+  function cancelSavedPlan() {
+    if (!savedPlan) return;
+    const cancelled = cancelIntention(savedPlan);
+    persistIntentions(savedIntentions.map((candidate) => candidate.id === cancelled.id ? cancelled : candidate));
+    setPlanActionsOpen(false);
+    setRescheduleMode(false);
+    showPlanStatus("cancelled");
+    trackEvent("intention_cancelled", {
+      intentId: cancelled.intentId,
+      selectedDate: cancelled.selectedDate,
+      score: cancelled.snapshot.score,
+      methodVersion: cancelled.snapshot.methodVersion,
     });
   }
 
@@ -2067,7 +2187,7 @@ export default function Home() {
                 <small>{keepRussianPrepositionsWithNextWord(personalizationResultLabel)}</small>
               </button>
             )}
-            <button type="button" className={`result-calendar-action ${isCurrentResultPlanned ? "is-planned" : ""}`} onClick={planCurrentResult}>
+            <button type="button" className={`result-calendar-action ${isCurrentResultPlanned ? "is-planned" : ""}`} onClick={isCurrentResultPlanned ? () => setPlanActionsOpen(true) : planCurrentResult}>
               {isCurrentResultPlanned ? <><Check weight="bold" aria-hidden="true" /> запланировано</> : "запланировать"}
             </button>
           </div>
@@ -2104,6 +2224,11 @@ export default function Home() {
               : "календарь не открылся"}
         </p>
       )}
+      {planStatus && (
+        <p className="calendar-action-toast plan-status-toast" aria-live="polite">
+          {planStatus === "rescheduled" ? "план перенесён · обновите напоминание" : "план отменён"}
+        </p>
+      )}
 
       {!pendingReveal && (
         <ResultCalendar
@@ -2114,8 +2239,10 @@ export default function Home() {
           savedPlan={savedPlan}
           currentIntentId={intent.id}
           savedPlanLabel={savedPlanLabel}
+          rescheduleMode={rescheduleMode}
           onExpandedChange={(expanded) => {
             setCalendarExpanded(expanded);
+            if (!expanded) setRescheduleMode(false);
             if (expanded) {
               trackEvent("calendar_expanded", {
                 intentId: intent.id,
@@ -2126,11 +2253,18 @@ export default function Home() {
             }
           }}
           onSelect={(day) => {
-            chooseDay(day);
-            if (calendarExpanded) setCalendarExpanded(false);
+            if (rescheduleMode) rescheduleSavedPlan(day);
+            else {
+              chooseDay(day);
+              if (calendarExpanded) setCalendarExpanded(false);
+            }
           }}
           onOpenSavedPlan={openSavedPlan}
           onAddReminder={() => performCalendarAction(preferredCalendarProvider)}
+          onCancelReschedule={() => {
+            setRescheduleMode(false);
+            setCalendarExpanded(false);
+          }}
         />
       )}
 
@@ -2178,6 +2312,19 @@ export default function Home() {
           nextLabel={intent.label}
           onClose={() => setPendingPlanReplacement(null)}
           onReplace={() => commitPlan(pendingPlanReplacement, true)}
+        />
+      )}
+      {planActionsOpen && savedPlan && (
+        <PlanActionsSheet
+          plan={savedPlan}
+          intentLabel={savedPlanLabel}
+          onClose={() => setPlanActionsOpen(false)}
+          onReschedule={beginPlanReschedule}
+          onReminder={() => {
+            setPlanActionsOpen(false);
+            performCalendarAction(preferredCalendarProvider);
+          }}
+          onCancel={cancelSavedPlan}
         />
       )}
       {personalizationOpen && (

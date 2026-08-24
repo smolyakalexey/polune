@@ -181,3 +181,46 @@ export function withCalendarReminder(
     updatedAt: timestamp,
   };
 }
+
+export function rescheduleIntention(
+  intention: SavedIntention,
+  input: {
+    selectedDate: string;
+    snapshot: IntentionSnapshot;
+    todayIso: string;
+    now?: Date;
+  },
+): SavedIntention {
+  if (intention.status !== "planned") throw new Error("Перенести можно только активный план");
+  if (!isCalendarDate(input.selectedDate) || input.selectedDate < input.todayIso) {
+    throw new Error("Нельзя перенести план на прошедшую или некорректную дату");
+  }
+  if (!isSnapshot(input.snapshot)) throw new Error("Некорректный снимок рекомендации");
+  if (input.selectedDate === intention.selectedDate) return intention;
+
+  const timestamp = (input.now ?? new Date()).toISOString();
+  return {
+    ...intention,
+    selectedDate: input.selectedDate,
+    snapshot: input.snapshot,
+    reminder: { kind: "none" },
+    dateHistory: [...intention.dateHistory, {
+      fromDate: intention.selectedDate,
+      toDate: input.selectedDate,
+      changedAt: timestamp,
+      reason: "user_selected",
+    }],
+    updatedAt: timestamp,
+  };
+}
+
+export function cancelIntention(intention: SavedIntention, now = new Date()): SavedIntention {
+  if (intention.status !== "planned") throw new Error("Отменить можно только активный план");
+  const timestamp = now.toISOString();
+  return {
+    ...intention,
+    status: "cancelled",
+    cancelledAt: timestamp,
+    updatedAt: timestamp,
+  };
+}
