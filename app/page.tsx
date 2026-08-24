@@ -1141,14 +1141,14 @@ function PlanSuccessScreen({
   intentLabel,
   day,
   onClose,
-  onOpenPlans,
+  onGoHome,
   onAddReminder,
 }: {
   plan: SavedIntention;
   intentLabel: string;
   day: Day;
   onClose: () => void;
-  onOpenPlans: () => void;
+  onGoHome: () => void;
   onAddReminder: () => void;
 }) {
   useEffect(() => {
@@ -1189,7 +1189,7 @@ function PlanSuccessScreen({
         </div>
 
         <div className="plan-success-actions">
-          <button type="button" onClick={onOpenPlans}>открыть мои планы</button>
+          <button type="button" onClick={onGoHome}>на главную</button>
           <button type="button" onClick={onAddReminder}>добавить напоминание</button>
         </div>
       </div>
@@ -1304,8 +1304,7 @@ function ResultCalendar({
                 <MoonPhaseIllustration angle={day.moonPhaseAngle} label={day.moonPhaseLabel} compact />
               </span>
               {isSuitable ? <Sparkle className="calendar-best-mark" weight="fill" aria-hidden="true" /> : null}
-              {isPlanned ? <CalendarCheck className="calendar-plan-mark" weight="fill" aria-hidden="true" /> : null}
-              <small><strong>{day.day}</strong><span>{day.weekday}</span></small>
+              <small><strong>{day.day}</strong>{isPlanned ? <CalendarCheck className="calendar-plan-inline" weight="bold" aria-hidden="true" /> : null}<span>{day.weekday}</span></small>
             </button>
           })}
         </div>
@@ -1347,8 +1346,7 @@ function ResultCalendar({
                       <MoonPhaseIllustration angle={day.moonPhaseAngle} label={day.moonPhaseLabel} compact />
                     </span>
                     {isSuitable ? <Sparkle className="calendar-best-mark" weight="fill" aria-hidden="true" /> : null}
-                    {isPlanned ? <CalendarCheck className="calendar-plan-mark" weight="fill" aria-hidden="true" /> : null}
-                    <small>{day.day}</small>
+                    <small><span>{day.day}</span>{isPlanned ? <CalendarCheck className="calendar-plan-inline" weight="bold" aria-hidden="true" /> : null}</small>
                   </button>
                 })}
               </div>
@@ -1385,6 +1383,7 @@ export default function Home() {
   const [dayMotionPhase, setDayMotionPhase] = useState<"idle" | "out" | "in">("idle");
   const [calendarExpanded, setCalendarExpanded] = useState(false);
   const [savedIntentions, setSavedIntentions] = useState<SavedIntention[]>([]);
+  const [activeSavedPlan, setActiveSavedPlan] = useState<SavedIntention | null>(null);
   const [planSuccess, setPlanSuccess] = useState<SavedIntention | null>(null);
   const [pendingPlanReplacement, setPendingPlanReplacement] = useState<SavedIntention | null>(null);
   const calendarStatusTimer = useRef<number | null>(null);
@@ -1429,7 +1428,7 @@ export default function Home() {
         : active.id === preferredId
           ? "персональный расчёт подтвердил эту дату"
           : "персональный расчёт применён ко всем датам";
-  const savedPlan = activeIntention(savedIntentions);
+  const savedPlan = activeSavedPlan;
   const savedPlanIntent = savedPlan ? intents.find((candidate) => candidate.id === savedPlan.intentId) ?? null : null;
   const savedPlanLabel = savedPlanIntent?.label ?? "сохранённое дело";
   const isCurrentResultPlanned = savedPlan?.intentId === intent.id && savedPlan.selectedDate === active.dateIso;
@@ -1545,7 +1544,10 @@ export default function Home() {
     } catch {
       // Plans remain optional when browser storage is unavailable.
     }
-    const timer = window.setTimeout(() => setSavedIntentions(restored), 0);
+    const timer = window.setTimeout(() => {
+      setSavedIntentions((current) => current.length > 0 ? current : restored);
+      setActiveSavedPlan((current) => current ?? activeIntention(restored));
+    }, 0);
     return () => window.clearTimeout(timer);
   }, []);
 
@@ -1702,6 +1704,7 @@ export default function Home() {
 
   function persistIntentions(next: SavedIntention[]) {
     setSavedIntentions(next);
+    setActiveSavedPlan(activeIntention(next));
     try {
       window.localStorage.setItem(INTENTIONS_STORAGE_KEY, JSON.stringify(next));
     } catch {
@@ -2156,9 +2159,12 @@ export default function Home() {
           intentLabel={planSuccessIntent.label}
           day={planSuccessDay}
           onClose={() => setPlanSuccess(null)}
-          onOpenPlans={() => {
+          onGoHome={() => {
             setPlanSuccess(null);
-            setCalendarExpanded(true);
+            setCalendarExpanded(false);
+            setScreen("start");
+            setHasChosenIntent(false);
+            window.history.pushState({}, "", window.location.pathname);
           }}
           onAddReminder={() => {
             setPlanSuccess(null);

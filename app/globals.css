@@ -1838,7 +1838,14 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   background: #fff;
 }
 .result-calendar-action.is-planned { color: #fff; background: linear-gradient(180deg, #7568f6, #5658eb); }
-.result-calendar-action svg { width: 21px; height: 21px; margin-right: 5px; vertical-align: -4px; }
+.result-calendar-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  text-align: center;
+}
+.result-calendar-action svg { width: 21px; height: 21px; flex: 0 0 auto; }
 .calendar-action-toast {
   position: fixed;
   left: 50%;
@@ -1967,20 +1974,17 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   color: #a89cff;
   filter: drop-shadow(0 0 5px rgba(155,140,255,.5));
 }
-.calendar-plan-mark {
-  position: absolute;
-  top: 3px;
-  left: 4px;
-  z-index: 3;
-  width: 13px;
-  height: 13px;
-  color: #fff;
-  filter: drop-shadow(0 0 6px rgba(155,140,255,.72));
-}
 .calendar-peek-day.is-planned,
 .calendar-month-grid button.is-planned {
-  background: rgba(98,99,245,.17);
-  box-shadow: inset 0 0 0 1px rgba(155,140,255,.26), 0 0 18px rgba(98,99,245,.1);
+  background: rgba(98,99,245,.1);
+  box-shadow: inset 0 0 0 1.5px rgba(155,140,255,.72), 0 0 18px rgba(98,99,245,.12);
+}
+.calendar-plan-inline {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+  color: #b3a8ff;
+  filter: drop-shadow(0 0 5px rgba(155,140,255,.42));
 }
 .calendar-months {
   height: calc(100% - 28px);
@@ -2063,14 +2067,13 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .calendar-month-grid button.selected { color: inherit; background: rgba(255,255,255,.08); box-shadow: inset 0 0 0 1px rgba(255,255,255,.035); }
 .calendar-month-grid button .calendar-day-moon { width: 36px; height: 35px; }
 .calendar-month-grid button .calendar-moon { width: 36px; height: 35px; }
-.calendar-month-grid button small { color: #fff; font-size: 12px; line-height: 16px; }
+.calendar-month-grid button small { color: #fff; font-size: 12px; line-height: 16px; display: inline-flex; align-items: center; justify-content: center; gap: 2px; }
 .calendar-month-grid button.is-suitable .calendar-moon {
   filter: saturate(.95) brightness(1.03) drop-shadow(0 0 10px rgba(145,132,255,.25));
   opacity: 1;
 }
 .calendar-month-grid button.is-suitable small { color: #b2a8ff; }
 .calendar-month-grid button .calendar-best-mark { top: 4px; right: 4px; }
-.calendar-month-grid button .calendar-plan-mark { top: 3px; left: 3px; }
 
 .plan-success-screen {
   position: fixed;
