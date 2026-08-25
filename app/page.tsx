@@ -20,6 +20,7 @@ import {
   resolveRequestedCalendarDay,
 } from "@/lib/calendar";
 import type { CalendarDay } from "@/lib/calendar";
+import { resolveCalendarSheetGesture } from "@/lib/calendar-sheet";
 import { intentCatalog } from "@/lib/intent-catalog";
 import type { CatalogIconKey, IntentDefinition } from "@/lib/intent-catalog";
 import { intentZodiacProfiles } from "@/lib/intent-profiles";
@@ -1332,7 +1333,10 @@ function ResultCalendar({
   onAddReminder: () => void;
   onCancelReschedule: () => void;
 }) {
-  const dragStart = useRef<number | null>(null);
+  const calendarRef = useRef<HTMLElement | null>(null);
+  const monthsRef = useRef<HTMLDivElement | null>(null);
+  const mouseDragStart = useRef<{ y: number; scrollTop: number } | null>(null);
+  const suppressCalendarClick = useRef(false);
   const todayIso = moscowDateIso();
   const upcomingDays = days.filter((day) => day.dateIso >= todayIso);
   const peekDays = upcomingDays.slice(0, 14);
@@ -1348,24 +1352,108 @@ function ResultCalendar({
     return groups;
   }, []).slice(0, 2);
 
+  useEffect(() => {
+    const calendar = calendarRef.current;
+    if (!calendar) return;
+    let touchStart: { y: number; scrollTop: number } | null = null;
+    let claimedGesture = false;
+
+    const suppressNextClick = () => {
+      suppressCalendarClick.current = true;
+      window.setTimeout(() => { suppressCalendarClick.current = false; }, 350);
+    };
+    const handleTouchStart = (event: TouchEvent) => {
+      if (event.touches.length !== 1) {
+        touchStart = null;
+        return;
+      }
+      touchStart = {
+        y: event.touches[0].clientY,
+        scrollTop: monthsRef.current?.scrollTop ?? 0,
+      };
+      claimedGesture = false;
+    };
+    const handleTouchMove = (event: TouchEvent) => {
+      if (!touchStart || event.touches.length !== 1) return;
+      const deltaY = event.touches[0].clientY - touchStart.y;
+      const canClaim = (!expanded && deltaY < -8)
+        || (expanded && touchStart.scrollTop <= 1 && deltaY > 8);
+      if (!canClaim && !claimedGesture) return;
+      claimedGesture = true;
+      event.preventDefault();
+    };
+    const handleTouchEnd = (event: TouchEvent) => {
+      if (!touchStart || event.changedTouches.length !== 1) {
+        touchStart = null;
+        return;
+      }
+      const action = resolveCalendarSheetGesture({
+        expanded,
+        deltaY: event.changedTouches[0].clientY - touchStart.y,
+        startScrollTop: touchStart.scrollTop,
+      });
+      if (action) {
+        suppressNextClick();
+        onExpandedChange(action === "expand");
+      } else if (claimedGesture) {
+        event.preventDefault();
+      }
+      touchStart = null;
+      claimedGesture = false;
+    };
+    const handleTouchCancel = () => {
+      touchStart = null;
+      claimedGesture = false;
+    };
+
+    calendar.addEventListener("touchstart", handleTouchStart, { passive: true });
+    calendar.addEventListener("touchmove", handleTouchMove, { passive: false });
+    calendar.addEventListener("touchend", handleTouchEnd, { passive: false });
+    calendar.addEventListener("touchcancel", handleTouchCancel, { passive: true });
+    return () => {
+      calendar.removeEventListener("touchstart", handleTouchStart);
+      calendar.removeEventListener("touchmove", handleTouchMove);
+      calendar.removeEventListener("touchend", handleTouchEnd);
+      calendar.removeEventListener("touchcancel", handleTouchCancel);
+    };
+  }, [expanded, onExpandedChange]);
+
   return (
-    <section className={`result-calendar ${expanded ? "is-expanded" : ""}`} aria-label="Календарь подходящих дней">
+    <section
+      ref={calendarRef}
+      className={`result-calendar ${expanded ? "is-expanded" : ""}`}
+      aria-label="Календарь подходящих дней"
+      onPointerDown={(event) => {
+        if (event.pointerType !== "mouse" || event.button !== 0) return;
+        mouseDragStart.current = { y: event.clientY, scrollTop: monthsRef.current?.scrollTop ?? 0 };
+      }}
+      onPointerUp={(event) => {
+        if (event.pointerType !== "mouse" || !mouseDragStart.current) return;
+        const action = resolveCalendarSheetGesture({
+          expanded,
+          deltaY: event.clientY - mouseDragStart.current.y,
+          startScrollTop: mouseDragStart.current.scrollTop,
+        });
+        mouseDragStart.current = null;
+        if (!action) return;
+        suppressCalendarClick.current = true;
+        window.setTimeout(() => { suppressCalendarClick.current = false; }, 350);
+        onExpandedChange(action === "expand");
+      }}
+      onPointerCancel={() => { mouseDragStart.current = null; }}
+      onClickCapture={(event) => {
+        if (!suppressCalendarClick.current) return;
+        event.preventDefault();
+        event.stopPropagation();
+        suppressCalendarClick.current = false;
+      }}
+    >
       <button
         type="button"
         className="calendar-grabber"
         aria-expanded={expanded}
         aria-label={expanded ? "Свернуть календарь" : "Развернуть календарь"}
         onClick={() => onExpandedChange(!expanded)}
-        onPointerDown={(event) => {
-          dragStart.current = event.clientY;
-          event.currentTarget.setPointerCapture(event.pointerId);
-        }}
-        onPointerUp={(event) => {
-          if (dragStart.current === null) return;
-          const distance = dragStart.current - event.clientY;
-          if (Math.abs(distance) > 24) onExpandedChange(distance > 0);
-          dragStart.current = null;
-        }}
       ><span /></button>
 
       {!expanded ? (
@@ -1391,7 +1479,7 @@ function ResultCalendar({
           })}
         </div>
       ) : (
-        <div className="calendar-months">
+        <div className="calendar-months" ref={monthsRef}>
           {rescheduleMode && (
             <div className="calendar-reschedule-banner" role="status">
               <span><strong>выберите новую дату</strong><small>план изменится только после нажатия на день</small></span>
