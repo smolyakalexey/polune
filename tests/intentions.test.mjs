@@ -4,7 +4,9 @@ import test from "node:test";
 import {
   activeIntention,
   cancelIntention,
+  completeIntention,
   createSavedIntention,
+  intentionNeedsDecision,
   parseSavedIntentions,
   replaceActiveIntention,
   rescheduleIntention,
@@ -112,4 +114,19 @@ test("cancelling preserves the plan as history and removes it from active state"
   assert.equal(cancelled.status, "cancelled");
   assert.equal(cancelled.cancelledAt, "2026-08-24T16:00:00.000Z");
   assert.equal(activeIntention([cancelled]), null);
+});
+
+test("completing preserves the plan as history and removes it from active state", () => {
+  const completed = completeIntention(build(), new Date("2026-08-25T10:00:00.000Z"));
+  assert.equal(completed.status, "completed");
+  assert.equal(completed.completedAt, "2026-08-25T10:00:00.000Z");
+  assert.equal(activeIntention([completed]), null);
+});
+
+test("only a planned date before today requires an explicit decision", () => {
+  const plan = build();
+  assert.equal(intentionNeedsDecision(plan, "2026-08-24"), false);
+  assert.equal(intentionNeedsDecision(plan, "2026-08-25"), false);
+  assert.equal(intentionNeedsDecision(plan, "2026-08-26"), true);
+  assert.equal(intentionNeedsDecision({ ...plan, status: "completed" }, "2026-08-26"), false);
 });

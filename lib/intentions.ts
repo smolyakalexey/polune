@@ -224,3 +224,18 @@ export function cancelIntention(intention: SavedIntention, now = new Date()): Sa
     updatedAt: timestamp,
   };
 }
+
+export function completeIntention(intention: SavedIntention, now = new Date()): SavedIntention {
+  if (intention.status !== "planned") throw new Error("Завершить можно только активный план");
+  const timestamp = now.toISOString();
+  return {
+    ...intention,
+    status: "completed",
+    completedAt: timestamp,
+    updatedAt: timestamp,
+  };
+}
+
+export function intentionNeedsDecision(intention: SavedIntention, todayIso: string) {
+  return intention.status === "planned" && isCalendarDate(todayIso) && intention.selectedDate < todayIso;
+}

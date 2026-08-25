@@ -2256,8 +2256,30 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .plan-actions-list > button > span { min-width: 0; display: grid; gap: 1px; }
 .plan-actions-list strong { font-size: 15px; font-weight: 500; line-height: 20px; }
 .plan-actions-list small { color: rgba(255,255,255,.45); font-size: 11px; line-height: 15px; }
+.plan-actions-list > button.is-complete > svg,
+.plan-actions-list > button.is-complete strong { color: #73d99a; }
 .plan-actions-list > button.is-cancel > svg,
 .plan-actions-list > button.is-cancel strong { color: #ff8175; }
+.plan-completion-mark {
+  position: relative;
+  width: 152px;
+  height: 152px;
+  margin-top: clamp(42px, 10dvh, 84px);
+  border: 1px solid rgba(115,217,154,.18);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(115,217,154,.16), rgba(98,99,245,.07) 46%, transparent 70%);
+  box-shadow: 0 0 70px rgba(115,217,154,.1);
+  display: grid;
+  place-items: center;
+  animation: plan-completion-mark-in .72s .12s cubic-bezier(.16,1,.3,1) both;
+}
+.plan-completion-mark::before,
+.plan-completion-mark::after { content: ""; position: absolute; border: 1px solid rgba(255,255,255,.07); border-radius: 50%; }
+.plan-completion-mark::before { inset: 17px; }
+.plan-completion-mark::after { inset: 34px; }
+.plan-completion-mark > span { position: relative; z-index: 1; width: 58px; height: 58px; border-radius: 50%; color: #06100a; background: #73d99a; box-shadow: 0 0 32px rgba(115,217,154,.34); display: grid; place-items: center; }
+.plan-completion-mark svg { width: 30px; height: 30px; }
+.plan-completion-note { max-width: 310px; margin: 28px auto 0; color: rgba(255,255,255,.52); font-size: 14px; line-height: 20px; text-align: center; animation: plan-success-copy-in .5s .55s cubic-bezier(.16,1,.3,1) both; }
 .plan-replace-sheet {
   width: min(100%, 420px);
   padding: 22px 18px max(24px, env(safe-area-inset-bottom));
@@ -2282,6 +2304,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 @keyframes plan-success-screen-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes plan-success-copy-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes plan-success-calendar-in { from { opacity: 0; transform: translateY(54px) scale(.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes plan-completion-mark-in { from { opacity: 0; transform: scale(.72); } to { opacity: 1; transform: scale(1); } }
 @keyframes plan-success-date-land {
   0% { opacity: 0; transform: translateY(-150px) scale(1.7); filter: blur(5px); }
   62% { opacity: 1; transform: translateY(5px) scale(.97); filter: blur(0); }

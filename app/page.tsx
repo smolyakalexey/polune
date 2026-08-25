@@ -33,7 +33,9 @@ import {
   INTENTIONS_STORAGE_KEY,
   activeIntention,
   cancelIntention,
+  completeIntention,
   createSavedIntention,
+  intentionNeedsDecision,
   parseSavedIntentions,
   replaceActiveIntention,
   rescheduleIntention,
@@ -1234,14 +1236,18 @@ function PlanActionsSheet({
   onClose,
   onReschedule,
   onReminder,
+  onComplete,
   onCancel,
+  needsDecision,
 }: {
   plan: SavedIntention;
   intentLabel: string;
   onClose: () => void;
   onReschedule: () => void;
   onReminder: () => void;
+  onComplete: () => void;
   onCancel: () => void;
+  needsDecision: boolean;
 }) {
   return (
     <div className="plan-actions-backdrop" role="presentation" onMouseDown={(event) => {
@@ -1249,17 +1255,51 @@ function PlanActionsSheet({
     }}>
       <section className="plan-actions-sheet" role="dialog" aria-modal="true" aria-labelledby="plan-actions-title">
         <header>
-          <div><p>ваш план</p><h2 id="plan-actions-title">{intentLabel}</h2></div>
+          <div><p>{needsDecision ? `план на ${formatPlanDate(plan.selectedDate)}` : "ваш план"}</p><h2 id="plan-actions-title">{needsDecision ? "получилось сделать задуманное?" : intentLabel}</h2></div>
           <button type="button" className="round-button" onClick={onClose} aria-label="Закрыть"><X weight="regular" /></button>
         </header>
-        <p className="plan-actions-date"><CalendarCheck weight="fill" aria-hidden="true" /> {formatPlanDate(plan.selectedDate)}</p>
+        <p className="plan-actions-date"><CalendarCheck weight="fill" aria-hidden="true" /> {needsDecision ? intentLabel : formatPlanDate(plan.selectedDate)}</p>
         <div className="plan-actions-list">
+          <button type="button" className="is-complete" onClick={onComplete}><Check weight="bold" aria-hidden="true" /><span><strong>{needsDecision ? "да, выполнено" : "отметить выполненным"}</strong><small>завершить этот план</small></span></button>
           <button type="button" onClick={onReschedule}><CalendarPlus weight="regular" aria-hidden="true" /><span><strong>перенести</strong><small>выбрать другую дату в календаре</small></span></button>
-          <button type="button" onClick={onReminder}><CalendarBlank weight="regular" aria-hidden="true" /><span><strong>добавить напоминание</strong><small>открыть системный календарь</small></span></button>
+          {!needsDecision && <button type="button" onClick={onReminder}><CalendarBlank weight="regular" aria-hidden="true" /><span><strong>добавить напоминание</strong><small>открыть системный календарь</small></span></button>}
           <button type="button" className="is-cancel" onClick={onCancel}><X weight="regular" aria-hidden="true" /><span><strong>отменить план</strong><small>убрать его из ближайших</small></span></button>
         </div>
       </section>
     </div>
+  );
+}
+
+function PlanCompletionScreen({
+  plan,
+  intentLabel,
+  onRepeat,
+  onGoHome,
+}: {
+  plan: SavedIntention;
+  intentLabel: string;
+  onRepeat: () => void;
+  onGoHome: () => void;
+}) {
+  return (
+    <section className="plan-success-screen plan-completion-screen" role="dialog" aria-modal="true" aria-labelledby="plan-completion-title">
+      <Starfield />
+      <div className="plan-success-content">
+        <div className="plan-success-copy">
+          <span><Check weight="bold" aria-hidden="true" /> готово</span>
+          <h2 id="plan-completion-title">план<br />выполнен</h2>
+          <p>{keepRussianPrepositionsWithNextWord(`${formatPlanDate(plan.selectedDate)} · ${intentLabel}`)}</p>
+        </div>
+        <div className="plan-completion-mark" aria-hidden="true">
+          <span><Check weight="bold" /></span>
+        </div>
+        <p className="plan-completion-note">Можно выбрать следующий подходящий день для этого же дела или вернуться к другим планам.</p>
+        <div className="plan-success-actions">
+          <button type="button" onClick={onRepeat}>подобрать следующую дату</button>
+          <button type="button" onClick={onGoHome}>на главную</button>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -1438,6 +1478,8 @@ export default function Home() {
   const [planActionsOpen, setPlanActionsOpen] = useState(false);
   const [rescheduleMode, setRescheduleMode] = useState(false);
   const [planStatus, setPlanStatus] = useState<"rescheduled" | "cancelled" | null>(null);
+  const [completionSuccess, setCompletionSuccess] = useState<SavedIntention | null>(null);
+  const [dismissedFollowUpId, setDismissedFollowUpId] = useState<string | null>(null);
   const calendarStatusTimer = useRef<number | null>(null);
   const feedbackStatusTimer = useRef<number | null>(null);
   const dayMotionTimer = useRef<number | null>(null);
@@ -1484,11 +1526,15 @@ export default function Home() {
   const savedPlan = activeSavedPlan;
   const savedPlanIntent = savedPlan ? intents.find((candidate) => candidate.id === savedPlan.intentId) ?? null : null;
   const savedPlanLabel = savedPlanIntent?.label ?? "сохранённое дело";
+  const savedPlanNeedsDecision = Boolean(savedPlan && intentionNeedsDecision(savedPlan, moscowDateIso()));
   const isCurrentResultPlanned = savedPlan?.intentId === intent.id && savedPlan.selectedDate === active.dateIso;
   const planSuccessIntent = planSuccess ? intents.find((candidate) => candidate.id === planSuccess.intentId) ?? intent : intent;
   const planSuccessDay = planSuccess
     ? calendarDays.find((day) => day.dateIso === planSuccess.selectedDate) ?? active
     : active;
+  const completionSuccessIntent = completionSuccess
+    ? intents.find((candidate) => candidate.id === completionSuccess.intentId) ?? intent
+    : intent;
 
   useEffect(() => {
     if (screen !== "result" || !personalizedCalendar) return;
@@ -1570,6 +1616,12 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (!savedPlanNeedsDecision || !savedPlan || dismissedFollowUpId === savedPlan.id) return;
+    const timer = window.setTimeout(() => setPlanActionsOpen(true), 280);
+    return () => window.clearTimeout(timer);
+  }, [dismissedFollowUpId, savedPlan, savedPlanNeedsDecision]);
+
+  useEffect(() => {
     let provider: CalendarProvider | null = null;
     try {
       const savedProvider = window.localStorage.getItem(CALENDAR_PREFERENCE_STORAGE_KEY);
@@ -1612,14 +1664,14 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const overlaySheetOpen = pickerOpen || calendarActionOpen || scoreInfoOpen || personalizationOpen || planActionsOpen || Boolean(planSuccess) || Boolean(pendingPlanReplacement);
+    const overlaySheetOpen = pickerOpen || calendarActionOpen || scoreInfoOpen || personalizationOpen || planActionsOpen || Boolean(planSuccess) || Boolean(completionSuccess) || Boolean(pendingPlanReplacement);
     const themeColor = overlaySheetOpen || calendarExpanded
       ? "#0c0d0e"
       : screen === "result"
         ? "#090b0c"
         : "#010506";
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", themeColor);
-  }, [calendarActionOpen, calendarExpanded, pendingPlanReplacement, personalizationOpen, pickerOpen, planActionsOpen, planSuccess, scoreInfoOpen, screen]);
+  }, [calendarActionOpen, calendarExpanded, completionSuccess, pendingPlanReplacement, personalizationOpen, pickerOpen, planActionsOpen, planSuccess, scoreInfoOpen, screen]);
 
   useEffect(() => {
     const restoreFromUrl = () => {
@@ -1863,6 +1915,7 @@ export default function Home() {
 
   function beginPlanReschedule() {
     setPlanActionsOpen(false);
+    if (screen === "start" || savedPlan?.intentId !== intent.id) openSavedPlan();
     setRescheduleMode(true);
     setCalendarExpanded(true);
     trackEvent("intention_reschedule_opened", {
@@ -1920,6 +1973,40 @@ export default function Home() {
       score: cancelled.snapshot.score,
       methodVersion: cancelled.snapshot.methodVersion,
     });
+  }
+
+  function completeSavedPlan() {
+    if (!savedPlan) return;
+    const completed = completeIntention(savedPlan);
+    persistIntentions(savedIntentions.map((candidate) => candidate.id === completed.id ? completed : candidate));
+    setPlanActionsOpen(false);
+    setRescheduleMode(false);
+    setCompletionSuccess(completed);
+    trackEvent("intention_completed", {
+      intentId: completed.intentId,
+      selectedDate: completed.selectedDate,
+      score: completed.snapshot.score,
+      methodVersion: completed.snapshot.methodVersion,
+    });
+  }
+
+  function repeatCompletedPlan() {
+    if (!completionSuccess) return;
+    const repeatedIntent = intents.find((candidate) => candidate.id === completionSuccess.intentId);
+    if (!repeatedIntent) return;
+    trackEvent("intention_repeated", {
+      intentId: completionSuccess.intentId,
+      selectedDate: completionSuccess.selectedDate,
+      score: completionSuccess.snapshot.score,
+      methodVersion: completionSuccess.snapshot.methodVersion,
+    });
+    setCompletionSuccess(null);
+    chooseIntent(repeatedIntent);
+  }
+
+  function closePlanActions() {
+    if (savedPlanNeedsDecision && savedPlan) setDismissedFollowUpId(savedPlan.id);
+    setPlanActionsOpen(false);
   }
 
   function calendarEventInput() {
@@ -2092,6 +2179,32 @@ export default function Home() {
           />
         )}
         {pickerOpen && <IntentPicker current={intent} showSelection={hasChosenIntent} onClose={() => setPickerOpen(false)} onSelect={chooseIntent} />}
+        {planActionsOpen && savedPlan && (
+          <PlanActionsSheet
+            plan={savedPlan}
+            intentLabel={savedPlanLabel}
+            needsDecision={savedPlanNeedsDecision}
+            onClose={closePlanActions}
+            onReschedule={beginPlanReschedule}
+            onReminder={() => {
+              setPlanActionsOpen(false);
+              performCalendarAction(preferredCalendarProvider);
+            }}
+            onComplete={completeSavedPlan}
+            onCancel={cancelSavedPlan}
+          />
+        )}
+        {completionSuccess && (
+          <PlanCompletionScreen
+            plan={completionSuccess}
+            intentLabel={completionSuccessIntent.label}
+            onRepeat={repeatCompletedPlan}
+            onGoHome={() => {
+              setCompletionSuccess(null);
+              window.history.pushState({}, "", window.location.pathname);
+            }}
+          />
+        )}
       </main>
     );
   }
@@ -2319,13 +2432,29 @@ export default function Home() {
         <PlanActionsSheet
           plan={savedPlan}
           intentLabel={savedPlanLabel}
-          onClose={() => setPlanActionsOpen(false)}
+          needsDecision={savedPlanNeedsDecision}
+          onClose={closePlanActions}
           onReschedule={beginPlanReschedule}
           onReminder={() => {
             setPlanActionsOpen(false);
             performCalendarAction(preferredCalendarProvider);
           }}
+          onComplete={completeSavedPlan}
           onCancel={cancelSavedPlan}
+        />
+      )}
+      {completionSuccess && (
+        <PlanCompletionScreen
+          plan={completionSuccess}
+          intentLabel={completionSuccessIntent.label}
+          onRepeat={repeatCompletedPlan}
+          onGoHome={() => {
+            setCompletionSuccess(null);
+            setCalendarExpanded(false);
+            setScreen("start");
+            setHasChosenIntent(false);
+            window.history.pushState({}, "", window.location.pathname);
+          }}
         />
       )}
       {personalizationOpen && (

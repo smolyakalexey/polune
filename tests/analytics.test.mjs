@@ -26,6 +26,8 @@ test("analytics covers the main product and personalization funnels", () => {
     "intention_reminder_opened",
     "intention_reschedule_opened",
     "intention_rescheduled",
+    "intention_completed",
+    "intention_repeated",
     "intention_cancelled",
     "second_intention_attempted",
     "result_shared",
